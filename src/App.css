@@ -1,0 +1,20 @@
+body {
+  overflow: hidden;
+}
+
+/* styles.css or your CSS module */
+@keyframes badgeScale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.badge-animate {
+  animation: badgeScale 0.3s ease-in-out; /* Adjust duration as needed */
+}
