@@ -1,180 +1,238 @@
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { CiSquareMinus } from "react-icons/ci";
-import { removeItemFromReceipt } from "../../redux/receiptSlice";
-import { useState } from "react";
-import CalculatorModal from "./CalculatorModel";
-import { removeTable } from "./../../redux/receiptSlice";
+import { XCircle, Plus, Minus } from "lucide-react";
+import {
+  removeItemFromReceipt,
+  incrementQuantity,
+  decrementQuantity,
+} from "./../../redux/receiptSlice";
+import { useNavigate } from "react-router-dom";
 import box from "./../../assets/box.png";
 import "./../input.css";
+import CalculatorModal from "./CalculatorModel";
 
-function Receipt() {
+function Receipt({ onClose }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [taxPercentage, setTaxPercentage] = useState(5); // Default tax is 5%
-  const [orderData, setOrderData] = useState(null);
+  const [taxRate, setTaxRate] = useState(5); // Default 5% tax
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
-  // Access the current table's receipt items and orderType
-  const currentReceipt = receipts[selectedTable]?.items || [];
-  const orderType = receipts[selectedTable]?.orderType || "Dine In";
-
-  const cancelAllItem = () => {
-    dispatch(removeTable(selectedTable));
+  const handleRemoveItem = (itemName) => {
+    dispatch(removeItemFromReceipt({ table: selectedTable, itemName }));
   };
 
-  // Function to calculate total price, tax, and item counts
-  const calculateTotalAndCounts = () => {
-    const counts = {};
-    let total = 0;
-
-    currentReceipt.forEach((item) => {
-      counts[item.dishName] = (counts[item.dishName] || 0) + 1;
-      total += item.price;
-    });
-
-    const tax = total * (taxPercentage / 100); // Dynamic tax calculation
-    const totalWithTax = total + tax;
-
-    return { counts, total, tax, totalWithTax };
+  const handleIncrement = (itemName) => {
+    dispatch(incrementQuantity({ table: selectedTable, itemName }));
   };
 
-  const confirmOrderClick = async () => {
-    const orders = Object.entries(counts).map(([dishName, quantity]) => ({
-      dishName,
-      price: currentReceipt.find((item) => item.dishName === dishName).price,
-      quantity,
-    }));
+  const handleDecrement = (itemName) => {
+    dispatch(decrementQuantity({ table: selectedTable, itemName }));
+  };
+
+  const handleTaxChange = (e) => {
+    const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
+    if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
+      setTaxRate(value === "" ? 0 : Number(value));
+    }
+  };
+
+  const calculateSubtotal = () => {
+    if (!selectedTable || !receipts[selectedTable]) return 0;
+    return receipts[selectedTable].items.reduce((total, item) => {
+      return total + item.price * (item.quantity || 1);
+    }, 0);
+  };
+
+  const calculateTax = (subtotal) => {
+    return subtotal * (taxRate / 100);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const tax = calculateTax(subtotal);
+    return subtotal + tax;
+  };
+
+  const handlePayment = () => {
+    if (!selectedTable || !receipts[selectedTable]?.items?.length) {
+      return;
+    }
 
     const orderData = {
       table: selectedTable,
-      orderType, // Use the stored orderType for the table
-      orders,
-      totalPrice: total,
-      finalPrice: totalWithTax,
-      tax: taxPercentage / 100,
+      orderType: receipts[selectedTable].orderType,
+      orders: receipts[selectedTable].items.map((item) => ({
+        dishName: item.dishName,
+        price: item.price,
+        quantity: item.quantity || 1,
+      })),
+      totalPrice: calculateSubtotal(),
+      finalPrice: calculateTotal(),
+      tax: taxRate / 100,
     };
 
-    setOrderData(orderData);
-    setIsModalOpen(true);
+    setIsCalculatorOpen(true);
   };
-
-  const handleRemoveItem = (itemName) => {
-    if (selectedTable !== null) {
-      dispatch(removeItemFromReceipt({ table: selectedTable, itemName }));
-    }
-  };
-
-  const handleTaxInputChange = (e) => {
-    let value = e.target.value;
-
-    // Remove leading zeros
-    if (value.length > 1 && value.startsWith(0)) {
-      value = value.replace(/^0+/, "");
-    }
-
-    setTaxPercentage(value ? value : 0); // Handle empty input case
-  };
-
-  const { counts, total, tax, totalWithTax } = calculateTotalAndCounts();
 
   return (
-    <div className="text-black h-screen overflow-y-auto pt-2 pb-40">
-      <div className="px-5">
-        <p className="sub-header font-bold mb-5">Receipt</p>
+    <div className="text-black h-screen px-3 pt-0">
+      <div className="pt-2">
+        <div className="flex justify-between w-full items-center mb-5">
+          <p className="sub-header font-bold">Receipt</p>
+          <button
+            className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+            onClick={() => navigate("/")}
+          >
+            Save
+          </button>
+        </div>
+
         {!selectedTable && (
           <div className="flex flex-col items-center justify-center h-[70vh]">
-            <img src={box} alt="box" />
-            <p className="sub-header">There is no order yet!</p>
-            <span className="text-gray-500 text-center">
-              Please select table and take order from customer.
-            </span>
+            <img src={box} alt="box" className="w-32 h-32 opacity-50" />
+            <p className="text-gray-500 mt-5">No table selected</p>
           </div>
         )}
-        {selectedTable && (
-          <div>
-            <p className="text-lg font-semibold mb-5">
-              Table {selectedTable} - {orderType} Order
-            </p>
-            <div className="receipt">
-              {Object.keys(counts).map((itemName, index) => (
-                <div key={itemName} className="font-medium mb-2 flex">
-                  <span className="me-2">{index + 1}.</span>{" "}
-                  <span className="w-1/3 font-bold">{itemName}</span>{" "}
-                  <div className="w-1/3 flex font-semibold">
-                    <span> {counts[itemName]} pcs</span>
-                    <div>
+
+        {selectedTable && !receipts[selectedTable]?.items?.length && (
+          <div className="flex flex-col items-center justify-center h-[70vh]">
+            <img src={box} alt="box" className="w-32 h-32 opacity-50" />
+            <p className="text-gray-500 mt-5">No items in receipt</p>
+          </div>
+        )}
+
+        {selectedTable && receipts[selectedTable]?.items?.length > 0 && (
+          <div className="flex flex-col h-[calc(100vh-6rem)]">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-gray-500">Table {selectedTable}</p>
+              <p className="text-gray-500">
+                {receipts[selectedTable].orderType}
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto mb-5 space-y-4">
+              {receipts[selectedTable].items.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center bg-white py-3 rounded-lg shadow-sm"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium">{item.dishName}</p>
+                    <p className="text-sm text-gray-500">
+                      {item.price.toLocaleString()} MMK
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                       <button
-                        className="ms-3"
-                        onClick={() => handleRemoveItem(itemName)}
+                        onClick={() => handleDecrement(item.dishName)}
+                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
                       >
-                        <CiSquareMinus size={20} />
+                        <Minus size={16} />
+                      </button>
+                      <span className="font-medium min-w-[24px] text-center">
+                        {item.quantity || 1}
+                      </span>
+                      <button
+                        onClick={() => handleIncrement(item.dishName)}
+                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                      >
+                        <Plus size={16} />
                       </button>
                     </div>
+                    <p className="font-medium min-w-[100px] text-right">
+                      {(item.price * (item.quantity || 1)).toLocaleString()} MMK
+                    </p>
+                    {/* <button
+                      onClick={() => handleRemoveItem(item.dishName)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <XCircle size={20} />
+                    </button> */}
                   </div>
-                  <span className="w-1/3 text-right">
-                    {counts[itemName] *
-                      currentReceipt.find((item) => item.dishName === itemName)
-                        .price}
-                    MMK
-                  </span>
                 </div>
               ))}
-              <div className="font-medium mb-5 flex border-b-4"></div>
-              <div className="flex justify-between items-center font-bold text-md">
-                <span>Subtotal</span> <span>{total.toLocaleString()} MMK</span>
-              </div>
-              <div className="font-medium my-5 flex border-b-4"></div>
-              <div className="flex justify-between items-center font-bold text-md">
-                <div className="flex w-2/3">
-                  <label className="font-semibold text-md w-1/2">Gov Tax</label>
-                  <input
-                    type="number"
-                    value={taxPercentage}
-                    onChange={handleTaxInputChange}
-                    className="ml-3 text-sm px-2 py-1 border border-black rounded-md"
-                    min="0"
-                    max="100"
-                  />
-                </div>
-                <span className="w-1/3 text-right">
-                  {tax.toLocaleString()} MMK
-                </span>
-              </div>
-              <div className="font-medium mt-5 flex border-b-4"></div>
-              <div className="flex justify-between items-center mt-5 font-bold text-xl">
-                <span>Total</span>{" "}
-                <span>{totalWithTax.toLocaleString()} MMK</span>
-              </div>
             </div>
-            <div className="flex gap-5 mt-5">
-              <button
-                className="bg-white w-full text-primary md:text-xl font-bold px-4 py-2 rounded-md transition duration-200 border border-gray-300 focus:outline-none focus:scale-105"
-                onClick={() => cancelAllItem()}
-              >
-                Delete All Orders
-              </button>
 
-              <button
-                onClick={() => confirmOrderClick()}
-                className="bg-primary w-full text-white md:text-xl font-bold px-4 py-2 rounded-md transition duration-200 border border-primary focus:outline-none focus:scale-105"
-              >
-                Confirm Order
-              </button>
+            <div className="sticky bottom-[0px] bg-white border-t pt-4">
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Subtotal</p>
+                  <p className="font-medium">
+                    {calculateSubtotal().toLocaleString()} MMK
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-600">Gov Tax</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={taxRate === 0 ? "" : taxRate}
+                        onChange={handleTaxChange}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-600">
+                    {calculateTax(calculateSubtotal()).toLocaleString()} MMK
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 border-t">
+                  <p className="font-bold text-lg">Total</p>
+                  <p className="font-bold text-lg text-primary">
+                    {calculateTotal().toLocaleString()} MMK
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pb-5">
+                <button
+                  onClick={onClose}
+                  className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                >
+                  Order More
+                </button>
+                <button
+                  onClick={handlePayment}
+                  className="flex-1 bg-primary text-white font-semibold py-4 rounded-full border border-primary hover:bg-primary/90 transition-colors"
+                >
+                  Payment
+                </button>
+              </div>
             </div>
           </div>
         )}
-        <div className="">
-          {isModalOpen && (
-            <CalculatorModal
-              totalPrice={totalWithTax}
-              table={selectedTable}
-              orderData={orderData}
-              onClose={() => setIsModalOpen(false)}
-            />
-          )}
-        </div>
       </div>
+
+      {isCalculatorOpen && (
+        <CalculatorModal
+          totalPrice={calculateTotal()}
+          table={selectedTable}
+          orderData={{
+            table: selectedTable,
+            orderType: receipts[selectedTable].orderType,
+            orders: receipts[selectedTable].items.map((item) => ({
+              dishName: item.dishName,
+              price: item.price,
+              quantity: item.quantity || 1,
+            })),
+            totalPrice: calculateSubtotal(),
+            finalPrice: calculateTotal(),
+            tax: taxRate / 100,
+          }}
+          onClose={() => setIsCalculatorOpen(false)}
+        />
+      )}
     </div>
   );
 }

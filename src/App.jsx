@@ -1,4 +1,3 @@
-import Sidebar from "./components/Sidebar";
 import HomePage from "./pages/HomePage";
 import MenuPage from "./pages/MenuPage";
 import { Route, Routes } from "react-router-dom";
@@ -8,24 +7,28 @@ import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./components/PrivateRoute";
 import PageNotFound from "./components/PageNotFound";
 import { useEffect, useState } from "react";
-import { IoMdMenu } from "react-icons/io";
-import Scoreboard from "./pages/TestingPage";
-import { Receipt } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import Dashboard from "./pages/Dashboard";
 // import { FaUser } from "react-icons/fa";
+import { Receipt as ReceiptIcon } from "lucide-react";
+import { IoMdMenu } from "react-icons/io";
+import Sidebar from "./components/Sidebar";
 
 import "./App.css";
 import EnterID from "./pages/EnterID";
 import User from "./components/User";
 import { useSelector } from "react-redux";
+import SetupShop from "./pages/SetupShop";
+import Welcome from "./pages/Welcome";
+import TablePage from "./components/Home/TablePage";
 
 export default function App() {
+  const tables = [1, 2, 3, 4, 5];
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
   const location = window.location.pathname;
   const user = JSON.parse(localStorage.getItem("bz-user"));
-  const [islogin, setIslogin] = useState(true);
+  const [islogin, setIslogin] = useState(false);
   const [isVisible, setisVisible] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [animate, setAnimate] = useState(false);
@@ -35,7 +38,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (location.includes("/login")) {
+    if (
+      location.includes("/login") ||
+      location.includes("/signup") ||
+      location.includes("/setup") ||
+      location.includes("/welcome")
+    ) {
       setIslogin(false);
     } else {
       setIslogin(true);
@@ -58,35 +66,39 @@ export default function App() {
       <div className="bg-gray-100">
         <div className="flex flex-col">
           {/* Button to open/close the sidebar */}
-          <div className="px-4 md:px-5 mt-3 md:mt-2 flex justify-between">
-            <button
-              onClick={toggleSidebar}
-              className="px-5 border bg-white border-gary-300 text-primary rounded-lg focus:outline-none"
-            >
-              <IoMdMenu size={30} />
-            </button>
+          {islogin && (
+            <div className="px-4 md:px-5 mt-3 md:mt-2 flex justify-between">
+              <button
+                onClick={toggleSidebar}
+                className="px-5 border bg-white border-gary-300 text-primary rounded-lg focus:outline-none"
+              >
+                <IoMdMenu size={30} />
+              </button>
 
-            <div className="">
-              <User user={user} />
+              <div className="">
+                <User user={user} />
+              </div>
+              <button
+                type="button"
+                className="relative md:hidden inline-flex items-center p-3 text-sm font-medium text-center text-white bg-primary rounded-lg"
+                onClick={() => setisVisible(!isVisible)}
+              >
+                <ReceiptIcon size={25} />
+                {receipts[selectedTable]?.items.length > 0 && (
+                  <div
+                    className={`absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-primary bg-white border-2 border-white rounded-full -top-2 -right-2 ${
+                      animate ? "badge-animate" : ""
+                    }`}
+                  >
+                    {receipts[selectedTable]?.items.length}
+                  </div>
+                )}
+              </button>
             </div>
-            <button
-              type="button"
-              className="relative md:hidden inline-flex items-center p-3 text-sm font-medium text-center text-white bg-primary rounded-lg"
-              onClick={() => setisVisible(!isVisible)}
-            >
-              <Receipt size={25} />
-              {receipts[selectedTable]?.items.length > 0 && (
-                <div
-                  className={`absolute inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-primary bg-white border-2 border-white rounded-full -top-2 -right-2 ${
-                    animate ? "badge-animate" : ""
-                  }`}
-                >
-                  {receipts[selectedTable]?.items.length}
-                </div>
-              )}
-            </button>
-          </div>
+          )}
+
           {/* Sidebar Component */}
+
           <div
             className={`${
               islogin
@@ -102,58 +114,83 @@ export default function App() {
               </div>
             )}
 
-            <Routes>
-              <Route path="/login/:id" element={<LoginPage />} />
-              <Route
-                path="/"
-                element={
-                  // <PrivateRoute>
-                  <HomePage isVisible={isVisible} />
-                  // </PrivateRoute>
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  // <PrivateRoute>
-                  <EnterID />
-                  // </PrivateRoute>
-                }
-              />
-              <Route
-                path="/menu"
-                element={
-                  // <PrivateRoute>
-                  <MenuPage />
-                  // </PrivateRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  // <PrivateRoute>
-                  <Dashboard />
-                  // </PrivateRoute>
-                }
-              />
-              <Route
-                path="/orders"
-                element={
-                  // <PrivateRoute>
-                  <OrderPage />
-                  // </PrivateRoute>
-                }
-              />
-              <Route
-                path="/testing"
-                element={
-                  <PrivateRoute>
-                    <Scoreboard />
-                  </PrivateRoute>
-                }
-              />
-              <Route path="*" element={<PageNotFound />} />
-            </Routes>
+            {/* Main Content */}
+            <div className={`flex-1 ${islogin ? "pt-1" : ""}`}>
+              <div className="flex">
+                {/* Main Content Area */}
+                <div className="flex-1">
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route
+                      path="/"
+                      element={
+                        // <PrivateRoute>
+                        <TablePage tables={tables} />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/order/:table"
+                      element={
+                        // <PrivateRoute>
+                        <HomePage />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/signup"
+                      element={
+                        // <PrivateRoute>
+                        <EnterID />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/welcome"
+                      element={
+                        // <PrivateRoute>
+                        <Welcome />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/setup"
+                      element={
+                        // <PrivateRoute>
+                        <SetupShop />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/menu"
+                      element={
+                        // <PrivateRoute>
+                        <MenuPage />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard"
+                      element={
+                        // <PrivateRoute>
+                        <Dashboard />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/orders"
+                      element={
+                        // <PrivateRoute>
+                        <OrderPage />
+                        // </PrivateRoute>
+                      }
+                    />
+
+                    <Route path="*" element={<PageNotFound />} />
+                  </Routes>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

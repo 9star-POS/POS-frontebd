@@ -5,7 +5,7 @@ import axios from "../axios";
 const Deleteitems = async (id) => {
   const toastId = toast.loading("Deleting Item...");
   try {
-    const res = await axios.delete(`api/v1/menu/items/${id}`);
+    const res = await axios.patch(`api/v1/stock/${id}`);
     toast.success("Deleted Item", {
       id: toastId,
       autoClose: 500,

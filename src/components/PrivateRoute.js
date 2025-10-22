@@ -1,11 +1,11 @@
 // import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./../hook/auth/AuthContext.jsx";
+// import { useAuth } from "./../hook/auth/AuthContext.jsx";
 import { useEffect } from "react";
 
 const PrivateRoute = ({ children }) => {
   const navigate = useNavigate();
-  const token = sessionStorage.getItem("biz-bozz");
+  const token = localStorage.getItem("biz-bozz-token");
   // console.log(token);
   // const { isAuthenticated } = useAuth();
   // Get authentication state from context

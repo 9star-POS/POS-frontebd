@@ -2,11 +2,12 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
 import updateMenu from "../../api/Menu/UpdateItem";
+import axios from "../../api/axios";
 
 const EditMenuModel = ({ isOpen, onClose, menu }) => {
   const [dishCategory, setDishCategory] = useState("Western");
-  const [dishName, setDishName] = useState(menu.dishName);
-  const [price, setPrice] = useState(menu.price);
+  const [dishName, setDishName] = useState(menu.name);
+  const [price, setPrice] = useState(menu.price.toString());
   const [image, setImage] = useState(null);
 
   const handleImageUpload = (e) => {
@@ -17,19 +18,25 @@ const EditMenuModel = ({ isOpen, onClose, menu }) => {
     setImage(null); // Clear the image state
   };
 
-  const handleAddDish = async () => {
+  const handleEditDish = async () => {
     const formData = new FormData();
-    formData.append("dishName", dishName);
+    formData.append("name", dishName);
     formData.append("price", price);
-    formData.append("dishImage", image);
+    if (image) {
+      formData.append("images", image);
+    }
     console.log(formData);
-    const res = await updateMenu({ id: menu._id, formData });
+    const res = await axios.patch(`api/v1/stock/${menu._id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     console.log(res);
     onClose();
     setImage(null);
-    // Handle adding the dish here
-    console.log("Dish Added:", { dishCategory, dishName, price, image });
-    onClose(); // Close the modal after adding the dish
+    // Handle editing the dish here
+    console.log("Dish Edited:", { dishCategory, dishName, price, image });
+    onClose(); // Close the modal after editing the dish
   };
 
   if (!isOpen) return null;
@@ -62,10 +69,10 @@ const EditMenuModel = ({ isOpen, onClose, menu }) => {
               Cancel
             </button>
             <button
-              onClick={handleAddDish}
+              onClick={handleEditDish}
               className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary"
             >
-              Add Dish
+              Edit Dish
             </button>
           </div>
         </div>
@@ -91,9 +98,9 @@ const EditMenuModel = ({ isOpen, onClose, menu }) => {
                   </div>
                 ) : (
                   <div className="relative md:w-[300px] h-48 border border-primary rounded-md mb-2 flex items-center justify-center overflow-hidden">
-                    {menu.dishImage ? (
+                    {menu.stockImagesUrl[0].url ? (
                       <img
-                        src={menu.dishImage}
+                        src={menu.stockImagesUrl[0].url}
                         alt="Dish"
                         className="w-full h-full object-cover"
                       />
@@ -161,10 +168,10 @@ const EditMenuModel = ({ isOpen, onClose, menu }) => {
             Cancel
           </button>
           <button
-            onClick={handleAddDish}
+            onClick={handleEditDish}
             className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary"
           >
-            Add Dish
+            Edit Dish
           </button>
         </div>
       </div>

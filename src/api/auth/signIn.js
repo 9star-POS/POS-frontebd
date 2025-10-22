@@ -6,10 +6,7 @@ const handleSignIn = async (data) => {
   console.log(data.formData);
   const toastId = toast.loading("Logging in...");
   try {
-    const response = await axios.post(
-      `api/v1/auth/login/${data.id}`,
-      data.formData
-    );
+    const response = await axios.post(`api/v1/auth/login`, data.formData);
     // console.log(response.data);
     toast.success("Logged in successfully!", {
       id: toastId,

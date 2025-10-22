@@ -25,7 +25,7 @@ body {
 }
 
 .sub-header {
-  @apply text-[36px] font-medium font-futura;
+  @apply text-[28px] font-medium font-futura;
 }
 
 input[type="radio"] {
@@ -39,6 +39,8 @@ input[type="radio"] {
   overflow: hidden; /* Hides the overflowed text */
 }
 
+
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Hide scrollbar */
 }
@@ -49,27 +51,4 @@ input[type="radio"] {
 }
 
 /* For WebKit browsers (Chrome, Safari) */
-::-webkit-scrollbar {
-  width: 5px; /* Width of the scrollbar */
-  height: 5px; /* Height of the scrollbar */
-}
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1; /* Background of the scrollbar track */
-  border-radius: 2px; /* Rounded corners for the track */
-}
-
-::-webkit-scrollbar-thumb {
-  background: #fd8e39; /* Color of the scrollbar thumb */
-  border-radius: 2px; /* Rounded corners for the thumb */
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #ff6f00; /* Color of the thumb on hover */
-}
-
-/* For Firefox */
-.scrollable {
-  scrollbar-width: thin; /* Use a thin scrollbar */
-  scrollbar-color: #ff6f00 #fd8e39; /* thumb color and track color */
-}

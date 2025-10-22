@@ -1,6 +1,6 @@
 // CreateMenu.js
 import { useState } from "react";
-import addMenu from "../../api/Menu/addMenu";
+import axios from "../../api/axios";
 import defaultMenu from "./../../assets/defaultMenu.jpg";
 import PropTypes from "prop-types";
 
@@ -21,20 +21,29 @@ const MenuModel = ({ isOpen, onClose, category }) => {
 
   const handleAddDish = async () => {
     const formData = new FormData();
-    formData.append("categoryName", dishCategory || category[0]);
-    formData.append("dishName", dishName);
+    formData.append("name", dishName);
     formData.append("price", price);
-    formData.append("dishImage", image);
-    // console.log(image);
-    const res = await addMenu(formData);
-    console.log(res);
-    if (res.code === 201) {
+    if (dishCategory || (category && category[0])) {
+      formData.append("category", dishCategory || category[0]);
+    }
+    // default type as restaurant until UI supports editing this
+    formData.append("type", "restaurant");
+    if (image) {
+      formData.append("images", image);
+    }
+
+    const res = await axios.post("api/v1/stock", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    const data = res?.data;
+    if (data?.code === 201) {
       onClose();
-      // setDishCategory("");
       setDishName("");
       setPrice("");
       setImage(null);
-      onClose(); // Close the modal after adding the dish
+      // keep selected category as-is
     }
   };
 

@@ -12,13 +12,12 @@ const MenuList = ({ category }) => {
 
   const getMenuList = async () => {
     const res = await getItems();
-    if (res.status === "success") {
-      console.log("menuLists", res.data);
-      setLoading(false);
+    if (res?.status === "success") {
       setMenuList(res.data);
-    } else {
       setLoading(false);
+    } else {
       setMenuList([]);
+      setLoading(false);
     }
   };
 
@@ -29,7 +28,7 @@ const MenuList = ({ category }) => {
   if (loading) {
     return (
       <div className="">
-        <Loading />;
+        <Loading />
       </div>
     );
   }
@@ -62,10 +61,12 @@ const MenuList = ({ category }) => {
 
   if (!loading && menuLists.length > 0) {
     return (
-      <div className="flex flex-col sm:flex-row lg:flex-wrap gap-5 mt-5 pb-40">
-        {menuLists.map((menu) => (
-          <MenuCard key={menu._id} menu={menu} />
-        ))}
+      <div className="flex flex-col lg:flex-row lg:flex-wrap gap-5 mt-5 pb-40">
+        {menuLists.map((menu) => {
+          return category === menu.category ? (
+            <MenuCard key={menu._id} menu={menu} />
+          ) : null;
+        })}
       </div>
     );
   }

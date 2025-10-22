@@ -31,15 +31,15 @@ const MenuCard = ({ menu, refreshMenu }) => {
       <div className="hidden md:block">
         <img
           className="w-full h-48 sm:h-32 object-cover"
-          src={menu.dishImage || defaultImage}
+          src={menu.stockImagesUrl[0].url || defaultImage}
           alt="Food"
         />
       </div>
 
-      <div className="flex h-[80px] gap-5 justify-between items-center mt-2 mx-2  ">
+      <div className="flex h-[80px] gap-2 justify-between items-center mt-2 mx-1  ">
         <div className="font-raleway ">
           <h2 className="font-semibold text-gray-800 multi-line-truncate">
-            {menu.dishName}{" "}
+            {menu.name}{" "}
           </h2>
           <p className="text-gray-500 text-sm mt-1">{menu.price} MMK</p>
         </div>
@@ -60,7 +60,7 @@ const MenuCard = ({ menu, refreshMenu }) => {
       </div>
 
       <button
-        className="hidden md:block absolute top-0 right-0 m-2 bg-red-500 text-white p-2 rounded-md hover:scale-95 active:scale-105"
+        className="hidden md:block absolute top-0 right-0 m-2 bg-white border border-red-500 text-red-500 p-2 rounded-md hover:scale-95 active:scale-105"
         onClick={() => setIsDeleteOpen(true)}
       >
         <Trash2Icon size={17} />
@@ -83,8 +83,8 @@ const MenuCard = ({ menu, refreshMenu }) => {
 
 MenuCard.propTypes = {
   menu: PropTypes.shape({
-    dishImage: PropTypes.string.isRequired,
-    dishName: PropTypes.string.isRequired,
+    dishImage: PropTypes.string,
+    name: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
     _id: PropTypes.string.isRequired,
   }).isRequired,
