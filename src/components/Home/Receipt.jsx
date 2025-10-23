@@ -5,11 +5,14 @@ import {
   removeItemFromReceipt,
   incrementQuantity,
   decrementQuantity,
+  removeTable,
 } from "./../../redux/receiptSlice";
 import { useNavigate } from "react-router-dom";
 import box from "./../../assets/box.png";
 import "./../input.css";
 import CalculatorModal from "./CalculatorModel";
+import sendToKitchen from "../../api/Order/sendtokitchen";
+import { toast } from "sonner";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -76,6 +79,33 @@ function Receipt({ onClose }) {
     setIsCalculatorOpen(true);
   };
 
+  const sendKitchen = async () => {
+    if (!selectedTable || !receipts[selectedTable]?.items?.length) {
+      toast.warning("No items to send");
+      return;
+    }
+
+    const orderItems = receipts[selectedTable].items.map((item) => ({
+      stockId: item._id || item.stockId,
+      quantity: item.quantity || 1,
+      notes: item.notes ?? "",
+    }));
+
+    const payload = {
+      tableNumber: selectedTable,
+      orderItems,
+    };
+
+    try {
+      const res = await sendToKitchen(payload);
+      if (res?.status === "success" || res?.code === 201) {
+        toast.success("Order sent to kitchen successfully");
+      }
+    } catch (e) {
+      // Error toasting handled in API layer; no-op here
+    }
+  };
+
   return (
     <div className="text-black h-screen px-3 pt-0">
       <div className="pt-2">
@@ -104,7 +134,7 @@ function Receipt({ onClose }) {
         )}
 
         {selectedTable && receipts[selectedTable]?.items?.length > 0 && (
-          <div className="flex flex-col h-[calc(100vh-6rem)]">
+          <div className="flex flex-col h-[calc(100vh-10rem)]">
             <div className="flex justify-between items-center mb-3">
               <p className="text-gray-500">Table {selectedTable}</p>
               <p className="text-gray-500">
@@ -156,7 +186,7 @@ function Receipt({ onClose }) {
               ))}
             </div>
 
-            <div className="sticky bottom-[0px] bg-white border-t pt-4">
+            <div className="sticky bottom-[0px] bg-white border-t">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Subtotal</p>
@@ -195,7 +225,7 @@ function Receipt({ onClose }) {
                 </div>
               </div>
 
-              <div className="flex gap-3 pb-5">
+              {/* <div className="flex gap-3 pb-5">
                 <button
                   onClick={onClose}
                   className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
@@ -207,6 +237,14 @@ function Receipt({ onClose }) {
                   className="flex-1 bg-primary text-white font-semibold py-4 rounded-full border border-primary hover:bg-primary/90 transition-colors"
                 >
                   Payment
+                </button>
+              </div> */}
+              <div className="flex gap-3 pb-5">
+                <button
+                  onClick={sendKitchen}
+                  className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                >
+                  Send to Kitchen
                 </button>
               </div>
             </div>
