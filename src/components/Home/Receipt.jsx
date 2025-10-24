@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { XCircle, Plus, Minus } from "lucide-react";
 import {
@@ -13,6 +13,8 @@ import "./../input.css";
 import CalculatorModal from "./CalculatorModel";
 import sendToKitchen from "../../api/Order/sendtokitchen";
 import { toast } from "sonner";
+import getRestaurantOrders from "../../api/Order/getRestaurantOrders";
+import { setItemsForTable } from "./../../redux/receiptSlice";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -21,6 +23,51 @@ function Receipt({ onClose }) {
   const receipts = useSelector((state) => state.receipts.receipts);
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [remoteOrder, setRemoteOrder] = useState(null);
+  const [isLoadingRemote, setIsLoadingRemote] = useState(false);
+
+  useEffect(() => {
+    const fetchOrdersForTable = async () => {
+      if (!selectedTable) {
+        setRemoteOrder(null);
+        return;
+      }
+      setIsLoadingRemote(true);
+      const res = await getRestaurantOrders();
+      if (res?.code === 200 && Array.isArray(res.data)) {
+        const forTable = res.data.filter(
+          (o) =>
+            Number(o.tableNumber) === Number(selectedTable) &&
+            o?.isDeleted === false
+        );
+        // Prefer latest pending; fallback to latest by createdAt
+        const pick = (list) =>
+          list
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
+          null;
+        const pendingLatest = pick(
+          forTable.filter((o) => o.status === "pending")
+        );
+        const chosen = pendingLatest || pick(forTable);
+        if (chosen?.orderItems?.length) {
+          const mappedItems = chosen.orderItems.map((it) => ({
+            name: it.stockName || it?.stockId?.name,
+            price: it.price || 0,
+            quantity: it.quantity || 1,
+            stockId: it?.stockId?._id || it?.stockId,
+          }));
+          dispatch(
+            setItemsForTable({ table: selectedTable, items: mappedItems })
+          );
+        }
+      } else {
+        setRemoteOrder(null);
+      }
+      setIsLoadingRemote(false);
+    };
+    fetchOrdersForTable();
+  }, [selectedTable]);
 
   const handleRemoveItem = (itemName) => {
     dispatch(removeItemFromReceipt({ table: selectedTable, itemName }));
@@ -41,8 +88,11 @@ function Receipt({ onClose }) {
     }
   };
 
+  const hasLocalItems =
+    !!selectedTable && !!receipts[selectedTable]?.items?.length;
+
   const calculateSubtotal = () => {
-    if (!selectedTable || !receipts[selectedTable]) return 0;
+    if (!selectedTable || !hasLocalItems) return 0;
     return receipts[selectedTable].items.reduce((total, item) => {
       return total + item.price * (item.quantity || 1);
     }, 0);
@@ -67,7 +117,7 @@ function Receipt({ onClose }) {
       table: selectedTable,
       orderType: receipts[selectedTable].orderType,
       orders: receipts[selectedTable].items.map((item) => ({
-        dishName: item.dishName,
+        dishName: item.name,
         price: item.price,
         quantity: item.quantity || 1,
       })),
@@ -126,14 +176,14 @@ function Receipt({ onClose }) {
           </div>
         )}
 
-        {selectedTable && !receipts[selectedTable]?.items?.length && (
+        {selectedTable && !hasLocalItems && (
           <div className="flex flex-col items-center justify-center h-[70vh]">
             <img src={box} alt="box" className="w-32 h-32 opacity-50" />
             <p className="text-gray-500 mt-5">No items in receipt</p>
           </div>
         )}
 
-        {selectedTable && receipts[selectedTable]?.items?.length > 0 && (
+        {selectedTable && hasLocalItems && (
           <div className="flex flex-col h-[calc(100vh-10rem)]">
             <div className="flex justify-between items-center mb-3">
               <p className="text-gray-500">Table {selectedTable}</p>
@@ -149,7 +199,7 @@ function Receipt({ onClose }) {
                   className="flex justify-between items-center bg-white py-3 rounded-lg shadow-sm"
                 >
                   <div className="flex-1">
-                    <p className="font-medium">{item.dishName}</p>
+                    <p className="font-medium">{item.name}</p>
                     <p className="text-sm text-gray-500">
                       {item.price.toLocaleString()} MMK
                     </p>
@@ -157,7 +207,7 @@ function Receipt({ onClose }) {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleDecrement(item.dishName)}
+                        onClick={() => handleDecrement(item.name)}
                         className="p-1 rounded-md hover:bg-gray-100 text-primary"
                       >
                         <Minus size={16} />
@@ -166,7 +216,7 @@ function Receipt({ onClose }) {
                         {item.quantity || 1}
                       </span>
                       <button
-                        onClick={() => handleIncrement(item.dishName)}
+                        onClick={() => handleIncrement(item.name)}
                         className="p-1 rounded-md hover:bg-gray-100 text-primary"
                       >
                         <Plus size={16} />
@@ -176,7 +226,7 @@ function Receipt({ onClose }) {
                       {(item.price * (item.quantity || 1)).toLocaleString()} MMK
                     </p>
                     {/* <button
-                      onClick={() => handleRemoveItem(item.dishName)}
+                      onClick={() => handleRemoveItem(item.name)}
                       className="text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <XCircle size={20} />
@@ -239,14 +289,16 @@ function Receipt({ onClose }) {
                   Payment
                 </button>
               </div> */}
-              <div className="flex gap-3 pb-5">
-                <button
-                  onClick={sendKitchen}
-                  className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                >
-                  Send to Kitchen
-                </button>
-              </div>
+              {hasLocalItems && (
+                <div className="flex gap-3 pb-5">
+                  <button
+                    onClick={sendKitchen}
+                    className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                  >
+                    Send to Kitchen
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -260,7 +312,7 @@ function Receipt({ onClose }) {
             table: selectedTable,
             orderType: receipts[selectedTable].orderType,
             orders: receipts[selectedTable].items.map((item) => ({
-              dishName: item.dishName,
+              dishName: item.name,
               price: item.price,
               quantity: item.quantity || 1,
             })),

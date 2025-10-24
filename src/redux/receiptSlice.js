@@ -23,7 +23,7 @@ const receiptSlice = createSlice({
         state.receipts[table] = { items: [], orderType: "Dine In" };
       }
       const existingItem = state.receipts[table].items.find(
-        (i) => i.dishName === item.dishName
+        (i) => i.name === item.name
       );
       if (existingItem) {
         existingItem.quantity = (existingItem.quantity || 1) + 1;
@@ -35,7 +35,7 @@ const receiptSlice = createSlice({
       const { table, itemName } = action.payload;
       if (state.receipts[table]) {
         const index = state.receipts[table].items.findIndex(
-          (item) => item.dishName === itemName
+          (item) => item.name === itemName
         );
         if (index !== -1) {
           state.receipts[table].items.splice(index, 1); // Remove one instance of the item
@@ -54,7 +54,7 @@ const receiptSlice = createSlice({
       const { table, itemName } = action.payload;
       if (state.receipts[table]) {
         const item = state.receipts[table].items.find(
-          (item) => item.dishName === itemName
+          (item) => item.name === itemName
         );
         if (item) {
           item.quantity = (item.quantity || 1) + 1;
@@ -65,7 +65,7 @@ const receiptSlice = createSlice({
       const { table, itemName } = action.payload;
       if (state.receipts[table]) {
         const itemIndex = state.receipts[table].items.findIndex(
-          (item) => item.dishName === itemName
+          (item) => item.name === itemName
         );
         if (itemIndex !== -1) {
           const item = state.receipts[table].items[itemIndex];
@@ -78,6 +78,13 @@ const receiptSlice = createSlice({
         }
       }
     },
+    setItemsForTable(state, action) {
+      const { table, items, orderType } = action.payload;
+      state.receipts[table] = {
+        items: items || [],
+        orderType: orderType || state.receipts[table]?.orderType || "Dine In",
+      };
+    },
   },
 });
 
@@ -89,5 +96,6 @@ export const {
   setOrderType,
   incrementQuantity,
   decrementQuantity,
+  setItemsForTable,
 } = receiptSlice.actions;
 export default receiptSlice.reducer;

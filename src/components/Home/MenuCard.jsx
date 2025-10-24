@@ -16,9 +16,7 @@ const MenuCard = ({ menu }) => {
 
   const currentItem =
     selectedTable &&
-    receipts[selectedTable]?.items.find(
-      (item) => item.dishName === menu.dishName
-    );
+    receipts[selectedTable]?.items.find((item) => item.name === menu.name);
   const quantity = currentItem?.quantity || 0;
 
   const handleIncrement = () => {
@@ -27,7 +25,7 @@ const MenuCard = ({ menu }) => {
         dispatch(addItemToReceipt({ table: selectedTable, item: menu }));
       } else {
         dispatch(
-          incrementQuantity({ table: selectedTable, itemName: menu.dishName })
+          incrementQuantity({ table: selectedTable, itemName: menu.name })
         );
       }
     } else {
@@ -38,7 +36,7 @@ const MenuCard = ({ menu }) => {
   const handleDecrement = () => {
     if (selectedTable !== null) {
       dispatch(
-        decrementQuantity({ table: selectedTable, itemName: menu.dishName })
+        decrementQuantity({ table: selectedTable, itemName: menu.name })
       );
     }
   };
@@ -87,7 +85,7 @@ const MenuCard = ({ menu }) => {
 MenuCard.propTypes = {
   menu: PropTypes.shape({
     dishImage: PropTypes.string,
-    dishName: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
   }).isRequired,
 };
