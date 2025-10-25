@@ -13,7 +13,8 @@ const MenuList = ({ category }) => {
   const getMenuList = async () => {
     const res = await getItems();
     if (res?.status === "success") {
-      setMenuList(res.data);
+      const restaurantItems = res.data.filter((i) => i.type === "restaurant");
+      setMenuList(restaurantItems);
       setLoading(false);
     } else {
       setMenuList([]);

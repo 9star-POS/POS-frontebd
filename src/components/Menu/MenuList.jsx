@@ -32,8 +32,11 @@ const MenuList = ({ isModalOpen2 }) => {
     }
   };
 
+  console.log("selectedCategory", selectedCategory);
+
   useEffect(() => {
     getMenuList();
+    console.log("work");
   }, [isModalOpen, isModalOpen2]);
 
   if (loading) {
@@ -69,6 +72,7 @@ const MenuList = ({ isModalOpen2 }) => {
         {categoryList.map((category, index) => (
           <div key={index} className="flex items-center gap-2 cursor-pointer">
             <button
+              type="button"
               className={`${
                 selectedCategory === category
                   ? "bg-prilight text-primary"

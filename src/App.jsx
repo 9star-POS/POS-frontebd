@@ -21,6 +21,7 @@ import { useSelector } from "react-redux";
 import SetupShop from "./pages/SetupShop";
 import Welcome from "./pages/Welcome";
 import TablePage from "./components/Home/TablePage";
+import SelectType from "./pages/SelectType";
 
 export default function App() {
   const tables = [1, 2, 3, 4, 5];
@@ -42,7 +43,8 @@ export default function App() {
       location.includes("/login") ||
       location.includes("/signup") ||
       location.includes("/setup") ||
-      location.includes("/welcome")
+      location.includes("/welcome") ||
+      location.includes("/select-type")
     ) {
       setIslogin(false);
     } else {
@@ -121,14 +123,26 @@ export default function App() {
                 <div className="flex-1">
                   <Routes>
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/select-type" element={<SelectType />} />
                     <Route
                       path="/"
                       element={
                         // <PrivateRoute>
-                        <TablePage tables={tables} />
+                        // <TablePage tables={tables} />
+                        <SelectType />
                         // </PrivateRoute>
                       }
                     />
+                    <Route
+                      path="/restaurant"
+                      element={
+                        // <PrivateRoute>
+                        <TablePage tables={tables} />
+
+                        // </PrivateRoute>
+                      }
+                    />
+                    {/* KTV routes removed */}
                     <Route
                       path="/order/:table"
                       element={

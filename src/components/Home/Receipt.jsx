@@ -15,6 +15,8 @@ import sendToKitchen from "../../api/Order/sendtokitchen";
 import { toast } from "sonner";
 import getRestaurantOrders from "../../api/Order/getRestaurantOrders";
 import { setItemsForTable } from "./../../redux/receiptSlice";
+import updateKitchenOrder from "../../api/Order/updatetokitchenorder";
+import checkoutOrder from "../../api/Order/checkout";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -23,6 +25,7 @@ function Receipt({ onClose }) {
   const receipts = useSelector((state) => state.receipts.receipts);
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [orderId, setOrderId] = useState(null);
   const [remoteOrder, setRemoteOrder] = useState(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
 
@@ -30,39 +33,62 @@ function Receipt({ onClose }) {
     const fetchOrdersForTable = async () => {
       if (!selectedTable) {
         setRemoteOrder(null);
+        setOrderId(null);
         return;
       }
       setIsLoadingRemote(true);
       const res = await getRestaurantOrders();
+      console.log(res);
       if (res?.code === 200 && Array.isArray(res.data)) {
         const forTable = res.data.filter(
           (o) =>
             Number(o.tableNumber) === Number(selectedTable) &&
             o?.isDeleted === false
         );
-        // Prefer latest pending; fallback to latest by createdAt
+        // Only show pending orders, pick latest by createdAt
         const pick = (list) =>
           list
             .slice()
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
           null;
-        const pendingLatest = pick(
-          forTable.filter((o) => o.status === "pending")
-        );
-        const chosen = pendingLatest || pick(forTable);
+        const pendingOnly = forTable.filter((o) => o.status === "pending");
+        const chosen = pick(pendingOnly);
+        setRemoteOrder(chosen || null);
+        setOrderId(chosen?._id || null);
         if (chosen?.orderItems?.length) {
-          const mappedItems = chosen.orderItems.map((it) => ({
-            name: it.stockName || it?.stockId?.name,
-            price: it.price || 0,
-            quantity: it.quantity || 1,
-            stockId: it?.stockId?._id || it?.stockId,
-          }));
+          // Group duplicate items (same stock) and sum quantities
+          const grouped = new Map();
+          chosen.orderItems.forEach((it) => {
+            const key = it?.stockId?._id || it?.stockId;
+            const name = it.stockName || it?.stockId?.name;
+            const price = it.price || 0;
+            const qty = it.quantity || 1;
+            if (!key) return;
+            if (!grouped.has(key)) {
+              grouped.set(key, {
+                name,
+                price,
+                quantity: qty,
+                stockId: key,
+              });
+            } else {
+              const existing = grouped.get(key);
+              existing.quantity += qty;
+              // Prefer latest price if it changes
+              existing.price = price || existing.price;
+            }
+          });
+          const mappedItems = Array.from(grouped.values());
           dispatch(
             setItemsForTable({ table: selectedTable, items: mappedItems })
           );
+        } else {
+          // No pending order
+          dispatch(setItemsForTable({ table: selectedTable, items: [] }));
         }
       } else {
         setRemoteOrder(null);
+        setOrderId(null);
       }
       setIsLoadingRemote(false);
     };
@@ -129,30 +155,145 @@ function Receipt({ onClose }) {
     setIsCalculatorOpen(true);
   };
 
+  const handleCalculatorConfirm = async ({ paidPrice, extraChange }) => {
+    if (!orderId) {
+      toast.error("No active order to checkout");
+      return;
+    }
+    const payload = {
+      status: "completed",
+      subTotal: calculateSubtotal(),
+      tax: taxRate,
+      discount: 0,
+      total: calculateTotal(),
+    };
+    try {
+      const res = await checkoutOrder({ id: orderId, data: payload });
+      if (res?.status === "success" || res?.code === 200) {
+        toast.success("Checkout completed successfully");
+        setIsCalculatorOpen(false);
+        setRemoteOrder(res?.data || null);
+        setOrderId(null);
+        if (selectedTable) {
+          dispatch(removeTable(selectedTable));
+        }
+        if (onClose) onClose();
+      }
+    } catch (_) {
+      // API layer toasts errors
+    }
+  };
+
   const sendKitchen = async () => {
     if (!selectedTable || !receipts[selectedTable]?.items?.length) {
       toast.warning("No items to send");
       return;
     }
 
-    const orderItems = receipts[selectedTable].items.map((item) => ({
+    // Prepare local items snapshot
+    const localItems = receipts[selectedTable].items.map((item) => ({
       stockId: item._id || item.stockId,
       quantity: item.quantity || 1,
       notes: item.notes ?? "",
+      price: item.price,
+      name: item.name,
     }));
 
-    const payload = {
-      tableNumber: selectedTable,
-      orderItems,
-    };
+    if (orderId) {
+      // Compute delta: only send newly added quantities/items
+      const remoteCounts = {};
+      (remoteOrder?.orderItems || []).forEach((it) => {
+        const key = it?.stockId?._id || it?.stockId;
+        const qty = it?.quantity || 1;
+        if (key) remoteCounts[key] = (remoteCounts[key] || 0) + qty;
+      });
 
-    try {
+      const deltaItems = [];
+      localItems.forEach((it) => {
+        const key = it.stockId;
+        const prevQty = remoteCounts[key] || 0;
+        const addQty = (it.quantity || 0) - prevQty;
+        if (addQty > 0) {
+          deltaItems.push({ stockId: key, quantity: addQty, notes: it.notes });
+        }
+      });
+
+      if (deltaItems.length === 0) {
+        toast.info("No new items to send");
+        return;
+      }
+
+      const updatePayload = { orderItems: deltaItems };
+      const res = await updateKitchenOrder({
+        data: updatePayload,
+        id: orderId,
+      });
+      if (res?.status === "success" || res?.code === 200) {
+        toast.success("Order updated in kitchen successfully");
+        // Keep baseline in sync to avoid resending the same items
+        const syncedOrderItems = localItems.map((it) => ({
+          stockId: it.stockId,
+          quantity: it.quantity,
+          notes: it.notes,
+          price: it.price,
+          stockName: it.name,
+        }));
+        setRemoteOrder((prev) => ({
+          ...(prev || {}),
+          orderItems: syncedOrderItems,
+        }));
+      }
+    } else {
+      const payload = {
+        tableNumber: selectedTable,
+        orderItems: localItems.map((it) => ({
+          stockId: it.stockId,
+          quantity: it.quantity,
+          notes: it.notes,
+        })),
+      };
       const res = await sendToKitchen(payload);
       if (res?.status === "success" || res?.code === 201) {
         toast.success("Order sent to kitchen successfully");
+        setOrderId(res?.data?._id);
+        // Initialize baseline with what we just sent
+        const syncedOrderItems = localItems.map((it) => ({
+          stockId: it.stockId,
+          quantity: it.quantity,
+          notes: it.notes,
+          price: it.price,
+          stockName: it.name,
+        }));
+        setRemoteOrder((prev) => ({
+          ...(prev || {}),
+          orderItems: syncedOrderItems,
+        }));
       }
-    } catch (e) {
-      // Error toasting handled in API layer; no-op here
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!orderId) return;
+    const payload = {
+      status: "completed",
+      subTotal: calculateSubtotal(),
+      tax: taxRate,
+      discount: 0,
+      total: calculateTotal(),
+    };
+    try {
+      const res = await checkoutOrder({ id: orderId, data: payload });
+      if (res?.status === "success" || res?.code === 200) {
+        toast.success("Checkout completed successfully");
+        setRemoteOrder(res?.data || null);
+        setOrderId(null);
+        if (selectedTable) {
+          dispatch(removeTable(selectedTable));
+        }
+        if (onClose) onClose();
+      }
+    } catch (_) {
+      // error handled in API layer
     }
   };
 
@@ -163,7 +304,7 @@ function Receipt({ onClose }) {
           <p className="sub-header font-bold">Receipt</p>
           <button
             className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
-            onClick={() => navigate("/")}
+            onClick={onClose}
           >
             Save
           </button>
@@ -290,13 +431,22 @@ function Receipt({ onClose }) {
                 </button>
               </div> */}
               {hasLocalItems && (
-                <div className="flex gap-3 pb-5">
+                <div className="flex flex-col gap-3">
                   <button
                     onClick={sendKitchen}
                     className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                   >
                     Send to Kitchen
                   </button>
+                  {orderId && (
+                    <button
+                      // onClick={handleCheckout}
+                      onClick={handlePayment}
+                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      Checkout
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -306,21 +456,9 @@ function Receipt({ onClose }) {
 
       {isCalculatorOpen && (
         <CalculatorModal
-          totalPrice={calculateTotal()}
-          table={selectedTable}
-          orderData={{
-            table: selectedTable,
-            orderType: receipts[selectedTable].orderType,
-            orders: receipts[selectedTable].items.map((item) => ({
-              dishName: item.name,
-              price: item.price,
-              quantity: item.quantity || 1,
-            })),
-            totalPrice: calculateSubtotal(),
-            finalPrice: calculateTotal(),
-            tax: taxRate / 100,
-          }}
+          total={calculateTotal()}
           onClose={() => setIsCalculatorOpen(false)}
+          onConfirm={handleCalculatorConfirm}
         />
       )}
     </div>

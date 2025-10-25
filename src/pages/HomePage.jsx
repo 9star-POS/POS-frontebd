@@ -27,7 +27,10 @@ function HomePage() {
     const res = await getItems();
 
     if (res?.status === "success") {
-      const categoryArray = [...new Set(res.data.map((item) => item.category))];
+      const restaurantItems = res.data.filter((i) => i.type === "restaurant");
+      const categoryArray = [
+        ...new Set(restaurantItems.map((item) => item.category)),
+      ];
       setCategorys(categoryArray);
       setSelectedCategory(categoryArray[0]);
       setLoading(false);
