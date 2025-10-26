@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { XCircle, Plus, Minus } from "lucide-react";
+import { XCircle, Plus, Minus, Trash2 } from "lucide-react";
 import {
   removeItemFromRoomReceipt,
   incrementRoomItemQuantity,
@@ -13,16 +13,19 @@ import {
   decrementRoomServiceTime,
   incrementVocalistServiceTime,
   decrementVocalistServiceTime,
+  removeVocalistFromRoom,
+  setOrderIdForRoom,
 } from "./../../redux/ktvReceiptSlice";
 import { useNavigate } from "react-router-dom";
 import box from "./../../assets/box.png";
 import "./../input.css";
 import CalculatorModal from "./CalculatorModel";
-import sendToKitchen from "../../api/Order/sendtokitchen";
 import { toast } from "sonner";
-import updateKitchenOrder from "../../api/Order/updatetokitchenorder";
 import checkoutOrder from "../../api/Order/checkout";
 import getKtvOrders from "../../api/Order/getKtvOrders";
+import sendKtvOrder from "../../api/KTV/sendKtvOrder";
+import getRoomService from "../../api/KTV/getRoomService";
+import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -34,6 +37,7 @@ function Receipt({ onClose }) {
   const [orderId, setOrderId] = useState(null);
   const [remoteOrder, setRemoteOrder] = useState(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
+  const [roomServiceId, setRoomServiceId] = useState(null);
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -46,26 +50,30 @@ function Receipt({ onClose }) {
       const res = await getKtvOrders();
       console.log(res);
       if (res?.code === 200 && Array.isArray(res.data)) {
+        // Only show active orders (not completed or cancelled)
         const forTable = res.data.filter(
           (o) =>
             Number(o.roomService.roomNumber) === Number(selectedRoom) &&
-            o?.isDeleted === false
+            o?.isDeleted === false &&
+            (o.status === "pending" ||
+              o.status === "ongoing" ||
+              o.status === "in_progress")
         );
-        // Prefer active (pending/ongoing/in_progress), otherwise latest by createdAt
+        // Pick the latest active order by createdAt
         const pickLatest = (list) =>
           list
             .slice()
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
           null;
-        const active = forTable.filter(
-          (o) =>
-            o.status === "pending" ||
-            o.status === "ongoing" ||
-            o.status === "in_progress"
-        );
-        const chosen = pickLatest(active.length ? active : forTable);
+        const chosen = pickLatest(forTable);
         setRemoteOrder(chosen || null);
-        setOrderId(chosen?._id || null);
+        const chosenOrderId = chosen?._id || null;
+        setOrderId(chosenOrderId);
+        if (chosenOrderId && selectedRoom) {
+          dispatch(
+            setOrderIdForRoom({ room: selectedRoom, orderId: chosenOrderId })
+          );
+        }
         if (chosen?.orderItems?.length) {
           // Group duplicate items (same stock) and sum quantities
           const grouped = new Map();
@@ -92,6 +100,7 @@ function Receipt({ onClose }) {
           const mappedItems = Array.from(grouped.values());
           dispatch(setItemsForRoom({ room: selectedRoom, items: mappedItems }));
           if (chosen?.roomService) {
+            setRoomServiceId(chosen.roomService.roomServiceId);
             dispatch(
               setRoomServiceForRoom({
                 room: selectedRoom,
@@ -109,8 +118,17 @@ function Receipt({ onClose }) {
             );
           }
         } else {
-          // No pending order
+          // No active order - clear all Redux state for this room
           dispatch(setItemsForRoom({ room: selectedRoom, items: [] }));
+          dispatch(
+            setRoomServiceForRoom({
+              room: selectedRoom,
+              hourlyRate: 0,
+              serviceTime: 0,
+            })
+          );
+          dispatch(setVocalistsForRoom({ room: selectedRoom, vocalists: [] }));
+          setRoomServiceId(null);
         }
       } else {
         setRemoteOrder(null);
@@ -120,6 +138,34 @@ function Receipt({ onClose }) {
     };
     fetchOrdersForTable();
   }, [selectedRoom]);
+
+  // Reset roomServiceId when room changes
+  useEffect(() => {
+    setRoomServiceId(null);
+  }, [selectedRoom]);
+
+  // Fetch room service ID when room is selected and no order exists
+  useEffect(() => {
+    const fetchRoomService = async () => {
+      // Only fetch if we have a room, no active order, and no roomServiceId yet
+      if (!selectedRoom || orderId || roomServiceId) return;
+      const res = await getRoomService(selectedRoom);
+      if (res?.code === 200 && res?.data?._id) {
+        setRoomServiceId(res.data._id);
+        // Initialize room service in state only if no order exists
+        if (!orderId) {
+          dispatch(
+            setRoomServiceForRoom({
+              room: selectedRoom,
+              hourlyRate: res.data.hourlyRate || 0,
+              serviceTime: 0,
+            })
+          );
+        }
+      }
+    };
+    fetchRoomService();
+  }, [selectedRoom, orderId, roomServiceId]);
 
   const handleRemoveItem = (itemName) => {
     dispatch(removeItemFromRoomReceipt({ room: selectedRoom, itemName }));
@@ -151,16 +197,53 @@ function Receipt({ onClose }) {
     }, 0);
   };
 
-  const calculateTax = (subtotal) => {
+  const calculateRoomCharges = () => {
+    if (remoteOrder?.roomCharges != null) {
+      return Number(remoteOrder.roomCharges) || 0;
+    }
+    // Calculate from local state
+    if (selectedRoom && receipts[selectedRoom]?.roomService) {
+      const hourlyRate =
+        Number(receipts[selectedRoom].roomService.hourlyRate) || 0;
+      const serviceTime =
+        Number(receipts[selectedRoom].roomService.serviceTime) || 0;
+      return hourlyRate * serviceTime;
+    }
+    return 0;
+  };
+
+  const calculateVocalistCharges = () => {
+    if (remoteOrder?.vocalistCharges != null) {
+      return Number(remoteOrder.vocalistCharges) || 0;
+    }
+    // Calculate from local state
+    if (selectedRoom && receipts[selectedRoom]?.vocalists) {
+      return receipts[selectedRoom].vocalists.reduce((total, v) => {
+        const hourlyRate = Number(v.hourlyRate) || 0;
+        const serviceTime = Number(v.serviceTime) || 0;
+        return total + hourlyRate * serviceTime;
+      }, 0);
+    }
+    return 0;
+  };
+
+  const calculateTax = () => {
     if (remoteOrder?.tax != null) return Number(remoteOrder.tax) || 0;
-    return subtotal * (taxRate / 100);
+    // Tax applies to subtotal + room charges + vocalist charges
+    const subtotal = calculateSubtotal();
+    const roomCharges = calculateRoomCharges();
+    const vocalistCharges = calculateVocalistCharges();
+    const baseAmount = subtotal + roomCharges + vocalistCharges;
+    return baseAmount * (taxRate / 100);
   };
 
   const calculateTotal = () => {
     if (remoteOrder?.total != null) return Number(remoteOrder.total) || 0;
     const subtotal = calculateSubtotal();
-    const tax = calculateTax(subtotal);
-    return subtotal + tax;
+    const tax = calculateTax();
+    const roomCharges = calculateRoomCharges();
+    const vocalistCharges = calculateVocalistCharges();
+    return subtotal + tax + roomCharges + vocalistCharges;
   };
 
   const handlePayment = () => {
@@ -189,17 +272,38 @@ function Receipt({ onClose }) {
       toast.error("No active order to checkout");
       return;
     }
+
+    // Prepare vocalist service times array
+    const vocalistServiceTimes = [];
+    if (selectedRoom && receipts[selectedRoom]?.vocalists) {
+      receipts[selectedRoom].vocalists.forEach((v) => {
+        vocalistServiceTimes.push(Number(v.serviceTime) || 0);
+      });
+    }
+
+    // Prepare room service time
+    const roomServiceTime =
+      selectedRoom && receipts[selectedRoom]?.roomService
+        ? Number(receipts[selectedRoom].roomService.serviceTime) || 0
+        : 0;
+
     const payload = {
-      status: "completed",
+      vocalistServiceTimes,
+      roomServiceTime,
+      roomCharges: calculateRoomCharges(),
+      vocalistCharges: calculateVocalistCharges(),
       subTotal: calculateSubtotal(),
-      tax: taxRate,
+      tax: calculateTax(),
       discount: 0,
       total: calculateTotal(),
+      status: "completed",
+      paymentMethod: "cash", // Can be extended to support other payment methods
     };
+
     try {
-      const res = await checkoutOrder({ id: orderId, data: payload });
+      const res = await finalizeKtvOrder(orderId, payload);
       if (res?.status === "success" || res?.code === 200) {
-        toast.success("Checkout completed successfully");
+        toast.success("KTV order checkout completed successfully");
         setIsCalculatorOpen(false);
         setRemoteOrder(res?.data || null);
         setOrderId(null);
@@ -207,15 +311,22 @@ function Receipt({ onClose }) {
           dispatch(removeRoom(selectedRoom));
         }
         if (onClose) onClose();
+      } else {
+        toast.error(res?.message || "Failed to complete checkout");
       }
     } catch (_) {
-      // API layer toasts errors
+      toast.error("An error occurred during checkout");
     }
   };
 
   const sendKitchen = async () => {
     if (!selectedRoom || !receipts[selectedRoom]?.items?.length) {
       toast.warning("No items to send");
+      return;
+    }
+
+    if (!roomServiceId) {
+      toast.error("Room service not found");
       return;
     }
 
@@ -228,101 +339,127 @@ function Receipt({ onClose }) {
       name: item.name,
     }));
 
+    // Get vocalists
+    const localVocalists = receipts[selectedRoom]?.vocalists || [];
+
     if (orderId) {
-      // Compute delta: only send newly added quantities/items
-      const remoteCounts = {};
-      (remoteOrder?.orderItems || []).forEach((it) => {
-        const key = it?.stockId?._id || it?.stockId;
-        const qty = it?.quantity || 1;
-        if (key) remoteCounts[key] = (remoteCounts[key] || 0) + qty;
-      });
-
-      const deltaItems = [];
-      localItems.forEach((it) => {
-        const key = it.stockId;
-        const prevQty = remoteCounts[key] || 0;
-        const addQty = (it.quantity || 0) - prevQty;
-        if (addQty > 0) {
-          deltaItems.push({ stockId: key, quantity: addQty, notes: it.notes });
-        }
-      });
-
-      if (deltaItems.length === 0) {
-        toast.info("No new items to send");
-        return;
-      }
-
-      const updatePayload = { orderItems: deltaItems };
-      const res = await updateKitchenOrder({
-        data: updatePayload,
-        id: orderId,
-      });
-      if (res?.status === "success" || res?.code === 200) {
-        toast.success("Order updated in kitchen successfully");
-        // Keep baseline in sync to avoid resending the same items
-        const syncedOrderItems = localItems.map((it) => ({
-          stockId: it.stockId,
-          quantity: it.quantity,
-          notes: it.notes,
-          price: it.price,
-          stockName: it.name,
-        }));
-        setRemoteOrder((prev) => ({
-          ...(prev || {}),
-          orderItems: syncedOrderItems,
-        }));
-      }
+      // TODO: Update existing KTV order (implement update API later)
+      toast.info("Order update not yet implemented for KTV");
+      return;
     } else {
+      // Create new KTV order
       const payload = {
-        tableNumber: selectedRoom,
         orderItems: localItems.map((it) => ({
           stockId: it.stockId,
           quantity: it.quantity,
           notes: it.notes,
         })),
+        roomService: {
+          roomServiceId: roomServiceId,
+        },
+        vocalist: localVocalists.map((v) => ({
+          vocalistId: v.vocalistId,
+        })),
       };
-      const res = await sendToKitchen(payload);
+
+      const res = await sendKtvOrder(payload);
       if (res?.status === "success" || res?.code === 201) {
-        toast.success("Order sent to kitchen successfully");
-        setOrderId(res?.data?._id);
-        // Initialize baseline with what we just sent
-        const syncedOrderItems = localItems.map((it) => ({
-          stockId: it.stockId,
-          quantity: it.quantity,
-          notes: it.notes,
-          price: it.price,
-          stockName: it.name,
-        }));
-        setRemoteOrder((prev) => ({
-          ...(prev || {}),
-          orderItems: syncedOrderItems,
-        }));
+        toast.success("KTV order sent to kitchen successfully");
+        const newOrderId = res?.data?._id;
+        setOrderId(newOrderId);
+        setRoomServiceId(res?.data?.roomService?.roomServiceId);
+        if (newOrderId && selectedRoom) {
+          dispatch(
+            setOrderIdForRoom({ room: selectedRoom, orderId: newOrderId })
+          );
+        }
+
+        // Update remote order state with full response
+        setRemoteOrder(res?.data);
+
+        // Sync local state with server response
+        if (res?.data?.orderItems) {
+          const mappedItems = res.data.orderItems.map((it) => ({
+            stockId: it.stockId,
+            name: it.stockName,
+            price: it.price,
+            quantity: it.quantity,
+          }));
+          dispatch(setItemsForRoom({ room: selectedRoom, items: mappedItems }));
+        }
+
+        // Sync room service
+        if (res?.data?.roomService) {
+          dispatch(
+            setRoomServiceForRoom({
+              room: selectedRoom,
+              hourlyRate: res.data.roomService.hourlyRate || 0,
+              serviceTime: res.data.roomServiceTime || 0,
+            })
+          );
+        }
+
+        // Sync vocalists
+        if (Array.isArray(res?.data?.vocalist)) {
+          dispatch(
+            setVocalistsForRoom({
+              room: selectedRoom,
+              vocalists: res.data.vocalist,
+            })
+          );
+        }
       }
     }
   };
 
   const handleCheckout = async () => {
-    if (!orderId) return;
+    if (!orderId) {
+      toast.error("No active order to checkout");
+      return;
+    }
+
+    // Prepare vocalist service times array
+    const vocalistServiceTimes = [];
+    if (selectedRoom && receipts[selectedRoom]?.vocalists) {
+      receipts[selectedRoom].vocalists.forEach((v) => {
+        vocalistServiceTimes.push(Number(v.serviceTime) || 0);
+      });
+    }
+
+    // Prepare room service time
+    const roomServiceTime =
+      selectedRoom && receipts[selectedRoom]?.roomService
+        ? Number(receipts[selectedRoom].roomService.serviceTime) || 0
+        : 0;
+
     const payload = {
-      status: "completed",
+      vocalistServiceTimes,
+      roomServiceTime,
+      roomCharges: calculateRoomCharges(),
+      vocalistCharges: calculateVocalistCharges(),
       subTotal: calculateSubtotal(),
-      tax: taxRate,
+      tax: calculateTax(),
       discount: 0,
       total: calculateTotal(),
+      status: "completed",
+      paymentMethod: "cash",
     };
+
     try {
-      const res = await checkoutOrder({ id: orderId, data: payload });
+      const res = await finalizeKtvOrder(orderId, payload);
       if (res?.status === "success" || res?.code === 200) {
-        toast.success("Checkout completed successfully");
+        toast.success("KTV order checkout completed successfully");
         setRemoteOrder(res?.data || null);
         setOrderId(null);
         if (selectedRoom) {
           dispatch(removeRoom(selectedRoom));
         }
         if (onClose) onClose();
+      } else {
+        toast.error(res?.message || "Failed to complete checkout");
       }
     } catch (_) {
-      // error handled in API layer
+      toast.error("An error occurred during checkout");
     }
   };
 
@@ -399,7 +536,8 @@ function Receipt({ onClose }) {
                 </div>
               ))}
 
-              {remoteOrder?.roomService && (
+              {(receipts[selectedRoom]?.roomService ||
+                remoteOrder?.roomService) && (
                 <div className="flex justify-between items-center bg-white py-3 rounded-lg shadow-sm px-3">
                   <div className="flex-1">
                     <p className="font-medium">Room Service</p>
@@ -462,76 +600,93 @@ function Receipt({ onClose }) {
                 </div>
               )}
 
-              {Array.isArray(remoteOrder?.vocalist) &&
-                remoteOrder.vocalist.length > 0 && (
-                  <div className="bg-white rounded-lg shadow-sm px-3 py-3">
-                    <p className="font-medium mb-2">Vocalists</p>
-                    <div className="space-y-2">
-                      {(
-                        receipts[selectedRoom]?.vocalists ||
-                        remoteOrder.vocalist
-                      ).map((v, idx) => (
-                        <div
-                          key={v?._id || idx}
-                          className="flex justify-between items-center"
-                        >
-                          <div className="flex-1">
-                            <p className="text-gray-800">
-                              {v?.vocalistName || "Vocalist"}
-                            </p>
-                            <p className="text-sm text-gray-500 flex items-center gap-2">
-                              <span>
-                                {Number(v?.hourlyRate || 0).toLocaleString()}{" "}
-                                MMK/hr ·
+              {(receipts[selectedRoom]?.vocalists?.length > 0 ||
+                (Array.isArray(remoteOrder?.vocalist) &&
+                  remoteOrder.vocalist.length > 0)) && (
+                <div className="bg-white rounded-lg shadow-sm px-3 py-3">
+                  <p className="font-medium mb-2">Vocalists</p>
+                  <div className="space-y-2">
+                    {(
+                      receipts[selectedRoom]?.vocalists ||
+                      remoteOrder?.vocalist ||
+                      []
+                    ).map((v, idx) => (
+                      <div
+                        key={v?._id || idx}
+                        className="flex justify-between items-center"
+                      >
+                        <div className="flex-1">
+                          <p className="text-gray-800">
+                            {v?.vocalistName || "Vocalist"}
+                          </p>
+                          <p className="text-sm text-gray-500 flex items-center gap-2">
+                            <span>
+                              {Number(v?.hourlyRate || 0).toLocaleString()}{" "}
+                              MMK/hr ·
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <button
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                                onClick={() =>
+                                  dispatch(
+                                    decrementVocalistServiceTime({
+                                      room: selectedRoom,
+                                      vocalistId: v?.vocalistId,
+                                    })
+                                  )
+                                }
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <span className="min-w-[40px] text-center">
+                                {Number(v?.serviceTime || 0)} hr
                               </span>
-                              <span className="inline-flex items-center gap-1">
-                                <button
-                                  className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                  onClick={() =>
-                                    dispatch(
-                                      decrementVocalistServiceTime({
-                                        room: selectedRoom,
-                                        vocalistId: v?.vocalistId,
-                                      })
-                                    )
-                                  }
-                                >
-                                  <Minus size={14} />
-                                </button>
-                                <span className="min-w-[40px] text-center">
-                                  {Number(v?.serviceTime || 0)} hr
-                                </span>
-                                <button
-                                  className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                  onClick={() =>
-                                    dispatch(
-                                      incrementVocalistServiceTime({
-                                        room: selectedRoom,
-                                        vocalistId: v?.vocalistId,
-                                      })
-                                    )
-                                  }
-                                >
-                                  <Plus size={14} />
-                                </button>
-                              </span>
-                            </p>
-                          </div>
-                          <p className="font-medium min-w-[100px] text-right">
+                              <button
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                                onClick={() =>
+                                  dispatch(
+                                    incrementVocalistServiceTime({
+                                      room: selectedRoom,
+                                      vocalistId: v?.vocalistId,
+                                    })
+                                  )
+                                }
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium min-w-[80px] text-right">
                             {(
                               Number(v?.hourlyRate || 0) *
                               Number(v?.serviceTime || 0)
                             ).toLocaleString()}{" "}
                             MMK
                           </p>
+                          <button
+                            className="p-1 rounded-md hover:bg-red-100 text-red-500"
+                            onClick={() =>
+                              dispatch(
+                                removeVocalistFromRoom({
+                                  room: selectedRoom,
+                                  vocalistId: v?.vocalistId,
+                                })
+                              )
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
             </div>
 
-            <div className="sticky bottom-[0px] bg-white border-t">
+            <div className="sticky bottom-[0px] bg-white border-t pt-3">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Subtotal</p>
@@ -540,74 +695,54 @@ function Receipt({ onClose }) {
                   </p>
                 </div>
 
-                {remoteOrder ? (
-                  <>
-                    {typeof remoteOrder.discount === "number" && (
-                      <div className="flex justify-between items-center">
-                        <p className="text-gray-600">Discount</p>
-                        <p className="font-medium text-gray-600">
-                          {Number(remoteOrder.discount || 0).toLocaleString()}{" "}
-                          MMK
-                        </p>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <p className="text-gray-600">Tax</p>
-                      <p className="font-medium text-gray-600">
-                        {Number(remoteOrder.tax || 0).toLocaleString()} MMK
-                      </p>
-                    </div>
-                    {(remoteOrder.roomCharges ||
-                      remoteOrder.vocalistCharges) && (
-                      <>
-                        {Number(remoteOrder.roomCharges || 0) > 0 && (
-                          <div className="flex justify-between items-center">
-                            <p className="text-gray-600">Room Charges</p>
-                            <p className="font-medium text-gray-600">
-                              {Number(
-                                remoteOrder.roomCharges || 0
-                              ).toLocaleString()}{" "}
-                              MMK
-                            </p>
-                          </div>
-                        )}
-                        {Number(remoteOrder.vocalistCharges || 0) > 0 && (
-                          <div className="flex justify-between items-center">
-                            <p className="text-gray-600">Vocalist Charges</p>
-                            <p className="font-medium text-gray-600">
-                              {Number(
-                                remoteOrder.vocalistCharges || 0
-                              ).toLocaleString()}{" "}
-                              MMK
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                ) : (
+                {remoteOrder && typeof remoteOrder.discount === "number" && (
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <p className="text-gray-600">Gov Tax</p>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={taxRate === 0 ? "" : taxRate}
-                          onChange={handleTaxChange}
-                          className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
-                          min="0"
-                          max="100"
-                        />
-                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                          %
-                        </span>
-                      </div>
-                    </div>
+                    <p className="text-gray-600">Discount</p>
                     <p className="font-medium text-gray-600">
-                      {calculateTax(calculateSubtotal()).toLocaleString()} MMK
+                      {Number(remoteOrder.discount || 0).toLocaleString()} MMK
                     </p>
                   </div>
                 )}
+
+                {calculateRoomCharges() > 0 && (
+                  <div className="flex justify-between items-center">
+                    <p className="text-gray-600">Room Charges</p>
+                    <p className="font-medium text-gray-600">
+                      {calculateRoomCharges().toLocaleString()} MMK
+                    </p>
+                  </div>
+                )}
+
+                {calculateVocalistCharges() > 0 && (
+                  <div className="flex justify-between items-center">
+                    <p className="text-gray-600">Vocalist Charges</p>
+                    <p className="font-medium text-gray-600">
+                      {calculateVocalistCharges().toLocaleString()} MMK
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center border-t pt-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-600">Gov Tax</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={taxRate === 0 ? "" : taxRate}
+                        onChange={handleTaxChange}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-600">
+                    {calculateTax().toLocaleString()} MMK
+                  </p>
+                </div>
 
                 <div className="flex justify-between items-center pt-3 border-t">
                   <p className="font-bold text-lg">Total</p>

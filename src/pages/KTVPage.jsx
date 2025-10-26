@@ -6,19 +6,18 @@ import getItems from "../api/Menu/getItems";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import { useSelector } from "react-redux";
-// import TablePage from "../components/Home/TablePage";
-// import { useNavigate } from "react-router-dom";
-// import { selectTable, addItemToReceipt } from "./../redux/receiptS
+import VocalistModal from "../components/KTV/VocalistModal";
+import { UserPlus } from "lucide-react";
 
 function KTVPage() {
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
   const [isVisible, setisVisible] = useState(false);
-  // const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [categorys, setCategorys] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isVocalistModalOpen, setIsVocalistModalOpen] = useState(false);
 
   const tables = [1, 2, 3, 4, 5];
 
@@ -72,17 +71,19 @@ function KTVPage() {
         {/* <TablePage tables={tables} /> */}
         <div className="flex flex-col  md:flex-row">
           <div className="w-screen md:w-1/2 lg:w-2/3 overflow-y-auto min-h-screen px-5 pt-2 overflow-x-hidden">
-            <div className="flex gap-10 items-center mb-5 ">
+            <div className="flex gap-4 items-center mb-5 flex-wrap">
               <span className="sub-header">Menu</span>
               <span className="text-gray-500">
                 ( Ordering for room {selectedRoom} )
               </span>
-              {/* <button
-                className="bg-primary font-bold text-white px-4 py-2 md:me-5 rounded-md border border-primary transition duration-200 hover:bg-white hover:text-primary focus:outline-none focus:scale-105"
-                onClick={() => setIsOpen(true)}
+              <button
+                className="ml-auto bg-primary font-bold text-white px-4 py-2 rounded-md border border-primary transition duration-200 hover:bg-white hover:text-primary focus:outline-none focus:scale-105 flex items-center gap-2"
+                onClick={() => setIsVocalistModalOpen(true)}
+                disabled={!selectedRoom}
               >
-                Select Table
-              </button> */}
+                <UserPlus size={18} />
+                Add Vocalist
+              </button>
             </div>
             <div className="w-full overflow-y-auto lg:overflow-hidden flex lg:flex-wrap gap-1 md:gap-5 me-[200px] md:me-0">
               {categorys.map((category, index) => (
@@ -135,6 +136,12 @@ function KTVPage() {
             onClose={() => setIsOpen(false)}
           />
         </div>
+
+        {/* Vocalist Modal */}
+        <VocalistModal
+          isOpen={isVocalistModalOpen}
+          onClose={() => setIsVocalistModalOpen(false)}
+        />
       </div>
     );
   }

@@ -142,7 +142,7 @@ export default function App() {
                       path="/ktv"
                       element={
                         // <PrivateRoute>
-                        <RoomPage tables={tables} />
+                        <RoomPage />
                         // </PrivateRoute>
                       }
                     />

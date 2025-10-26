@@ -5,14 +5,20 @@ const ktvReceiptSlice = createSlice({
   initialState: {
     selectedRoom: null,
     receipts: {},
+    orderIds: {}, // Track order IDs by room number
   },
   reducers: {
     selectRoom(state, action) {
       state.selectedRoom = action.payload;
     },
+    setOrderIdForRoom(state, action) {
+      const { room, orderId } = action.payload;
+      state.orderIds[room] = orderId;
+    },
     removeRoom(state, action) {
       const roomToRemove = action.payload;
       delete state.receipts[roomToRemove];
+      delete state.orderIds[roomToRemove];
       if (state.selectedRoom === roomToRemove) {
         state.selectedRoom = null;
       }
@@ -20,7 +26,15 @@ const ktvReceiptSlice = createSlice({
     addItemToRoomReceipt(state, action) {
       const { room, item } = action.payload;
       if (!state.receipts[room]) {
-        state.receipts[room] = { items: [], orderType: "KTV" };
+        state.receipts[room] = {
+          items: [],
+          orderType: "KTV",
+          vocalists: [],
+          roomService: null,
+        };
+      }
+      if (!Array.isArray(state.receipts[room].items)) {
+        state.receipts[room].items = [];
       }
       const existingItem = state.receipts[room].items.find(
         (i) => i.name === item.name
@@ -34,7 +48,12 @@ const ktvReceiptSlice = createSlice({
     setRoomServiceForRoom(state, action) {
       const { room, hourlyRate, serviceTime } = action.payload;
       if (!state.receipts[room]) {
-        state.receipts[room] = { items: [], orderType: "KTV" };
+        state.receipts[room] = {
+          items: [],
+          orderType: "KTV",
+          vocalists: [],
+          roomService: null,
+        };
       }
       state.receipts[room].roomService = {
         hourlyRate: Number(hourlyRate) || 0,
@@ -57,7 +76,12 @@ const ktvReceiptSlice = createSlice({
     setVocalistsForRoom(state, action) {
       const { room, vocalists } = action.payload;
       if (!state.receipts[room]) {
-        state.receipts[room] = { items: [], orderType: "KTV" };
+        state.receipts[room] = {
+          items: [],
+          orderType: "KTV",
+          vocalists: [],
+          roomService: null,
+        };
       }
       state.receipts[room].vocalists = (vocalists || []).map((v) => ({
         vocalistId: v.vocalistId,
@@ -65,6 +89,40 @@ const ktvReceiptSlice = createSlice({
         hourlyRate: Number(v.hourlyRate) || 0,
         serviceTime: Number(v.serviceTime) || 0,
       }));
+    },
+    addVocalistToRoom(state, action) {
+      const { room, vocalist } = action.payload;
+      if (!state.receipts[room]) {
+        state.receipts[room] = {
+          items: [],
+          orderType: "KTV",
+          vocalists: [],
+          roomService: null,
+        };
+      }
+      if (!Array.isArray(state.receipts[room].vocalists)) {
+        state.receipts[room].vocalists = [];
+      }
+      // Check if vocalist already exists
+      const exists = state.receipts[room].vocalists.find(
+        (v) => v.vocalistId === vocalist.vocalistId
+      );
+      if (!exists) {
+        state.receipts[room].vocalists.push({
+          vocalistId: vocalist.vocalistId,
+          vocalistName: vocalist.vocalistName,
+          hourlyRate: Number(vocalist.hourlyRate) || 0,
+          serviceTime: Number(vocalist.serviceTime) || 0,
+        });
+      }
+    },
+    removeVocalistFromRoom(state, action) {
+      const { room, vocalistId } = action.payload;
+      if (state.receipts[room]?.vocalists) {
+        state.receipts[room].vocalists = state.receipts[room].vocalists.filter(
+          (v) => v.vocalistId !== vocalistId
+        );
+      }
     },
     incrementVocalistServiceTime(state, action) {
       const { room, vocalistId, step = 0.5 } = action.payload;
@@ -131,16 +189,25 @@ const ktvReceiptSlice = createSlice({
     },
     setItemsForRoom(state, action) {
       const { room, items, orderType } = action.payload;
-      state.receipts[room] = {
-        items: items || [],
-        orderType: orderType || state.receipts[room]?.orderType || "KTV",
-      };
+      if (!state.receipts[room]) {
+        state.receipts[room] = {
+          items: [],
+          orderType: "KTV",
+          vocalists: [],
+          roomService: null,
+        };
+      }
+      state.receipts[room].items = items || [];
+      if (orderType) {
+        state.receipts[room].orderType = orderType;
+      }
     },
   },
 });
 
 export const {
   selectRoom,
+  setOrderIdForRoom,
   removeRoom,
   addItemToRoomReceipt,
   removeItemFromRoomReceipt,
@@ -149,6 +216,8 @@ export const {
   incrementRoomServiceTime,
   decrementRoomServiceTime,
   setVocalistsForRoom,
+  addVocalistToRoom,
+  removeVocalistFromRoom,
   incrementVocalistServiceTime,
   decrementVocalistServiceTime,
   incrementRoomItemQuantity,
