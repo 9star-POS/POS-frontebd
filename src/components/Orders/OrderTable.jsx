@@ -53,7 +53,7 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
               No
             </th>
             <th className="hidden lg:block px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-              Order Type
+              Table/Room
             </th>
             <th className="px-2 lg:px-6 lg:py-4 text-left text-md font-semibold text-white tracking-wider">
               Order Time
@@ -113,7 +113,11 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
                 {index + 1}
               </td>
               <td className="hidden lg:block px-2 lg:px-6 py-4 whitespace-nowrap">
-                {order.orderType}
+                {order.tableNumber
+                  ? `Table ${order.tableNumber}`
+                  : order.roomService?.roomNumber
+                  ? `Room ${order.roomService.roomNumber}`
+                  : "N/A"}
               </td>
               <td className="px-2 lg:px-6 lg:py-4 whitespace-nowrap">
                 <span className="hidden lg:inline">
@@ -122,11 +126,22 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
                 <TimestampFormatter timestamp={order.createdAt} />
               </td>
               <td className="hidden md:block px-2 lg:px-6 py-4 whitespace-nowrap">
-                {order.totalQuantity}{" "}
-                {order.totalQuantity > 1 ? "dishes" : "dish"}
+                {order.orderItems?.reduce(
+                  (sum, item) => sum + (item.quantity || 0),
+                  0
+                )}{" "}
+                {order.orderItems?.reduce(
+                  (sum, item) => sum + (item.quantity || 0),
+                  0
+                ) > 1
+                  ? "items"
+                  : "item"}
               </td>
               <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                {order.finalPrice.toLocaleString()} MMK
+                {order.total != null
+                  ? Number(order.total).toLocaleString()
+                  : "Pending"}{" "}
+                {order.total != null && "MMK"}
               </td>
               <td className="hidden sm:block px-2 lg:px-6 py-4 whitespace-nowrap ">
                 <div className="flex space-x-4 items-center">

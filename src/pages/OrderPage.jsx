@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
-import getAllOrders from "../api/Order/getAllOrders";
-import getKtvOrdersByDate from "../api/KTV/getKtvOrdersByDate";
+// import { format } from "date-fns";
+// import getAllOrders from "../api/Order/getAllOrders";
+// import getKtvOrdersByDate from "../api/KTV/getKtvOrdersByDate";
+import getRestaurantOrders from "../api/Order/getRestaurantOrders";
+import getKtvOrders from "../api/Order/getKtvOrders";
 import OrderTable from "../components/Orders/OrderTable";
 // import { TbReport } from "react-icons/tb";
-import Calendar from "../components/Calender";
+// import Calendar from "../components/Calender";
 import deleteOrders from "../api/Order/deleteOrder";
 import EditOrder from "./EditOrder";
 // import getReport from "../api/report/getReport";
@@ -14,13 +16,7 @@ import { Trash2Icon } from "lucide-react";
 import DeleteModel from "../components/DeleteModel";
 
 const OrdersPage = () => {
-  const date = new Date();
-  const formattedDate = format(date, "yyyy-MM-dd");
   const [dataFromChild, setDataFromChild] = useState("");
-  const [dataFromCalendar, setDataFromCalendar] = useState({
-    startDate: formattedDate,
-    endDate: formattedDate,
-  });
   const [orders, setOrders] = useState([]);
   const [open, setOpen] = useState(false);
   const [orderIds, setOrderIds] = useState([]);
@@ -41,10 +37,6 @@ const OrdersPage = () => {
   // console.log(orderIds);
 
   // console.log("dataFromChild", dataFromChild);
-
-  const handleDataFromCalendar = (childData) => {
-    setDataFromCalendar(childData);
-  };
 
   const openOrderDetails = () => {
     setOpen(true);
@@ -98,9 +90,9 @@ const OrdersPage = () => {
     let res;
 
     if (activeTab === "restaurant") {
-      res = await getAllOrders(dataFromCalendar);
+      res = await getRestaurantOrders();
     } else {
-      res = await getKtvOrdersByDate(dataFromCalendar);
+      res = await getKtvOrders();
     }
 
     if (res?.code === 200 && res?.status !== "error") {
@@ -114,7 +106,7 @@ const OrdersPage = () => {
 
   useEffect(() => {
     getOrders();
-  }, [dataFromCalendar, activeTab]);
+  }, [activeTab]);
 
   return (
     <div className="p-5">
@@ -122,7 +114,6 @@ const OrdersPage = () => {
         <div className="md:flex justify-between mb-5">
           <h1 className="sub-header font-bold">Orders Management</h1>
           <div className="flex gap-4">
-            <Calendar sendDate={handleDataFromCalendar} />
             <div>
               <button
                 disabled={orderIds.length == 0}
