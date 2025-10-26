@@ -1,13 +1,15 @@
 // import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Menu, Receipt, LogOut, ChevronLeft } from "lucide-react";
+import { Home, Menu, Receipt, LogOut, ChevronLeft, Music } from "lucide-react";
 import { useAuth } from "../hook/auth/AuthContext";
 
 const Sidebar = ({ closeSidebar }) => {
   const navItems = [
-    { to: "/", icon: Home, label: "Home" },
+    { to: "/", icon: Home, label: "Restaurant" },
+    { to: "/ktv", icon: Music, label: "KTV" },
     { to: "/menu", icon: Menu, label: "Menu" },
     { to: "/orders", icon: Receipt, label: "Orders" },
+
     // { to: "/dashboard", icon: Receipt, label: "Reports" },
   ];
 

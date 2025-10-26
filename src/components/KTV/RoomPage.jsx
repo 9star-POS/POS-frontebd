@@ -3,8 +3,10 @@ import { selectRoom } from "./../../redux/ktvReceiptSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import getAllRooms from "../../api/KTV/getAllRooms";
+import createRoom from "../../api/KTV/createRoom";
 import { toast } from "sonner";
 import Loading from "../Loading";
+import { Plus, X } from "lucide-react";
 
 const RoomPage = () => {
   const Navigate = useNavigate();
@@ -13,6 +15,12 @@ const RoomPage = () => {
   const receipts = useSelector((state) => state.ktvReceipts.receipts);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    roomNumber: "",
+    hourlyRate: "",
+  });
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchRooms();
@@ -38,6 +46,34 @@ const RoomPage = () => {
     Navigate(`/ktv/${room}`);
   };
 
+  const handleCreateRoom = async () => {
+    if (!newRoom.roomNumber.trim()) {
+      toast.error("Please enter room number");
+      return;
+    }
+    if (!newRoom.hourlyRate || Number(newRoom.hourlyRate) <= 0) {
+      toast.error("Please enter a valid hourly rate");
+      return;
+    }
+
+    setIsCreating(true);
+    const payload = {
+      roomNumber: newRoom.roomNumber.trim(),
+      hourlyRate: Number(newRoom.hourlyRate),
+    };
+
+    const res = await createRoom(payload);
+    if (res?.code === 201 && res?.data) {
+      toast.success("Room created successfully");
+      setNewRoom({ roomNumber: "", hourlyRate: "" });
+      setIsCreateModalOpen(false);
+      fetchRooms(); // Refresh the list
+    } else {
+      toast.error(res?.message || "Failed to create room");
+    }
+    setIsCreating(false);
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
@@ -51,6 +87,13 @@ const RoomPage = () => {
       <div className="w-full px-5">
         <div className="flex justify-between items-center mb-2">
           <h2 className="sub-header">Rooms</h2>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Create Room
+          </button>
         </div>
 
         {rooms.length === 0 ? (
@@ -89,6 +132,106 @@ const RoomPage = () => {
           </div>
         )}
       </div>
+
+      {/* Create Room Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Create New Room</h3>
+              <button
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setNewRoom({ roomNumber: "", hourlyRate: "" });
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Room Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newRoom.roomNumber}
+                  onChange={(e) =>
+                    setNewRoom({ ...newRoom, roomNumber: e.target.value })
+                  }
+                  placeholder="Enter room number"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                  disabled={isCreating}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hourly Rate (MMK) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={newRoom.hourlyRate}
+                  onChange={(e) =>
+                    setNewRoom({ ...newRoom, hourlyRate: e.target.value })
+                  }
+                  placeholder="Enter hourly rate"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                  min="0"
+                  disabled={isCreating}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setNewRoom({ roomNumber: "", hourlyRate: "" });
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  disabled={isCreating}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRoom}
+                  disabled={
+                    isCreating ||
+                    !newRoom.roomNumber.trim() ||
+                    !newRoom.hourlyRate
+                  }
+                  className={`flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
+                    isCreating ||
+                    !newRoom.roomNumber.trim() ||
+                    !newRoom.hourlyRate
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
+                >
+                  {isCreating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={18} />
+                      Create
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
