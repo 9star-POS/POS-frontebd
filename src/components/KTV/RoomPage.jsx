@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import { selectTable, setOrderType } from "./../../redux/receiptSlice";
+import { selectRoom, setRoomOrderType } from "./../../redux/ktvReceiptSlice";
 import { useDispatch, useSelector } from "react-redux";
 
-const TablePage = ({ tables }) => {
+const RoomPage = ({ tables }) => {
   const Navigate = useNavigate();
   const dispatch = useDispatch();
-  const selectedTable = useSelector((state) => state.receipts.selectedTable);
-  const receipts = useSelector((state) => state.receipts.receipts);
+  const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
+  const receipts = useSelector((state) => state.ktvReceipts.receipts);
   //   const orderType = useSelector(
   //     (state) => state.receipts.receipts[selectedTable]?.orderType || "Dine In"
   //   );
@@ -18,16 +18,16 @@ const TablePage = ({ tables }) => {
   //   };
   //   console.log(receipts);
 
-  const handleTableSelect = (table) => {
-    dispatch(selectTable(table));
-    Navigate(`/order/${table}`);
+  const handleTableSelect = (room) => {
+    dispatch(selectRoom(room));
+    Navigate(`/ktv/${room}`);
   };
 
   return (
     <div className="flex h-screen pt-10 bg-white">
       <div className="w-full px-5">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="sub-header">Tables</h2>
+          <h2 className="sub-header">Rooms</h2>
         </div>
 
         {/* <div className="mb-4 ">
@@ -66,7 +66,7 @@ const TablePage = ({ tables }) => {
               <button
                 key={table}
                 className={`${
-                  receipts[table] || selectedTable === table
+                  receipts[table] || selectedRoom === table
                     ? "bg-primary text-white"
                     : "bg-white text-primary"
                 } border border-gray-300 px-2 py-4 rounded-lg font-bold`}
@@ -97,4 +97,4 @@ const TablePage = ({ tables }) => {
   );
 };
 
-export default TablePage;
+export default RoomPage;

@@ -3,13 +3,11 @@ import MenuPage from "./pages/MenuPage";
 import { Route, Routes } from "react-router-dom";
 import OrderPage from "./pages/OrderPage";
 import LoginPage from "./pages/LoginPage";
-// import { useAuth } from "./hook/auth/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import PageNotFound from "./components/PageNotFound";
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import Dashboard from "./pages/Dashboard";
-// import { FaUser } from "react-icons/fa";
 import { Receipt as ReceiptIcon } from "lucide-react";
 import { IoMdMenu } from "react-icons/io";
 import Sidebar from "./components/Sidebar";
@@ -21,7 +19,8 @@ import { useSelector } from "react-redux";
 import SetupShop from "./pages/SetupShop";
 import Welcome from "./pages/Welcome";
 import TablePage from "./components/Home/TablePage";
-import SelectType from "./pages/SelectType";
+import KTVPage from "./pages/KTVPage";
+import RoomPage from "./components/KTV/RoomPage";
 
 export default function App() {
   const tables = [1, 2, 3, 4, 5];
@@ -43,8 +42,7 @@ export default function App() {
       location.includes("/login") ||
       location.includes("/signup") ||
       location.includes("/setup") ||
-      location.includes("/welcome") ||
-      location.includes("/select-type")
+      location.includes("/welcome")
     ) {
       setIslogin(false);
     } else {
@@ -72,7 +70,7 @@ export default function App() {
             <div className="px-4 md:px-5 mt-3 md:mt-2 flex justify-between">
               <button
                 onClick={toggleSidebar}
-                className="px-5 border bg-white border-gary-300 text-primary rounded-lg focus:outline-none"
+                className="px-5 border bg-white border-gray-300 text-primary rounded-lg focus:outline-none"
               >
                 <IoMdMenu size={30} />
               </button>
@@ -123,31 +121,36 @@ export default function App() {
                 <div className="flex-1">
                   <Routes>
                     <Route path="/login" element={<LoginPage />} />
-                    <Route path="/select-type" element={<SelectType />} />
+
                     <Route
                       path="/"
                       element={
                         // <PrivateRoute>
-                        // <TablePage tables={tables} />
-                        <SelectType />
-                        // </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/restaurant"
-                      element={
-                        // <PrivateRoute>
                         <TablePage tables={tables} />
-
                         // </PrivateRoute>
                       }
                     />
-                    {/* KTV routes removed */}
                     <Route
                       path="/order/:table"
                       element={
                         // <PrivateRoute>
                         <HomePage />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/ktv"
+                      element={
+                        // <PrivateRoute>
+                        <RoomPage tables={tables} />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/ktv/:room"
+                      element={
+                        // <PrivateRoute>
+                        <KTVPage />
                         // </PrivateRoute>
                       }
                     />
