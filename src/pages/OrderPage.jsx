@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import getAllOrders from "../api/Order/getAllOrders";
+import getKtvOrdersByDate from "../api/KTV/getKtvOrdersByDate";
 import OrderTable from "../components/Orders/OrderTable";
 // import { TbReport } from "react-icons/tb";
 import Calendar from "../components/Calender";
@@ -25,6 +26,7 @@ const OrdersPage = () => {
   const [orderIds, setOrderIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("restaurant"); // "restaurant" or "ktv"
 
   // Callback function to receive data from child
   const handleDataFromChild = (childData) => {
@@ -92,11 +94,18 @@ const OrdersPage = () => {
   // console.log(orders.length);
 
   const getOrders = async () => {
-    const res = await getAllOrders(dataFromCalendar);
+    setLoading(true);
+    let res;
 
-    if (res.code === 200 && res.status !== "error") {
+    if (activeTab === "restaurant") {
+      res = await getAllOrders(dataFromCalendar);
+    } else {
+      res = await getKtvOrdersByDate(dataFromCalendar);
+    }
+
+    if (res?.code === 200 && res?.status !== "error") {
       setLoading(false);
-      setOrders(res.data);
+      setOrders(res.data || []);
     } else {
       setLoading(false);
       setOrders([]);
@@ -105,7 +114,7 @@ const OrdersPage = () => {
 
   useEffect(() => {
     getOrders();
-  }, [dataFromCalendar]);
+  }, [dataFromCalendar, activeTab]);
 
   return (
     <div className="p-5">
@@ -129,6 +138,36 @@ const OrdersPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-5 border-b border-gray-200">
+          <button
+            onClick={() => {
+              setActiveTab("restaurant");
+              setOrderIds([]);
+            }}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === "restaurant"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Restaurant Orders
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("ktv");
+              setOrderIds([]);
+            }}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === "ktv"
+                ? "text-primary border-b-2 border-primary"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            KTV Orders
+          </button>
+        </div>
         {loading ? (
           <div>
             <Loading />
@@ -137,7 +176,12 @@ const OrdersPage = () => {
           <div className="bg-white w-full rounded-lg overflow-hidden">
             {orders && orders.length === 0 ? (
               <div className="flex justify-center items-center mt-20">
-                <NoItems header={"No Orders"} subHeader={"No orders found"} />
+                <NoItems
+                  header={"No Orders"}
+                  subHeader={`No ${
+                    activeTab === "restaurant" ? "restaurant" : "KTV"
+                  } orders found`}
+                />
               </div>
             ) : (
               <OrderTable

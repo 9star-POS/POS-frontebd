@@ -21,7 +21,7 @@ import box from "./../../assets/box.png";
 import "./../input.css";
 import CalculatorModal from "./CalculatorModel";
 import { toast } from "sonner";
-import checkoutOrder from "../../api/Order/checkout";
+// import checkoutOrder from "../../api/Order/checkout";
 import getKtvOrders from "../../api/Order/getKtvOrders";
 import sendKtvOrder from "../../api/KTV/sendKtvOrder";
 import getRoomService from "../../api/KTV/getRoomService";
@@ -189,6 +189,15 @@ function Receipt({ onClose }) {
   const hasLocalItems =
     !!selectedRoom && !!receipts[selectedRoom]?.items?.length;
 
+  const hasLocalVocalists =
+    !!selectedRoom && !!receipts[selectedRoom]?.vocalists?.length;
+
+  const hasLocalRoomService =
+    !!selectedRoom && !!receipts[selectedRoom]?.roomService;
+
+  const hasLocalData =
+    hasLocalItems || hasLocalVocalists || hasLocalRoomService;
+
   const calculateSubtotal = () => {
     if (remoteOrder?.subTotal != null) return Number(remoteOrder.subTotal) || 0;
     if (!selectedRoom || !hasLocalItems) return 0;
@@ -302,11 +311,13 @@ function Receipt({ onClose }) {
 
     try {
       const res = await finalizeKtvOrder(orderId, payload);
+      console.log(res);
       if (res?.status === "success" || res?.code === 200) {
         toast.success("KTV order checkout completed successfully");
         setIsCalculatorOpen(false);
         setRemoteOrder(res?.data || null);
         setOrderId(null);
+        navigate("/ktv");
         if (selectedRoom) {
           dispatch(removeRoom(selectedRoom));
         }
@@ -314,14 +325,18 @@ function Receipt({ onClose }) {
       } else {
         toast.error(res?.message || "Failed to complete checkout");
       }
-    } catch (_) {
-      toast.error("An error occurred during checkout");
+    } catch (error) {
+      console.log(error);
+      // toast.error("An error occurred during checkout");
     }
   };
 
   const sendKitchen = async () => {
-    if (!selectedRoom || !receipts[selectedRoom]?.items?.length) {
-      toast.warning("No items to send");
+    const hasItems = receipts[selectedRoom]?.items?.length > 0;
+    const hasVocalists = receipts[selectedRoom]?.vocalists?.length > 0;
+
+    if (!selectedRoom || (!hasItems && !hasVocalists)) {
+      toast.warning("Please add items or vocalists to send");
       return;
     }
 
@@ -330,8 +345,8 @@ function Receipt({ onClose }) {
       return;
     }
 
-    // Prepare local items snapshot
-    const localItems = receipts[selectedRoom].items.map((item) => ({
+    // Prepare local items snapshot (can be empty array)
+    const localItems = (receipts[selectedRoom]?.items || []).map((item) => ({
       stockId: item._id || item.stockId,
       quantity: item.quantity || 1,
       notes: item.notes ?? "",
@@ -412,56 +427,57 @@ function Receipt({ onClose }) {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!orderId) {
-      toast.error("No active order to checkout");
-      return;
-    }
+  // const handleCheckout = async () => {
+  //   if (!orderId) {
+  //     toast.error("No active order to checkout");
+  //     return;
+  //   }
 
-    // Prepare vocalist service times array
-    const vocalistServiceTimes = [];
-    if (selectedRoom && receipts[selectedRoom]?.vocalists) {
-      receipts[selectedRoom].vocalists.forEach((v) => {
-        vocalistServiceTimes.push(Number(v.serviceTime) || 0);
-      });
-    }
+  //   // Prepare vocalist service times array
+  //   const vocalistServiceTimes = [];
+  //   if (selectedRoom && receipts[selectedRoom]?.vocalists) {
+  //     receipts[selectedRoom].vocalists.forEach((v) => {
+  //       vocalistServiceTimes.push(Number(v.serviceTime) || 0);
+  //     });
+  //   }
 
-    // Prepare room service time
-    const roomServiceTime =
-      selectedRoom && receipts[selectedRoom]?.roomService
-        ? Number(receipts[selectedRoom].roomService.serviceTime) || 0
-        : 0;
+  //   // Prepare room service time
+  //   const roomServiceTime =
+  //     selectedRoom && receipts[selectedRoom]?.roomService
+  //       ? Number(receipts[selectedRoom].roomService.serviceTime) || 0
+  //       : 0;
 
-    const payload = {
-      vocalistServiceTimes,
-      roomServiceTime,
-      roomCharges: calculateRoomCharges(),
-      vocalistCharges: calculateVocalistCharges(),
-      subTotal: calculateSubtotal(),
-      tax: calculateTax(),
-      discount: 0,
-      total: calculateTotal(),
-      status: "completed",
-      paymentMethod: "cash",
-    };
+  //   const payload = {
+  //     vocalistServiceTimes,
+  //     roomServiceTime,
+  //     roomCharges: calculateRoomCharges(),
+  //     vocalistCharges: calculateVocalistCharges(),
+  //     subTotal: calculateSubtotal(),
+  //     tax: calculateTax(),
+  //     discount: 0,
+  //     total: calculateTotal(),
+  //     status: "completed",
+  //     paymentMethod: "cash",
+  //   };
 
-    try {
-      const res = await finalizeKtvOrder(orderId, payload);
-      if (res?.status === "success" || res?.code === 200) {
-        toast.success("KTV order checkout completed successfully");
-        setRemoteOrder(res?.data || null);
-        setOrderId(null);
-        if (selectedRoom) {
-          dispatch(removeRoom(selectedRoom));
-        }
-        if (onClose) onClose();
-      } else {
-        toast.error(res?.message || "Failed to complete checkout");
-      }
-    } catch (_) {
-      toast.error("An error occurred during checkout");
-    }
-  };
+  //   try {
+  //     const res = await finalizeKtvOrder(orderId, payload);
+  //     console.log(res);
+  //     if (res?.status === "success" || res?.code === 200) {
+  //       toast.success("KTV order checkout completed successfully");
+  //       setRemoteOrder(res?.data || null);
+  //       setOrderId(null);
+  //       if (selectedRoom) {
+  //         dispatch(removeRoom(selectedRoom));
+  //       }
+  //       if (onClose) onClose();
+  //     } else {
+  //       toast.error(res?.message || "Failed to complete checkout");
+  //     }
+  //   } catch (_) {
+  //     toast.error("An error occurred during checkout");
+  //   }
+  // };
 
   return (
     <div className="text-black h-screen px-3 pt-0">
@@ -483,14 +499,14 @@ function Receipt({ onClose }) {
           </div>
         )}
 
-        {selectedRoom && !hasLocalItems && !remoteOrder && (
+        {selectedRoom && !hasLocalData && !remoteOrder && (
           <div className="flex flex-col items-center justify-center h-[70vh]">
             <img src={box} alt="box" className="w-32 h-32 opacity-50" />
             <p className="text-gray-500 mt-5">No items in receipt</p>
           </div>
         )}
 
-        {selectedRoom && (hasLocalItems || remoteOrder) && (
+        {selectedRoom && (hasLocalData || remoteOrder) && (
           <div className="flex flex-col h-[calc(100vh-10rem)]">
             {/* <div className="flex justify-between items-center mb-3">
               <p className="text-gray-500">Room {selectedRoom}</p>
