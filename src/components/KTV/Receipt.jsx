@@ -372,9 +372,12 @@ function Receipt({ onClose }) {
         roomService: {
           roomServiceId: roomServiceId,
         },
-        vocalist: localVocalists.map((v) => ({
-          vocalistId: v.vocalistId,
-        })),
+        vocalist:
+          localVocalists.length > 0
+            ? localVocalists.map((v) => ({
+                vocalistId: v.vocalistId,
+              }))
+            : null,
       };
 
       const res = await sendKtvOrder(payload);
