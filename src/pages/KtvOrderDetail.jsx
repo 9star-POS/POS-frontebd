@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
-import getRestaurantOrderById from "../api/Order/getRestaurantOrderById";
+import getKtvOrderById from "../api/KTV/getKtvOrderById";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, CreditCard, Receipt } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  CreditCard,
+  Receipt,
+  Mic,
+  DoorOpen,
+  Users,
+} from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
 
-function OrderDetail() {
+function KtvOrderDetail() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,7 +22,7 @@ function OrderDetail() {
   const getOrder = async () => {
     setLoading(true);
     try {
-      const res = await getRestaurantOrderById(id);
+      const res = await getKtvOrderById(id);
       if (res.code === 200 && res.status === "success") {
         setOrder(res.data);
       } else {
@@ -48,6 +57,15 @@ function OrderDetail() {
       minute: "2-digit",
       hour12: true,
     });
+  };
+
+  const calculateDuration = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const durationMs = end - start;
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
   };
 
   const getStatusColor = (status) => {
@@ -117,7 +135,7 @@ function OrderDetail() {
   }
 
   return (
-    <div className="pt-10 px-10  pb-10 overflow-y-auto h-[calc(100vh-100px)]">
+    <div className=" pt-10 px-4 md:px-10 pb-10 overflow-y-auto h-[calc(100vh-100px)]">
       <Link
         to="/orders"
         className="text-primary mb-4 inline-flex items-center gap-2 hover:text-blue-700 transition-colors"
@@ -130,7 +148,7 @@ function OrderDetail() {
         <div className="bg-primary text-white p-6">
           <div className="flex justify-between items-start flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Order Details</h1>
+              <h1 className="text-3xl font-bold mb-2">KTV Order Details</h1>
               <p className="text-white">Order ID: {order._id}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -145,15 +163,18 @@ function OrderDetail() {
           </div>
         </div>
 
-        {/* Order Information Grid */}
+        {/* Room & Payment Information Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <Receipt className="text-primary" size={24} />
-              <h3 className="font-semibold text-lg">Table Number</h3>
+              <DoorOpen className="text-primary" size={24} />
+              <h3 className="font-semibold text-lg">Room Number</h3>
             </div>
             <p className="text-2xl font-bold text-gray-800">
-              Table {order.tableNumber}
+              Room {order.roomService?.roomNumber || "N/A"}
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              {order.roomService?.hourlyRate?.toLocaleString() || 0} MMK/hour
             </p>
           </div>
 
@@ -190,33 +211,139 @@ function OrderDetail() {
           </div>
         </div>
 
+        {/* Room Service Details */}
+        {order.roomService && (
+          <div className="p-6 border-t border-gray-200">
+            <h2 className="font-bold text-2xl mb-4 text-gray-800 flex items-center gap-2">
+              <DoorOpen className="text-primary" size={28} />
+              Room Service Details
+            </h2>
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Service Started</p>
+                  <p className="font-semibold text-gray-800">
+                    {formatTime(order.roomService.serviceStartedAt)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Service Ended</p>
+                  <p className="font-semibold text-gray-800">
+                    {order.roomService.serviceEndedAt
+                      ? formatTime(order.roomService.serviceEndedAt)
+                      : "Ongoing"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Duration</p>
+                  <p className="font-semibold text-gray-800">
+                    {order.roomService.serviceEndedAt
+                      ? calculateDuration(
+                          order.roomService.serviceStartedAt,
+                          order.roomService.serviceEndedAt
+                        )
+                      : `${order.roomServiceTime} hour(s)`}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-primary">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-semibold">
+                    Room Charges:
+                  </span>
+                  <span className="text-xl font-bold text-primary">
+                    {order.roomCharges.toLocaleString()} MMK
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Vocalist Details */}
+        {order.vocalist && order.vocalist.length > 0 && (
+          <div className="p-6 border-t border-gray-200">
+            <h2 className="font-bold text-2xl mb-4 text-gray-800 flex items-center gap-2">
+              <Mic className="text-primary" size={28} />
+              Vocalist Services
+            </h2>
+            <div className="space-y-4">
+              {order.vocalist.map((vocalist) => (
+                <div
+                  key={vocalist._id}
+                  className="bg-pink-50 rounded-lg p-4 border border-pink-200"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Users className="text-primary" size={24} />
+                      <h3 className="font-bold text-lg text-gray-800">
+                        {vocalist.vocalistName}
+                      </h3>
+                    </div>
+                    <span className="text-sm bg-pink-200 text-pink-800 px-3 py-1 rounded-full font-semibold">
+                      {vocalist.hourlyRate.toLocaleString()} MMK/hour
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Service Started</p>
+                      <p className="font-semibold text-gray-800">
+                        {formatTime(vocalist.serviceStartedAt)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Service Duration</p>
+                      <p className="font-semibold text-gray-800">
+                        {vocalist.serviceTime} hour(s)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="bg-pink-100 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-semibold">
+                    Total Vocalist Charges:
+                  </span>
+                  <span className="text-xl font-bold text-pink-600">
+                    {order.vocalistCharges.toLocaleString()} MMK
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Order Items */}
-        <div className="p-6">
-          <h2 className="font-bold text-2xl mb-4 text-gray-800">Order Items</h2>
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="text-left p-4 font-semibold text-gray-700">
-                    Item
-                  </th>
-                  <th className="text-center p-4 font-semibold text-gray-700">
-                    Quantity
-                  </th>
-                  <th className="text-right p-4 font-semibold text-gray-700">
-                    Price
-                  </th>
-                  <th className="text-center p-4 font-semibold text-gray-700">
-                    Status
-                  </th>
-                  <th className="text-right p-4 font-semibold text-gray-700">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.orderItems && order.orderItems.length > 0 ? (
-                  order.orderItems.map((item, index) => (
+        {order.orderItems && order.orderItems.length > 0 && (
+          <div className="p-6 border-t border-gray-200">
+            <h2 className="font-bold text-2xl mb-4 text-gray-800 flex items-center gap-2">
+              <Receipt className="text-purple-600" size={28} />
+              Food & Beverage Items
+            </h2>
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="text-left p-4 font-semibold text-gray-700">
+                      Item
+                    </th>
+                    <th className="text-center p-4 font-semibold text-gray-700">
+                      Quantity
+                    </th>
+                    <th className="text-right p-4 font-semibold text-gray-700">
+                      Price
+                    </th>
+                    <th className="text-center p-4 font-semibold text-gray-700">
+                      Status
+                    </th>
+                    <th className="text-right p-4 font-semibold text-gray-700">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.orderItems.map((item) => (
                     <tr
                       key={item._id}
                       className="border-t border-gray-200 hover:bg-gray-50"
@@ -257,34 +384,42 @@ function OrderDetail() {
                         {(item.price * item.quantity).toLocaleString()} MMK
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="p-4 text-center text-gray-500">
-                      No items in this order
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+        )}
 
-          {/* Order Summary */}
-          <div className="mt-6 bg-gray-50 rounded-lg p-6">
+        {/* Order Summary */}
+        <div className="p-6 border-t border-gray-200">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6">
             <h3 className="font-bold text-xl mb-4 text-gray-800">
               Order Summary
             </h3>
             <div className="space-y-3">
               <div className="flex justify-between text-lg">
-                <span className="text-gray-600">Subtotal:</span>
+                <span className="text-gray-600">Room Charges:</span>
+                <span className="font-semibold text-gray-800">
+                  {order.roomCharges.toLocaleString()} MMK
+                </span>
+              </div>
+              <div className="flex justify-between text-lg">
+                <span className="text-gray-600">Vocalist Charges:</span>
+                <span className="font-semibold text-gray-800">
+                  {order.vocalistCharges.toLocaleString()} MMK
+                </span>
+              </div>
+              <div className="flex justify-between text-lg">
+                <span className="text-gray-600">Food & Beverage:</span>
                 <span className="font-semibold text-gray-800">
                   {order.subTotal.toLocaleString()} MMK
                 </span>
               </div>
               <div className="flex justify-between text-lg">
-                <span className="text-gray-600">Tax ({order.tax}%):</span>
+                <span className="text-gray-600">Tax:</span>
                 <span className="font-semibold text-gray-800">
-                  {((order.subTotal * order.tax) / 100).toLocaleString()} MMK
+                  {order.tax.toLocaleString()} MMK
                 </span>
               </div>
               {order.discount > 0 && (
@@ -295,10 +430,10 @@ function OrderDetail() {
                   </span>
                 </div>
               )}
-              <div className="border-t-2 border-gray-300 pt-3 mt-3">
+              <div className="border-t-2 border-purple-300 pt-3 mt-3">
                 <div className="flex justify-between text-2xl">
-                  <span className="font-bold text-gray-800">Total:</span>
-                  <span className="font-bold text-primary">
+                  <span className="font-bold text-gray-800">Grand Total:</span>
+                  <span className="font-bold text-purple-600">
                     {order.total.toLocaleString()} MMK
                   </span>
                 </div>
@@ -321,4 +456,4 @@ function OrderDetail() {
   );
 }
 
-export default OrderDetail;
+export default KtvOrderDetail;

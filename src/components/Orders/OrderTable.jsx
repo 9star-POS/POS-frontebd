@@ -2,13 +2,26 @@ import TimestampFormatter from "./TimestampFormatter";
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DeleteModel from "../DeleteModel";
 
 function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
   // console.log(orders[0].tax);
+  const navigate = useNavigate();
   const [selectedOrders, setselectedOrders] = useState([]); // For selected mail _IDs
   const [orderId, setOrderId] = useState([]);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false); // For selected mail _IDs
+
+  const handleViewOrder = (order, e) => {
+    e.stopPropagation();
+    // Check if it's a KTV order (has roomService) or restaurant order (has tableNumber only)
+    if (order.roomService) {
+      navigate(`/ktv-orders/${order._id}`);
+    } else {
+      navigate(`/orders/${order._id}`);
+    }
+  };
+
   const handleSendData = (orderId) => {
     sendData(orderId);
   };
@@ -74,7 +87,7 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
             <tr
               key={order._id}
               className="font-bold text-md md:text-lg cursor-pointer hover:bg-gray-100"
-              onClick={() => handleSendData(order._id)}
+              onClick={(e) => handleViewOrder(order, e)}
             >
               <td
                 className="px-2 lg:px-6 py-4 whitespace-nowrap"
@@ -147,7 +160,7 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
                 <div className="flex space-x-4 items-center">
                   <button
                     className="text-blue-500 font-bold hover:text-blue-700"
-                    onClick={() => handleSendData(order._id)}
+                    onClick={(e) => handleViewOrder(order, e)}
                   >
                     <MdOutlineRemoveRedEye size={25} />
                   </button>

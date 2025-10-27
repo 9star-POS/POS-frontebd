@@ -174,9 +174,11 @@ function Receipt({ onClose }) {
         setIsCalculatorOpen(false);
         setRemoteOrder(res?.data || null);
         setOrderId(null);
+        navigate("/");
         if (selectedTable) {
           dispatch(removeTable(selectedTable));
         }
+
         if (onClose) onClose();
       }
     } catch (_) {

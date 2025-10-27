@@ -2,6 +2,8 @@ import HomePage from "./pages/HomePage";
 import MenuPage from "./pages/MenuPage";
 import { Route, Routes } from "react-router-dom";
 import OrderPage from "./pages/OrderPage";
+import OrderDetail from "./pages/OrderDetail";
+import KtvOrderDetail from "./pages/KtvOrderDetail";
 import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./components/PrivateRoute";
 import PageNotFound from "./components/PageNotFound";
@@ -199,6 +201,22 @@ export default function App() {
                       element={
                         // <PrivateRoute>
                         <OrderPage />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/orders/:id"
+                      element={
+                        // <PrivateRoute>
+                        <OrderDetail />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/ktv-orders/:id"
+                      element={
+                        // <PrivateRoute>
+                        <KtvOrderDetail />
                         // </PrivateRoute>
                       }
                     />
