@@ -23,6 +23,7 @@ import Welcome from "./pages/Welcome";
 import TablePage from "./components/Home/TablePage";
 import KTVPage from "./pages/KTVPage";
 import RoomPage from "./components/KTV/RoomPage";
+import KitchenPage from "./pages/KitchenPage";
 
 export default function App() {
   const tables = [1, 2, 3, 4, 5];
@@ -217,6 +218,14 @@ export default function App() {
                       element={
                         // <PrivateRoute>
                         <KtvOrderDetail />
+                        // </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/kitchen"
+                      element={
+                        // <PrivateRoute>
+                        <KitchenPage />
                         // </PrivateRoute>
                       }
                     />
