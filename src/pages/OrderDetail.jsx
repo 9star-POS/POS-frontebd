@@ -278,7 +278,7 @@ function OrderDetail() {
               <div className="flex justify-between text-lg">
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="font-semibold text-gray-800">
-                  {order.subTotal.toLocaleString()} MMK
+                  {order.subTotal} MMK
                 </span>
               </div>
               <div className="flex justify-between text-lg">
@@ -299,7 +299,7 @@ function OrderDetail() {
                 <div className="flex justify-between text-2xl">
                   <span className="font-bold text-gray-800">Total:</span>
                   <span className="font-bold text-primary">
-                    {order.total.toLocaleString()} MMK
+                    {order.total} MMK
                   </span>
                 </div>
               </div>

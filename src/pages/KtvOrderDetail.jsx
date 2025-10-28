@@ -252,7 +252,7 @@ function KtvOrderDetail() {
                     Room Charges:
                   </span>
                   <span className="text-xl font-bold text-primary">
-                    {order.roomCharges.toLocaleString()} MMK
+                    {order.roomCharges} MMK
                   </span>
                 </div>
               </div>
@@ -281,7 +281,7 @@ function KtvOrderDetail() {
                       </h3>
                     </div>
                     <span className="text-sm bg-pink-200 text-pink-800 px-3 py-1 rounded-full font-semibold">
-                      {vocalist.hourlyRate.toLocaleString()} MMK/hour
+                      {vocalist.hourlyRate} MMK/hour
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -306,7 +306,7 @@ function KtvOrderDetail() {
                     Total Vocalist Charges:
                   </span>
                   <span className="text-xl font-bold text-pink-600">
-                    {order.vocalistCharges.toLocaleString()} MMK
+                    {order.vocalistCharges} MMK
                   </span>
                 </div>
               </div>
@@ -369,7 +369,7 @@ function KtvOrderDetail() {
                         x{item.quantity}
                       </td>
                       <td className="p-4 text-right text-gray-700">
-                        {item.price.toLocaleString()} MMK
+                        {item.price} MMK
                       </td>
                       <td className="p-4 text-center">
                         <span
@@ -381,7 +381,7 @@ function KtvOrderDetail() {
                         </span>
                       </td>
                       <td className="p-4 text-right font-semibold text-gray-800">
-                        {(item.price * item.quantity).toLocaleString()} MMK
+                        {item.price * item.quantity} MMK
                       </td>
                     </tr>
                   ))}
@@ -401,40 +401,38 @@ function KtvOrderDetail() {
               <div className="flex justify-between text-lg">
                 <span className="text-gray-600">Room Charges:</span>
                 <span className="font-semibold text-gray-800">
-                  {order.roomCharges.toLocaleString()} MMK
+                  {order.roomCharges} MMK
                 </span>
               </div>
               <div className="flex justify-between text-lg">
                 <span className="text-gray-600">Vocalist Charges:</span>
                 <span className="font-semibold text-gray-800">
-                  {order.vocalistCharges.toLocaleString()} MMK
+                  {order.vocalistCharges} MMK
                 </span>
               </div>
               <div className="flex justify-between text-lg">
                 <span className="text-gray-600">Food & Beverage:</span>
                 <span className="font-semibold text-gray-800">
-                  {order.subTotal.toLocaleString()} MMK
+                  {order.subTotal} MMK
                 </span>
               </div>
               <div className="flex justify-between text-lg">
                 <span className="text-gray-600">Tax:</span>
                 <span className="font-semibold text-gray-800">
-                  {order.tax.toLocaleString()} MMK
+                  {order.tax} MMK
                 </span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-lg text-green-600">
                   <span>Discount:</span>
-                  <span className="font-semibold">
-                    -{order.discount.toLocaleString()} MMK
-                  </span>
+                  <span className="font-semibold">-{order.discount} MMK</span>
                 </div>
               )}
               <div className="border-t-2 border-purple-300 pt-3 mt-3">
                 <div className="flex justify-between text-2xl">
                   <span className="font-bold text-gray-800">Grand Total:</span>
                   <span className="font-bold text-purple-600">
-                    {order.total.toLocaleString()} MMK
+                    {order.total} MMK
                   </span>
                 </div>
               </div>
