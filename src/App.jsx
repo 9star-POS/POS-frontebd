@@ -128,105 +128,84 @@ export default function App() {
                     <Route
                       path="/"
                       element={
-                        // <PrivateRoute>
-                        <TablePage tables={tables} />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <TablePage tables={tables} />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/order/:table"
                       element={
-                        // <PrivateRoute>
-                        <HomePage />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <HomePage />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/ktv"
                       element={
-                        // <PrivateRoute>
-                        <RoomPage />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <RoomPage />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/ktv/:room"
                       element={
-                        // <PrivateRoute>
-                        <KTVPage />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <KTVPage />
+                        </PrivateRoute>
                       }
                     />
-                    <Route
-                      path="/signup"
-                      element={
-                        // <PrivateRoute>
-                        <EnterID />
-                        // </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/welcome"
-                      element={
-                        // <PrivateRoute>
-                        <Welcome />
-                        // </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/setup"
-                      element={
-                        // <PrivateRoute>
-                        <SetupShop />
-                        // </PrivateRoute>
-                      }
-                    />
+                    <Route path="/signup" element={<EnterID />} />
+                    <Route path="/welcome" element={<Welcome />} />
+                    <Route path="/setup" element={<SetupShop />} />
                     <Route
                       path="/menu"
                       element={
-                        // <PrivateRoute>
-                        <MenuPage />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <MenuPage />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/dashboard"
                       element={
-                        // <PrivateRoute>
-                        <Dashboard />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <Dashboard />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/orders"
                       element={
-                        // <PrivateRoute>
-                        <OrderPage />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <OrderPage />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/orders/:id"
                       element={
-                        // <PrivateRoute>
-                        <OrderDetail />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <OrderDetail />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/ktv-orders/:id"
                       element={
-                        // <PrivateRoute>
-                        <KtvOrderDetail />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <KtvOrderDetail />
+                        </PrivateRoute>
                       }
                     />
                     <Route
                       path="/kitchen"
                       element={
-                        // <PrivateRoute>
-                        <KitchenPage />
-                        // </PrivateRoute>
+                        <PrivateRoute>
+                          <KitchenPage />
+                        </PrivateRoute>
                       }
                     />
 

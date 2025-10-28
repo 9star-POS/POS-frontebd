@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import updateMenu from "../../api/Menu/UpdateItem";
 import axios from "../../api/axios";
 
-const EditMenuModel = ({ isOpen, onClose, menu }) => {
+const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
   const [dishCategory, setDishCategory] = useState("Western");
   const [dishName, setDishName] = useState(menu.name);
   const [price, setPrice] = useState(menu.price.toString());
@@ -32,11 +32,14 @@ const EditMenuModel = ({ isOpen, onClose, menu }) => {
       },
     });
     console.log(res);
-    onClose();
     setImage(null);
+    onClose();
+    // Refresh menu list after successful edit
+    if (refreshMenu) {
+      refreshMenu();
+    }
     // Handle editing the dish here
     console.log("Dish Edited:", { dishCategory, dishName, price, image });
-    onClose(); // Close the modal after editing the dish
   };
 
   if (!isOpen) return null;
@@ -182,6 +185,8 @@ const EditMenuModel = ({ isOpen, onClose, menu }) => {
 EditMenuModel.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  menu: PropTypes.object.isRequired,
+  refreshMenu: PropTypes.func,
 };
 
 export default EditMenuModel;

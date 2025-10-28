@@ -23,7 +23,7 @@ const User = ({ user }) => {
     <div className="relative w-48 h-20 flex items-center">
       <div
         className={`cursor-pointer transition duration-300 absolute border border-primary rounded-full bg-white flex items-center gap-4 px-4 py-2 z-10 hover:scale-105 ${
-          isOpen ? "-translate-x-[80px]" : "translate-x-9"
+          isOpen ? "-translate-x-[80px]" : "translate-x-0"
         }`}
         onClick={toggleDropdown}
       >
@@ -35,7 +35,7 @@ const User = ({ user }) => {
         </div>
       </div>
       <div
-        className="absolute left-20 flex text-primary items-center cursor-pointer bg-white hover:text-orange-300"
+        className="absolute left-20 flex text-primary rounded border border-primary items-center cursor-pointer bg-white hover:text-orange-700"
         onClick={handleClose}
       >
         <GoSignOut size={25} />

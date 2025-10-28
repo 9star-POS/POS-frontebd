@@ -4,12 +4,29 @@ import MenuList from "../components/Menu/MenuList";
 import getMenu from "../api/Menu/getMenu";
 import MenuModel from "../components/Menu/MenuModel";
 import Loading from "../components/Loading";
+import getItems from "../api/Menu/getItems";
 
 function MenuPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalOpen2, setIsModalOpen2] = useState(false);
   const [categorys, setCategorys] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState();
+  const [categories, setCategories] = useState([]);
+  const [menuType, setMenuType] = useState("restaurant");
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const res = await getItems();
+      if (res.status === "success") {
+        const filteredMenus = res.data.filter((menu) => menu.type === menuType);
+        const cats = [
+          ...new Set(filteredMenus.map((menu) => menu.category)),
+        ].filter(Boolean);
+        setCategories(cats);
+      }
+    };
+    fetchCategories();
+  }, [isModalOpen2, menuType]);
 
   return (
     <>
@@ -27,13 +44,17 @@ function MenuPage() {
         </div>
         <div className="flex flex-col md:flex-row gap-1"></div>
         <div className="overflow-y-auto h-[70vh]">
-          <MenuList isModalOpen2={isModalOpen2} />
+          <MenuList
+            isModalOpen2={isModalOpen2}
+            onMenuTypeChange={setMenuType}
+          />
         </div>
 
         <MenuModel
           isOpen={isModalOpen2}
           onClose={() => setIsModalOpen2(false)}
-          // category={categorys}
+          categories={categories}
+          menuType={menuType}
         />
       </div>
     </>

@@ -6,7 +6,7 @@ import NoItems from "../NoItems";
 import Loading from "../Loading";
 // import Modal from "./Modal"; // Import the Modal component
 
-const MenuList = ({ isModalOpen2 }) => {
+const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
   // console.log(category);
   const [menuLists, setMenuList] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +14,14 @@ const MenuList = ({ isModalOpen2 }) => {
   const [categoryList, setCategoryList] = useState(["All"]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [menuType, setMenuType] = useState("restaurant"); // "restaurant" or "ktv"
+
+  // Notify parent when menu type changes
+  const handleMenuTypeChange = (type) => {
+    setMenuType(type);
+    if (onMenuTypeChange) {
+      onMenuTypeChange(type);
+    }
+  };
 
   const getMenuList = async () => {
     const res = await getItems();
@@ -31,10 +39,9 @@ const MenuList = ({ isModalOpen2 }) => {
       ];
       setCategoryList(categoryList);
       console.log("categoryList", categoryList);
-      setSelectedCategory("All");
     } else {
       setMenuList([]);
-      setSelectedCategory("All");
+
       setCategoryList(["All"]);
     }
   };
@@ -43,8 +50,6 @@ const MenuList = ({ isModalOpen2 }) => {
 
   useEffect(() => {
     getMenuList();
-
-    console.log("work");
   }, [isModalOpen, isModalOpen2, menuType]);
 
   if (loading) {
@@ -71,6 +76,8 @@ const MenuList = ({ isModalOpen2 }) => {
           <MenuModel
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+            categories={categoryList.filter((cat) => cat !== "All")}
+            menuType={menuType}
           />
         </div>
       </div>
@@ -83,7 +90,7 @@ const MenuList = ({ isModalOpen2 }) => {
       <div className="flex gap-2 border-b border-gray-200">
         <button
           onClick={() => {
-            setMenuType("restaurant");
+            handleMenuTypeChange("restaurant");
             setSelectedCategory("All");
           }}
           className={`px-6 py-3 font-semibold transition-all ${
@@ -96,7 +103,7 @@ const MenuList = ({ isModalOpen2 }) => {
         </button>
         <button
           onClick={() => {
-            setMenuType("ktv");
+            handleMenuTypeChange("ktv");
             setSelectedCategory("All");
           }}
           className={`px-6 py-3 font-semibold transition-all ${

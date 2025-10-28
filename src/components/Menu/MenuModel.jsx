@@ -1,18 +1,66 @@
 // CreateMenu.js
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "../../api/axios";
 import defaultMenu from "./../../assets/defaultMenu.jpg";
 import PropTypes from "prop-types";
+import getItems from "../../api/Menu/getItems";
 
-const MenuModel = ({ isOpen, onClose, category }) => {
+const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
   const [dishCategory, setDishCategory] = useState();
   const [dishName, setDishName] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState(null);
-  const [itemType, setItemType] = useState("restaurant");
-  const [quantity, setQuantity] = useState("1");
+  const [itemType, setItemType] = useState(menuType || "restaurant");
+  const [quantity, setQuantity] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [existingCategories, setExistingCategories] = useState([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const categoryInputRef = useRef(null);
   // console.log(dishCategory);
+
+  // Update itemType when menuType prop changes
+  useEffect(() => {
+    if (menuType) {
+      setItemType(menuType);
+    }
+  }, [menuType]);
+
+  // Use passed categories or fetch if not provided
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      // Use categories passed from parent
+      setExistingCategories(categories);
+    } else if (isOpen) {
+      // Fallback: fetch categories if not provided
+      const fetchCategories = async () => {
+        const res = await getItems();
+        if (res.status === "success") {
+          const filteredMenus = res.data.filter(
+            (menu) => menu.type === itemType
+          );
+          const cats = [
+            ...new Set(filteredMenus.map((menu) => menu.category)),
+          ].filter(Boolean);
+          setExistingCategories(cats);
+        }
+      };
+      fetchCategories();
+    }
+  }, [isOpen, itemType, categories]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        categoryInputRef.current &&
+        !categoryInputRef.current.contains(event.target)
+      ) {
+        setShowCategoryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleImageUpload = (e) => {
     setImage(e.target.files[0]);
@@ -22,11 +70,19 @@ const MenuModel = ({ isOpen, onClose, category }) => {
     setImage(null); // Clear the image state
   };
 
+  const handleCategorySelect = (selectedCat) => {
+    setNewCategory(selectedCat);
+    setShowCategoryDropdown(false);
+  };
+
   const handleAddDish = async () => {
     const formData = new FormData();
     formData.append("name", dishName);
     formData.append("price", price);
-    formData.append("quantity", quantity);
+    // Only append quantity if it has a value
+    if (quantity && quantity.trim() !== "") {
+      formData.append("quantity", quantity);
+    }
     const chosenCategory =
       (newCategory && newCategory.trim()) ||
       dishCategory ||
@@ -49,7 +105,7 @@ const MenuModel = ({ isOpen, onClose, category }) => {
       onClose();
       setDishName("");
       setPrice("");
-      setQuantity("1");
+      setQuantity("");
       setNewCategory("");
       setImage(null);
       // keep selected category as-is
@@ -125,15 +181,37 @@ const MenuModel = ({ isOpen, onClose, category }) => {
             </div>
           </div>
           <div className="w-full">
-            <div className="mb-4">
+            <div className="mb-4" ref={categoryInputRef}>
               <label className="block text-sm font-medium mb-1">Category</label>
-              <input
-                type="text"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Type a new category"
-                className="border border-primary rounded-md p-2 w-full"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  onFocus={() => setShowCategoryDropdown(true)}
+                  placeholder="Type a new category or select existing"
+                  className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                {showCategoryDropdown && existingCategories.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    <div className="p-2">
+                      <p className="text-xs text-gray-500 mb-2 font-semibold">
+                        Existing Categories:
+                      </p>
+                      {existingCategories.map((cat, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleCategorySelect(cat)}
+                          className="w-full text-left px-3 py-2 hover:bg-prilight hover:text-primary rounded-md transition-colors"
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Type</label>
@@ -171,7 +249,7 @@ const MenuModel = ({ isOpen, onClose, category }) => {
                 value={dishName}
                 onChange={(e) => setDishName(e.target.value)}
                 placeholder="Enter Your Dish Name"
-                className="border border-primary rounded-md p-2 w-full"
+                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div className="mb-4">
@@ -182,7 +260,7 @@ const MenuModel = ({ isOpen, onClose, category }) => {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="Enter Your Price"
-                  className="border border-primary rounded-md p-2 w-full pr-16"
+                  className="border border-primary rounded-md p-2 w-full pr-16 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 border border-primary rounded-md px-3 py-1 text-sm">
                   MMK
@@ -190,7 +268,10 @@ const MenuModel = ({ isOpen, onClose, category }) => {
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Quantity</label>
+              <label className="block text-sm font-medium mb-1">
+                Quantity{" "}
+                <span className="text-gray-500 text-xs">(Optional)</span>
+              </label>
               <input
                 type="number"
                 min="0"
@@ -198,8 +279,8 @@ const MenuModel = ({ isOpen, onClose, category }) => {
                 pattern="[0-9]*"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                placeholder="Enter Quantity"
-                className="border border-primary rounded-md p-2 w-full"
+                placeholder="Enter Quantity (Optional)"
+                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           </div>
@@ -226,7 +307,9 @@ const MenuModel = ({ isOpen, onClose, category }) => {
 MenuModel.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  // category: PropTypes.arrayOf(PropTypes.string).isRequired,
+  category: PropTypes.array,
+  categories: PropTypes.array,
+  menuType: PropTypes.string,
 };
 
 export default MenuModel;

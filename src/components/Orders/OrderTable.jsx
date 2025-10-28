@@ -42,9 +42,9 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
   };
 
   return (
-    <div className="shadow-lg h-[75vh] overflow-y-auto border border-gray-200">
+    <div className="shadow-lg h-[calc(100vh-280px)] overflow-y-auto border border-gray-200">
       <table className="min-w-full divide-y bg-primary divide-gray-200">
-        <thead className="bg-primary">
+        <thead className="bg-primary sticky top-0">
           <tr className="font-bold text-md md:text-lg">
             <th
               className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider"

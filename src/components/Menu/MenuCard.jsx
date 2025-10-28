@@ -11,20 +11,12 @@ const MenuCard = ({ menu, refreshMenu }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const handleAction = () => {
-    refreshMenu();
-  };
-
   const deleteItems = async (id) => {
     const res = await Deleteitems(id);
     if (res.status === "success") {
-      handleAction();
+      refreshMenu();
     }
   };
-
-  useEffect(() => {
-    handleAction();
-  }, [isModalOpen]);
   // console.log(menu);
   return (
     <div className="sm:w-[200px] bg-white shadow-lg overflow-hidden relative">
@@ -70,6 +62,7 @@ const MenuCard = ({ menu, refreshMenu }) => {
         isOpen={isModalOpen}
         menu={menu}
         onClose={() => setIsModalOpen(false)}
+        refreshMenu={refreshMenu}
       />
 
       <DeleteModel

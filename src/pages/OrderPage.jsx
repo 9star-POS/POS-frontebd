@@ -97,7 +97,11 @@ const OrdersPage = () => {
 
     if (res?.code === 200 && res?.status !== "error") {
       setLoading(false);
-      setOrders(res.data || []);
+      // Filter to show only completed orders
+      const completedOrders = res.data.filter(
+        (order) => order.status === "completed"
+      );
+      setOrders(completedOrders.reverse() || []);
     } else {
       setLoading(false);
       setOrders([]);

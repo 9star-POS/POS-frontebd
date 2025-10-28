@@ -1,22 +1,15 @@
-// import React from "react";
-import { useNavigate } from "react-router-dom";
-// import { useAuth } from "./../hook/auth/AuthContext.jsx";
-import { useEffect } from "react";
+import { Navigate } from "react-router-dom";
 
 const PrivateRoute = ({ children }) => {
-  const navigate = useNavigate();
   const token = localStorage.getItem("biz-bozz-token");
-  // console.log(token);
-  // const { isAuthenticated } = useAuth();
-  // Get authentication state from context
 
+  // If no token, redirect to login
   if (!token) {
-    return useEffect(() => {
-      navigate("/login");
-    }, []);
-  } else {
-    return children;
+    return (window.location.href = "/login");
   }
+
+  // If token exists, render the protected component
+  return children;
 };
 
 export default PrivateRoute;

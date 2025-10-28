@@ -26,6 +26,7 @@ import getKtvOrders from "../../api/Order/getKtvOrders";
 import sendKtvOrder from "../../api/KTV/sendKtvOrder";
 import getRoomService from "../../api/KTV/getRoomService";
 import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
+import updateKtvOrder from "../../api/KTV/updateKtvOrder";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -358,9 +359,49 @@ function Receipt({ onClose }) {
     const localVocalists = receipts[selectedRoom]?.vocalists || [];
 
     if (orderId) {
-      // TODO: Update existing KTV order (implement update API later)
-      toast.info("Order update not yet implemented for KTV");
-      return;
+      // Compute delta: only send newly added quantities/items
+      const remoteCounts = {};
+      (remoteOrder?.orderItems || []).forEach((it) => {
+        const key = it?.stockId?._id || it?.stockId;
+        const qty = it?.quantity || 1;
+        if (key) remoteCounts[key] = (remoteCounts[key] || 0) + qty;
+      });
+
+      const deltaItems = [];
+      localItems.forEach((it) => {
+        const key = it.stockId;
+        const prevQty = remoteCounts[key] || 0;
+        const addQty = (it.quantity || 0) - prevQty;
+        if (addQty > 0) {
+          deltaItems.push({ stockId: key, quantity: addQty, notes: it.notes });
+        }
+      });
+
+      if (deltaItems.length === 0) {
+        toast.info("No new items to send");
+        return;
+      }
+
+      const updatePayload = { orderItems: deltaItems };
+      const res = await updateKtvOrder({
+        data: updatePayload,
+        id: orderId,
+      });
+      if (res?.status === "success" || res?.code === 200) {
+        toast.success("KTV order updated successfully");
+        // Keep baseline in sync to avoid resending the same items
+        const syncedOrderItems = localItems.map((it) => ({
+          stockId: it.stockId,
+          quantity: it.quantity,
+          notes: it.notes,
+          price: it.price,
+          stockName: it.name,
+        }));
+        setRemoteOrder((prev) => ({
+          ...(prev || {}),
+          orderItems: syncedOrderItems,
+        }));
+      }
     } else {
       // Create new KTV order
       const payload = {

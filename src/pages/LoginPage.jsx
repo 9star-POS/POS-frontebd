@@ -9,7 +9,7 @@ const LoginPage = () => {
   const { id } = useParams();
   // const { login } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   // const [formData, setFormData] = useState({});
 
@@ -19,10 +19,10 @@ const LoginPage = () => {
 
   const handleLogin = async (formData) => {
     const res = await handleSignIn({ formData, id });
-    if (res.status === "success") {
+    if (res.success) {
       const user = {
-        name: res.data.user.shopName,
-        role: res.data.user.role,
+        name: res.data.admin.name,
+        role: res.data.admin.role,
       };
       localStorage.setItem("bz-user", JSON.stringify(user));
       localStorage.setItem("biz-bozz-token", res.data.token);
@@ -35,31 +35,31 @@ const LoginPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = {
-      phone_number: email,
+      name: name,
       password,
     };
     handleLogin(formData);
   };
 
   return (
-    <div className="flex w-full justify-center mt-20 md:mt-0 h-screen">
+    <div className="flex w-full justify-center items-center mt-20 md:mt-0 h-screen">
       <div className="absolute top-0 left-0">
         <img src={logo} alt="logo" className="w-20 h-20" />
       </div>
-      <div className="w-full mx-0 md:w-[450px] bg-white mdshadow-md rounded-lg p-6 border border-gray-100">
+      <div className="w-full mx-0 md:w-[450px] mdshadow-md rounded-lg p-6 border border-gray-100">
         <h2 className="sub-header font-bold mb-4">Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-bold mb-2" htmlFor="name">
-              Phone
+              Name
             </label>
             <input
               type="text"
-              id="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your phone number"
+              id="name"
+              name="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
               required
               className="block w-full px-3 py-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -91,14 +91,14 @@ const LoginPage = () => {
             Login BIZ BOZZ
           </button>
         </form>
-        <div className="border-b border-gray-500 mt-5"></div>
+        {/* <div className="border-b border-gray-500 mt-5"></div>
         <h2 className="sub-header font-bold mt-5">Don't Have Account?</h2>
         <Link
           to="/signup"
           className="w-full block text-center mt-4 bg-prilight border border-primary text-primary font-bold py-4 rounded hover:bg-pridark transition duration-200"
         >
           Sign Up Biz Bozz
-        </Link>
+        </Link> */}
       </div>
     </div>
   );
