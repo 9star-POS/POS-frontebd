@@ -20,10 +20,10 @@ const User = ({ user }) => {
   };
 
   return (
-    <div className="relative w-48 h-20 flex items-center">
+    <div className="relative w-64 h-20 flex items-center">
       <div
         className={`cursor-pointer transition duration-300 absolute border border-primary rounded-full bg-white flex items-center gap-4 px-4 py-2 z-10 hover:scale-105 ${
-          isOpen ? "-translate-x-[80px]" : "translate-x-0"
+          isOpen ? "-translate-x-[120px]" : "translate-x-0"
         }`}
         onClick={toggleDropdown}
       >

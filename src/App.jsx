@@ -81,7 +81,7 @@ export default function App() {
               <div className="">
                 <User user={user} />
               </div>
-              <button
+              {/* <button
                 type="button"
                 className="relative md:hidden inline-flex items-center p-3 text-sm font-medium text-center text-white bg-primary rounded-lg"
                 onClick={() => setisVisible(!isVisible)}
@@ -96,7 +96,7 @@ export default function App() {
                     {receipts[selectedTable]?.items.length}
                   </div>
                 )}
-              </button>
+              </button> */}
             </div>
           )}
 
