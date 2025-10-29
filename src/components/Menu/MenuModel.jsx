@@ -12,9 +12,12 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
   const [image, setImage] = useState(null);
   const [itemType, setItemType] = useState(menuType || "restaurant");
   const [quantity, setQuantity] = useState("");
+  const [requireCooking, setRequireCooking] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [existingCategories, setExistingCategories] = useState([]);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const categoryInputRef = useRef(null);
   // console.log(dishCategory);
 
@@ -24,6 +27,13 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
       setItemType(menuType);
     }
   }, [menuType]);
+
+  // Clear quantity when requireCooking is enabled
+  useEffect(() => {
+    if (requireCooking) {
+      setQuantity("");
+    }
+  }, [requireCooking]);
 
   // Use passed categories or fetch if not provided
   useEffect(() => {
@@ -75,40 +85,113 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
     setShowCategoryDropdown(false);
   };
 
-  const handleAddDish = async () => {
-    const formData = new FormData();
-    formData.append("name", dishName);
-    formData.append("price", price);
-    // Only append quantity if it has a value
-    if (quantity && quantity.trim() !== "") {
-      formData.append("quantity", quantity);
-    }
-    const chosenCategory =
-      (newCategory && newCategory.trim()) ||
-      dishCategory ||
-      (category && category[0]);
-    if (chosenCategory) {
-      formData.append("category", chosenCategory);
-    }
-    formData.append("type", itemType);
-    if (image) {
-      formData.append("images", image);
-    }
+  const handleClose = () => {
+    setError("");
+    setLoading(false);
+    onClose();
+  };
 
-    const res = await axios.post("api/v1/stock", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    const data = res?.data;
-    if (data?.code === 201) {
-      onClose();
-      setDishName("");
-      setPrice("");
-      setQuantity("");
-      setNewCategory("");
-      setImage(null);
-      // keep selected category as-is
+  // Clear error when user starts typing
+  const clearErrorOnChange = () => {
+    if (error) setError("");
+  };
+
+  const handleAddDish = async () => {
+    // Clear any previous errors
+    setError("");
+    setLoading(true);
+
+    try {
+      // Basic validation
+      if (!dishName.trim()) {
+        setError("Dish name is required");
+        setLoading(false);
+        return;
+      }
+      if (!price.trim()) {
+        setError("Price is required");
+        setLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("name", dishName);
+      formData.append("price", price);
+      // Only append quantity if requireCooking is false and quantity has a value
+      if (!requireCooking && quantity && quantity.trim() !== "") {
+        formData.append("quantity", quantity);
+      }
+      formData.append("requiresCooking", requireCooking);
+      const chosenCategory =
+        (newCategory && newCategory.trim()) ||
+        dishCategory ||
+        (category && category[0]);
+      if (chosenCategory) {
+        formData.append("category", chosenCategory);
+      }
+      formData.append("type", itemType);
+      if (image) {
+        formData.append("images", image);
+      }
+
+      const res = await axios.post("api/v1/stock", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const data = res?.data;
+      if (data?.code === 201) {
+        // Clear all form data and close modal on success
+        setDishName("");
+        setPrice("");
+        setQuantity("");
+        setRequireCooking(false);
+        setNewCategory("");
+        setImage(null);
+        setError("");
+        setLoading(false);
+        onClose();
+        // keep selected category as-is
+      } else {
+        // Handle non-201 success responses
+        setError(data?.message || "Failed to create menu item");
+      }
+    } catch (error) {
+      console.error("Error creating menu item:", error);
+
+      // Handle different error scenarios
+      if (error.response) {
+        // Server responded with error status
+        const errorData = error.response.data;
+        const statusCode = error.response.status;
+
+        if (statusCode === 400) {
+          setError(
+            errorData?.message ||
+              "Invalid input data. Please check your entries."
+          );
+        } else if (statusCode === 401) {
+          setError("You are not authorized to perform this action.");
+        } else if (statusCode === 409) {
+          setError("A menu item with this name already exists.");
+        } else if (statusCode >= 500) {
+          setError("Server error. Please try again later.");
+        } else {
+          setError(
+            errorData?.message ||
+              `Error ${statusCode}: Failed to create menu item`
+          );
+        }
+      } else if (error.request) {
+        // Network error
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        // Other error
+        setError("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,16 +204,18 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
           <h2 className="sub-header">Create Menu</h2>
           <div className="hidden md:flex justify-between gap-5 me-5 mt-4">
             <button
-              onClick={onClose}
-              className="border border-primary w-32 rounded-md px-4 py-2 text-primary hover:bg-primary hover:text-white"
+              onClick={handleClose}
+              disabled={loading}
+              className="border border-primary w-32 rounded-md px-4 py-2 text-primary hover:bg-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleAddDish}
-              className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary"
+              disabled={loading}
+              className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Dish
+              {loading ? "Adding..." : "Add Dish"}
             </button>
           </div>
         </div>
@@ -187,7 +272,10 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
                 <input
                   type="text"
                   value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
+                  onChange={(e) => {
+                    setNewCategory(e.target.value);
+                    clearErrorOnChange();
+                  }}
                   onFocus={() => setShowCategoryDropdown(true)}
                   placeholder="Type a new category or select existing"
                   className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -247,7 +335,10 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
               <input
                 type="text"
                 value={dishName}
-                onChange={(e) => setDishName(e.target.value)}
+                onChange={(e) => {
+                  setDishName(e.target.value);
+                  clearErrorOnChange();
+                }}
                 placeholder="Enter Your Dish Name"
                 className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
@@ -258,7 +349,10 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
                 <input
                   type="text"
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onChange={(e) => {
+                    setPrice(e.target.value);
+                    clearErrorOnChange();
+                  }}
                   placeholder="Enter Your Price"
                   className="border border-primary rounded-md p-2 w-full pr-16 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
@@ -268,35 +362,64 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Quantity{" "}
-                <span className="text-gray-500 text-xs">(Optional)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="Enter Quantity (Optional)"
-                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="requireCooking"
+                  checked={requireCooking}
+                  onChange={(e) => setRequireCooking(e.target.checked)}
+                  className="mr-2 h-4 w-4 text-primary focus:ring-primary border-primary rounded"
+                />
+                <label htmlFor="requireCooking" className="text-sm font-medium">
+                  Requires Cooking
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Check this if the item needs to be prepared/cooked
+              </p>
             </div>
+            {!requireCooking && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Quantity{" "}
+                  <span className="text-gray-500 text-xs">(Optional)</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={quantity}
+                  onChange={(e) => {
+                    setQuantity(e.target.value);
+                    clearErrorOnChange();
+                  }}
+                  placeholder="Enter Quantity (Optional)"
+                  className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            )}
           </div>
         </div>
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
         <div className="flex justify-between mt-4 md:hidden">
           <button
-            onClick={onClose}
-            className="border border-primary w-32 rounded-md px-4 py-2 text-primary hover:bg-primary hover:text-white"
+            onClick={handleClose}
+            disabled={loading}
+            className="border border-primary w-32 rounded-md px-4 py-2 text-primary hover:bg-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleAddDish}
-            className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary"
+            disabled={loading}
+            className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Dish
+            {loading ? "Adding..." : "Add Dish"}
           </button>
         </div>
       </div>

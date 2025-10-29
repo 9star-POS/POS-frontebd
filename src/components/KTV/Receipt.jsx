@@ -260,14 +260,18 @@ function Receipt({ onClose }) {
   };
 
   const handlePayment = () => {
-    if (!selectedRoom || !receipts[selectedRoom]?.items?.length) {
+    // Allow checkout if we have a room selected and either items, room service, or vocalists
+    if (
+      !selectedRoom ||
+      (!hasLocalItems && !hasLocalRoomService && !hasLocalVocalists)
+    ) {
       return;
     }
 
     const orderData = {
       table: selectedRoom,
-      orderType: receipts[selectedRoom].orderType,
-      orders: receipts[selectedRoom].items.map((item) => ({
+      orderType: receipts[selectedRoom]?.orderType || "KTV",
+      orders: (receipts[selectedRoom]?.items || []).map((item) => ({
         dishName: item.name,
         price: item.price,
         quantity: item.quantity || 1,
@@ -340,9 +344,14 @@ function Receipt({ onClose }) {
     const hasVocalists = receipts[selectedRoom]?.vocalists?.length > 0;
 
     // For first order (no orderId), allow sending only room service
-    // For existing orders (has orderId), require items or vocalists
-    if (!selectedRoom || (orderId && !hasItems && !hasVocalists)) {
-      toast.warning("Please add items or vocalists to send");
+    // For existing orders (has orderId), allow room service updates or require items/vocalists
+    const hasRoomServiceUpdates =
+      selectedRoom && receipts[selectedRoom]?.roomService;
+    if (
+      !selectedRoom ||
+      (orderId && !hasItems && !hasVocalists && !hasRoomServiceUpdates)
+    ) {
+      toast.warning("Please add items, vocalists, or room service to send");
       return;
     }
 
@@ -870,7 +879,7 @@ function Receipt({ onClose }) {
                   Payment
                 </button>
               </div> */}
-              {(hasLocalItems || (!orderId && roomServiceId)) && (
+              {(hasLocalItems || roomServiceId || orderId) && (
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={sendKitchen}
