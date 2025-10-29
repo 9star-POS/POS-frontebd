@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { RefreshCw, ChefHat, AlertCircle } from "lucide-react";
 import getKitchenOrders from "../api/Kitchen/getKitchenOrders";
-import KitchenOrderCard from "../components/Kitchen/KitchenOrderCard";
+import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const KitchenPage = () => {
@@ -10,8 +10,9 @@ const KitchenPage = () => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "pending", "ready"
+  const [updatingItems, setUpdatingItems] = useState(new Set()); // Track items being updated
 
-  // Transform flat API data into grouped structure
+  // Transform flat API data into simple list structure
   const transformKitchenData = (apiData) => {
     if (!Array.isArray(apiData)) return [];
 
@@ -21,66 +22,78 @@ const KitchenPage = () => {
         ? apiData
         : apiData.filter((item) => item.kitchenStatus === statusFilter);
 
-    // Group items by stockName (dish name)
-    const grouped = filteredData.reduce((acc, item) => {
-      const key = item.stockName;
-      if (!acc[key]) {
-        acc[key] = {
-          stockName: item.stockName,
-          stockId: item.orderItemId, // Use orderItemId as fallback
-          category: `${item.stockName} Orders`, // Better category naming
-          orders: [],
-          totalQuantity: 0,
-          unitPrice: 0, // We'll calculate this from first order
-          totalPrice: 0,
-        };
-      }
+    // Transform each item into order item structure
+    return filteredData.map((item) => ({
+      id: item.orderItemId, // Unique identifier for checkboxes
+      orderId: item.orderId,
+      orderItemId: item.orderItemId,
+      stockName: item.stockName,
+      quantity: item.quantity,
+      kitchenStatus: item.kitchenStatus,
+      notes: item.notes,
+      orderType: item.orderType,
+      createdAt: item.createdAt || new Date().toISOString(),
+      requiresCooking: item.requiresCooking,
+      // Additional display fields
+      orderDisplay: `${item.orderType.toUpperCase()} #${item.orderId.slice(
+        -6
+      )}`,
+      statusColor:
+        item.kitchenStatus === "pending"
+          ? "orange"
+          : item.kitchenStatus === "ready"
+          ? "green"
+          : "gray",
+    }));
+  };
 
-      // Add order to the group
-      acc[key].orders.push({
-        orderId: item.orderId,
-        orderItemId: item.orderItemId,
-        quantity: item.quantity,
-        kitchenStatus: item.kitchenStatus,
-        notes: item.notes,
-        orderType: item.orderType,
-        orderCreatedAt: item.createdAt || new Date().toISOString(),
-        userName: `${item.orderType.toUpperCase()} #${item.orderId.slice(-6)}`,
-        tableNumber: item.orderType === "restaurant" ? "Table N/A" : undefined,
-        roomNumber: item.orderType === "ktv" ? "Room N/A" : undefined,
-        itemIndex: acc[key].orders.length + 1,
+  // Individual item status update
+  const handleItemStatusToggle = async (item) => {
+    // Prevent multiple simultaneous updates for the same item
+    if (updatingItems.has(item.id)) return;
+
+    try {
+      const newStatus = item.kitchenStatus === "ready" ? "pending" : "ready";
+
+      // Add item to updating set to show loading state
+      setUpdatingItems((prev) => new Set([...prev, item.id]));
+
+      console.log(`Updating item ${item.orderItemId} to status: ${newStatus}`);
+
+      // Call the actual API to update item status
+      const response = await updateKitchenItemStatus(
+        item.orderId,
+        item.orderType,
+        item.orderItemId,
+        newStatus
+      );
+
+      if (response.status === "success" || response.code === 200) {
+        // Update local state immediately for better UX
+        const updatedOrders = orders.map((order) =>
+          order.id === item.id ? { ...order, kitchenStatus: newStatus } : order
+        );
+        setOrders(updatedOrders);
+
+        // Clear any existing errors
+        setError(null);
+
+        // Optionally refresh from server to ensure consistency
+        // fetchOrders(true);
+      } else {
+        setError(response.message || "Failed to update item status");
+      }
+    } catch (error) {
+      console.error("Error updating item status:", error);
+      setError("Failed to update item status. Please try again.");
+    } finally {
+      // Remove item from updating set
+      setUpdatingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
       });
-
-      // Update totals
-      acc[key].totalQuantity += item.quantity;
-      // Assume a default price if not provided
-      acc[key].unitPrice = acc[key].unitPrice || 1000; // Default 1000 MMK
-      acc[key].totalPrice = acc[key].totalQuantity * acc[key].unitPrice;
-
-      return acc;
-    }, {});
-
-    // Convert to array and group by category (using stockName as category)
-    const itemsArray = Object.values(grouped);
-    const categoriesMap = itemsArray.reduce((acc, item) => {
-      const categoryName = item.category;
-      if (!acc[categoryName]) {
-        acc[categoryName] = {
-          category: categoryName,
-          items: [],
-          totalItems: 0,
-          totalQuantity: 0,
-        };
-      }
-
-      acc[categoryName].items.push(item);
-      acc[categoryName].totalItems += 1;
-      acc[categoryName].totalQuantity += item.totalQuantity;
-
-      return acc;
-    }, {});
-
-    return Object.values(categoriesMap);
+    }
   };
 
   const fetchOrders = async (isRefresh = false) => {
@@ -120,14 +133,19 @@ const KitchenPage = () => {
   }, [statusFilter]); // Re-fetch when filter changes
 
   const getTotalItems = () => {
-    return orders.reduce((total, category) => total + category.totalItems, 0);
+    return orders.length;
   };
 
   const getTotalQuantity = () => {
-    return orders.reduce(
-      (total, category) => total + category.totalQuantity,
-      0
-    );
+    return orders.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const getPendingCount = () => {
+    return orders.filter((item) => item.kitchenStatus === "pending").length;
+  };
+
+  const getReadyCount = () => {
+    return orders.filter((item) => item.kitchenStatus === "ready").length;
   };
 
   if (loading) {
@@ -168,41 +186,49 @@ const KitchenPage = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="text-sm text-blue-600 font-medium mb-1">
-              Categories
-            </div>
-            <div className="text-2xl font-bold text-blue-700">
-              {orders.length}
-            </div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-sm text-green-600 font-medium mb-1">
               Total Items
             </div>
-            <div className="text-2xl font-bold text-green-700">
+            <div className="text-2xl font-bold text-blue-700">
               {getTotalItems()}
             </div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-4 col-span-2 md:col-span-1">
+          <div className="bg-orange-50 rounded-lg p-4">
             <div className="text-sm text-orange-600 font-medium mb-1">
-              Total Quantity
+              Pending
             </div>
             <div className="text-2xl font-bold text-orange-700">
+              {getPendingCount()}
+            </div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="text-sm text-green-600 font-medium mb-1">Ready</div>
+            <div className="text-2xl font-bold text-green-700">
+              {getReadyCount()}
+            </div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-4">
+            <div className="text-sm text-purple-600 font-medium mb-1">
+              Total Quantity
+            </div>
+            <div className="text-2xl font-bold text-purple-700">
               {getTotalQuantity()}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Status Filter */}
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
           <h3 className="text-lg font-semibold text-gray-800">
-            Filter by Status
+            Kitchen Orders - Check items when ready
           </h3>
         </div>
+
+        {/* Status Filters */}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setStatusFilter("all")}
@@ -248,44 +274,136 @@ const KitchenPage = () => {
         </div>
       )}
 
-      {/* Orders by Category */}
+      {/* Order Items List */}
       {orders.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <ChefHat size={64} className="text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 mb-2">
-            No Pending Orders
+            No Kitchen Orders
           </h3>
           <p className="text-gray-500">
             All orders have been completed or there are no new orders yet.
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {orders.map((category, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-lg shadow-md p-4 md:p-6"
-            >
-              <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-gray-800 capitalize">
-                    {category.category}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {category.totalItems} item
-                    {category.totalItems > 1 ? "s" : ""} •{" "}
-                    {category.totalQuantity} total quantity
-                  </p>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          {/* Order Items */}
+          <div className="divide-y divide-gray-200">
+            {orders.map((item, index) => (
+              <div
+                key={item.id}
+                className={`p-4 hover:bg-gray-50 transition-colors ${
+                  item.kitchenStatus === "ready" ? "bg-green-50" : ""
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Ready Checkbox with Label */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={item.kitchenStatus === "ready"}
+                        onChange={() => handleItemStatusToggle(item)}
+                        disabled={updatingItems.has(item.id)}
+                        className={`w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 ${
+                          updatingItems.has(item.id)
+                            ? "opacity-50 cursor-not-allowed"
+                            : "cursor-pointer"
+                        }`}
+                        title={
+                          updatingItems.has(item.id)
+                            ? "Updating..."
+                            : item.kitchenStatus === "ready"
+                            ? "Mark as pending"
+                            : "Mark as ready"
+                        }
+                      />
+                      {updatingItems.has(item.id) && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500 text-center">
+                      {updatingItems.has(item.id)
+                        ? "Updating..."
+                        : item.kitchenStatus === "ready"
+                        ? "Ready"
+                        : "Cook"}
+                    </span>
+                  </div>
+
+                  {/* Item Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {item.stockName}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {item.orderDisplay}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold text-gray-900">
+                          {item.quantity}x
+                        </span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            item.kitchenStatus === "pending"
+                              ? "bg-orange-100 text-orange-800"
+                              : item.kitchenStatus === "ready"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {item.kitchenStatus.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Additional Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
+                      <div>
+                        <span className="font-medium">Order Type:</span>{" "}
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            item.orderType === "restaurant"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {item.orderType.toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Order ID:</span>{" "}
+                        <span className="font-mono text-xs">
+                          #{item.orderId.slice(-8)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Time:</span>{" "}
+                        {new Date(item.createdAt).toLocaleTimeString()}
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    {item.notes && (
+                      <div className="mt-2 p-2 bg-yellow-50 rounded-md">
+                        <span className="text-sm font-medium text-yellow-800">
+                          📝 Note:
+                        </span>
+                        <span className="text-sm text-yellow-700 ml-1">
+                          {item.notes}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                {category.items.map((item, itemIndex) => (
-                  <KitchenOrderCard key={itemIndex} item={item} />
-                ))}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
