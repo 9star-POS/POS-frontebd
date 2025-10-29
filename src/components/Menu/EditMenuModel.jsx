@@ -1,14 +1,53 @@
-// CreateMenu.js
-import { useState } from "react";
+// EditMenu.js
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import updateMenu from "../../api/Menu/UpdateItem";
 import axios from "../../api/axios";
+import defaultMenu from "./../../assets/defaultMenu.jpg";
+import getItems from "../../api/Menu/getItems";
 
 const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
-  const [dishCategory, setDishCategory] = useState("Western");
   const [dishName, setDishName] = useState(menu.name);
   const [price, setPrice] = useState(menu.price.toString());
   const [image, setImage] = useState(null);
+  const [itemType, setItemType] = useState(menu.type || "restaurant");
+  const [quantity, setQuantity] = useState(menu.quantity?.toString() || "");
+  const [newCategory, setNewCategory] = useState(menu.category || "");
+  const [existingCategories, setExistingCategories] = useState([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const categoryInputRef = useRef(null);
+
+  // Fetch categories when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCategories = async () => {
+        const res = await getItems();
+        if (res.status === "success") {
+          const filteredMenus = res.data.filter(
+            (menuItem) => menuItem.type === itemType
+          );
+          const cats = [
+            ...new Set(filteredMenus.map((menuItem) => menuItem.category)),
+          ].filter(Boolean);
+          setExistingCategories(cats);
+        }
+      };
+      fetchCategories();
+    }
+  }, [isOpen, itemType]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        categoryInputRef.current &&
+        !categoryInputRef.current.contains(event.target)
+      ) {
+        setShowCategoryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleImageUpload = (e) => {
     setImage(e.target.files[0]);
@@ -18,51 +57,59 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     setImage(null); // Clear the image state
   };
 
+  const handleCategorySelect = (selectedCat) => {
+    setNewCategory(selectedCat);
+    setShowCategoryDropdown(false);
+  };
+
   const handleEditDish = async () => {
     const formData = new FormData();
     formData.append("name", dishName);
     formData.append("price", price);
+
+    // Only append quantity if it has a value
+    if (quantity && quantity.trim() !== "") {
+      formData.append("quantity", quantity);
+    }
+
+    const chosenCategory = newCategory && newCategory.trim();
+    if (chosenCategory) {
+      formData.append("category", chosenCategory);
+    }
+
+    formData.append("type", itemType);
+
     if (image) {
       formData.append("images", image);
     }
-    console.log(formData);
-    const res = await axios.patch(`api/v1/stock/${menu._id}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    console.log(res);
-    setImage(null);
-    onClose();
-    // Refresh menu list after successful edit
-    if (refreshMenu) {
-      refreshMenu();
+
+    try {
+      const res = await axios.patch(`api/v1/stock/${menu._id}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (res?.data?.code === 200 || res?.status === 200) {
+        setImage(null);
+        onClose();
+
+        // Refresh menu list after successful edit
+        if (refreshMenu) {
+          refreshMenu();
+        }
+      }
+    } catch (error) {
+      console.error("Error updating menu:", error);
     }
-    // Handle editing the dish here
-    console.log("Dish Edited:", { dishCategory, dishName, price, image });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
-      <div className="border border-gray-300 shadow-lg py-5 px-10 rounded-md bg-white h-full md:h-auto overflow-y-auto">
-        {/* <h2 className="text-xl font-semibold mb-4">Create Menu</h2>
-        <div className="flex justify-between gap-5 me-5 mt-4 absolute top-0 right-0">
-          <button
-            onClick={onClose}
-            className="border border-gray-300 w-32 rounded-md px-4 py-2 text-gray-700 hover:bg-gray-100"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAddDish}
-            className="bg-black text-white w-32 rounded-md px-4 py-2 hover:bg-blue-700"
-          >
-            Edit Dish
-          </button>
-        </div> */}
-        <div className="flex justify-between">
+    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
+      <div className="border border-gray-300 shadow-lg py-6 px-6 md:px-8 rounded-md bg-white w-full max-w-5xl h-full md:h-auto overflow-y-auto">
+        <div className="flex items-start justify-between">
           <h2 className="sub-header">Edit Menu</h2>
           <div className="hidden md:flex justify-between gap-5 me-5 mt-4">
             <button
@@ -79,12 +126,12 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
             </button>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row gap-5 mt-5">
-          <div className="w-full md:w-1/2">
-            <div className="mb-4">
-              <div className="">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+          <div className="w-full">
+            <div className="space-y-3">
+              <div className="relative w-full h-56 md:h-80 border border-primary rounded-md mb-2 flex items-center justify-center overflow-hidden bg-white">
                 {image ? (
-                  <div className="relative md:w-[300px] h-48 border border-primary rounded-md mb-2 flex items-center justify-center">
+                  <>
                     <img
                       src={URL.createObjectURL(image)}
                       alt="Dish"
@@ -98,19 +145,23 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                     >
                       ×
                     </button>
-                  </div>
+                  </>
                 ) : (
-                  <div className="relative md:w-[300px] h-48 border border-primary rounded-md mb-2 flex items-center justify-center overflow-hidden">
-                    {menu.stockImagesUrl[0].url ? (
+                  <>
+                    {menu.stockImagesUrl && menu.stockImagesUrl[0]?.url ? (
                       <img
                         src={menu.stockImagesUrl[0].url}
                         alt="Dish"
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-gray-400">No Image Uploaded</span>
+                      <img
+                        src={defaultMenu}
+                        alt="Dish"
+                        className="w-full h-full object-cover"
+                      />
                     )}
-                  </div>
+                  </>
                 )}
               </div>
               <input
@@ -120,20 +171,77 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                 accept="image/*"
                 className="hidden"
               />
-              <div className="flex justify-between items-center border border-primary rounded-md">
-                <p className="ms-2 font-medium text-primary">
-                  Upload Dish Image
-                </p>
+              <div className="flex items-center justify-between border border-primary rounded-md px-3 py-2">
+                <p className="font-medium text-primary">Upload Dish Image</p>
                 <label
                   htmlFor="file-upload"
-                  className="cursor-pointer text-white bg-primary text-sm rounded-md px-4 py-1 m-2 text-center hover:bg-prilight hover:text-white border boder-primary transition"
+                  className="cursor-pointer text-white bg-primary text-sm rounded-md px-4 py-1 text-center hover:bg-prilight hover:text-white border boder-primary transition"
                 >
                   Upload
                 </label>
               </div>
             </div>
           </div>
-          <div className="w-full md:w-1/2">
+          <div className="w-full">
+            <div className="mb-4" ref={categoryInputRef}>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  onFocus={() => setShowCategoryDropdown(true)}
+                  placeholder="Type a new category or select existing"
+                  className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                {showCategoryDropdown && existingCategories.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    <div className="p-2">
+                      <p className="text-xs text-gray-500 mb-2 font-semibold">
+                        Existing Categories:
+                      </p>
+                      {existingCategories.map((cat, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleCategorySelect(cat)}
+                          className="w-full text-left px-3 py-2 hover:bg-prilight hover:text-primary rounded-md transition-colors"
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Type</label>
+              <div className="inline-grid grid-cols-2 rounded-md border border-primary overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setItemType("restaurant")}
+                  className={`px-4 py-1 transition ${
+                    itemType === "restaurant"
+                      ? "bg-primary text-white"
+                      : "bg-white text-primary"
+                  }`}
+                >
+                  Restaurant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItemType("ktv")}
+                  className={`px-4 py-1 border-l border-primary transition ${
+                    itemType === "ktv"
+                      ? "bg-primary text-white"
+                      : "bg-white text-primary"
+                  }`}
+                >
+                  KTV
+                </button>
+              </div>
+            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">
                 Dish Name
@@ -143,23 +251,39 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                 value={dishName}
                 onChange={(e) => setDishName(e.target.value)}
                 placeholder="Enter Your Dish Name"
-                className="border border-primary rounded-md p-2 w-full"
+                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Price</label>
-              <div className="flex">
+              <div className="relative">
                 <input
                   type="text"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="Enter Your Price"
-                  className="border border-primary rounded-md p-2 flex-grow"
+                  className="border border-primary rounded-md p-2 w-full pr-16 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
-                <span className="border border-primary rounded-md p-2 ml-2">
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 border border-primary rounded-md px-3 py-1 text-sm">
                   MMK
                 </span>
               </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Quantity{" "}
+                <span className="text-gray-500 text-xs">(Optional)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="Enter Quantity (Optional)"
+                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
             </div>
           </div>
         </div>

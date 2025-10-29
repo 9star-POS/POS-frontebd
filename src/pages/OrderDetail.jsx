@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
 import getRestaurantOrderById from "../api/Order/getRestaurantOrderById";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, CreditCard, Receipt } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  CreditCard,
+  Receipt,
+  Edit,
+} from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useDispatch } from "react-redux";
+import { selectRoom } from "../redux/ktvReceiptSlice";
+import { selectTable } from "../redux/receiptSlice";
 
 function OrderDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,6 +88,26 @@ function OrderDetail() {
     }
   };
 
+  // Check if this is a KTV order
+  const isKtvOrder = () => {
+    return order && order.roomService && order.roomService.roomNumber;
+  };
+
+  // Handle edit order (both restaurant and KTV)
+  const handleEditOrder = () => {
+    if (isKtvOrder()) {
+      // KTV Order - redirect to KTV page
+      const roomNumber = order.roomService.roomNumber;
+      dispatch(selectRoom(roomNumber));
+      navigate("/ktv");
+    } else {
+      // Restaurant Order - redirect to homepage
+      const tableNumber = order.tableNumber;
+      dispatch(selectTable(tableNumber));
+      navigate("/");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -132,8 +164,11 @@ function OrderDetail() {
             <div>
               <h1 className="text-3xl font-bold mb-2">Order Details</h1>
               <p className="text-white">Order ID: {order._id}</p>
+              <p className="text-blue-200 text-sm mt-1">
+                {isKtvOrder() ? "KTV Room Service Order" : "Restaurant Order"}
+              </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <span
                 className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(
                   order.status
@@ -141,6 +176,13 @@ function OrderDetail() {
               >
                 {order.status.toUpperCase()}
               </span>
+              {/* <button
+                onClick={handleEditOrder}
+                className="bg-white text-primary px-4 py-2 rounded-full font-semibold text-sm border-2 border-primary hover:bg-primary hover:text-white transition-colors duration-200 flex items-center gap-2"
+              >
+                <Edit size={16} />
+                Edit Order
+              </button> */}
             </div>
           </div>
         </div>
@@ -150,10 +192,14 @@ function OrderDetail() {
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <Receipt className="text-primary" size={24} />
-              <h3 className="font-semibold text-lg">Table Number</h3>
+              <h3 className="font-semibold text-lg">
+                {isKtvOrder() ? "Room Number" : "Table Number"}
+              </h3>
             </div>
             <p className="text-2xl font-bold text-gray-800">
-              Table {order.tableNumber}
+              {isKtvOrder()
+                ? `Room ${order.roomService.roomNumber}`
+                : `Table ${order.tableNumber}`}
             </p>
           </div>
 

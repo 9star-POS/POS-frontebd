@@ -115,7 +115,7 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80">
+    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
       <div className="border border-gray-300 shadow-lg py-6 px-6 md:px-8 rounded-md bg-white w-full max-w-5xl h-full md:h-auto overflow-y-auto">
         <div className="flex items-start justify-between">
           <h2 className="sub-header">Create Menu</h2>
