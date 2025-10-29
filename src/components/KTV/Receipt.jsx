@@ -27,6 +27,7 @@ import sendKtvOrder from "../../api/KTV/sendKtvOrder";
 import getRoomService from "../../api/KTV/getRoomService";
 import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 import updateKtvOrder from "../../api/KTV/updateKtvOrder";
+import TimestampFormatter from "../Orders/TimestampFormatter";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -39,6 +40,7 @@ function Receipt({ onClose }) {
   const [remoteOrder, setRemoteOrder] = useState(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [roomServiceId, setRoomServiceId] = useState(null);
+  const [localCreationTime, setLocalCreationTime] = useState(null);
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -140,9 +142,10 @@ function Receipt({ onClose }) {
     fetchOrdersForTable();
   }, [selectedRoom]);
 
-  // Reset roomServiceId when room changes
+  // Reset roomServiceId and localCreationTime when room changes
   useEffect(() => {
     setRoomServiceId(null);
+    setLocalCreationTime(null);
   }, [selectedRoom]);
 
   // Fetch room service ID when room is selected and no order exists
@@ -336,7 +339,9 @@ function Receipt({ onClose }) {
     const hasItems = receipts[selectedRoom]?.items?.length > 0;
     const hasVocalists = receipts[selectedRoom]?.vocalists?.length > 0;
 
-    if (!selectedRoom || (!hasItems && !hasVocalists)) {
+    // For first order (no orderId), allow sending only room service
+    // For existing orders (has orderId), require items or vocalists
+    if (!selectedRoom || (orderId && !hasItems && !hasVocalists)) {
       toast.warning("Please add items or vocalists to send");
       return;
     }
@@ -403,13 +408,20 @@ function Receipt({ onClose }) {
         }));
       }
     } else {
+      // Set creation time immediately for immediate display
+      const creationTime = new Date().toISOString();
+      setLocalCreationTime(creationTime);
+
       // Create new KTV order
       const payload = {
-        orderItems: localItems.map((it) => ({
-          stockId: it.stockId,
-          quantity: it.quantity,
-          notes: it.notes,
-        })),
+        orderItems:
+          localItems.length > 0
+            ? localItems.map((it) => ({
+                stockId: it.stockId,
+                quantity: it.quantity,
+                notes: it.notes,
+              }))
+            : null,
         roomService: {
           roomServiceId: roomServiceId,
         },
@@ -423,7 +435,12 @@ function Receipt({ onClose }) {
 
       const res = await sendKtvOrder(payload);
       if (res?.status === "success" || res?.code === 201) {
-        toast.success("KTV order sent to kitchen successfully");
+        const hasItemsOrVocalists =
+          localItems.length > 0 || localVocalists.length > 0;
+        const successMessage = hasItemsOrVocalists
+          ? "KTV order sent to kitchen successfully"
+          : "Room service initiated successfully";
+        toast.success(successMessage);
         const newOrderId = res?.data?._id;
         setOrderId(newOrderId);
         setRoomServiceId(res?.data?.roomService?.roomServiceId);
@@ -434,7 +451,15 @@ function Receipt({ onClose }) {
         }
 
         // Update remote order state with full response
-        setRemoteOrder(res?.data);
+        setRemoteOrder({
+          ...res?.data,
+          createdAt: res?.data?.createdAt || creationTime,
+        });
+
+        // Clear local creation time since we now have remote data
+        if (res?.data?.createdAt) {
+          setLocalCreationTime(null);
+        }
 
         // Sync local state with server response
         if (res?.data?.orderItems) {
@@ -552,12 +577,31 @@ function Receipt({ onClose }) {
 
         {selectedRoom && (hasLocalData || remoteOrder) && (
           <div className="flex flex-col h-[calc(100vh-10rem)]">
-            {/* <div className="flex justify-between items-center mb-3">
-              <p className="text-gray-500">Room {selectedRoom}</p>
-              <p className="text-gray-500">
-                {receipts[selectedRoom].orderType}
-              </p>
-            </div> */}
+            <div className="flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-lg">
+              <div>
+                <p className="text-gray-800 font-medium">Room {selectedRoom}</p>
+                {(remoteOrder?.createdAt || localCreationTime) && (
+                  <p className="text-gray-500 text-sm">
+                    Started:{" "}
+                    <TimestampFormatter
+                      timestamp={remoteOrder?.createdAt || localCreationTime}
+                    />
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-gray-500 text-sm">
+                  {receipts[selectedRoom]?.orderType || "KTV"}
+                </p>
+                {(remoteOrder?.createdAt || localCreationTime) && (
+                  <p className="text-gray-500 text-sm">
+                    {new Date(
+                      remoteOrder?.createdAt || localCreationTime
+                    ).toLocaleDateString("en-GB")}
+                  </p>
+                )}
+              </div>
+            </div>
 
             <div className="flex-1 overflow-y-auto mb-5 space-y-4">
               {receipts[selectedRoom].items.map((item, index) => (
@@ -826,7 +870,7 @@ function Receipt({ onClose }) {
                   Payment
                 </button>
               </div> */}
-              {hasLocalItems && (
+              {(hasLocalItems || (!orderId && roomServiceId)) && (
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={sendKitchen}
