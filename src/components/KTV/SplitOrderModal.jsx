@@ -97,28 +97,32 @@ function SplitOrderModal({ isOpen, onClose, items = [], currency = "MMK" }) {
                     {item.quantity || 1}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                    onClick={() => decrementQty(idx)}
-                    disabled={!s.selected}
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span className="min-w-[28px] text-center font-medium">
-                    {qty}
-                  </span>
-                  <button
-                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                    onClick={() => incrementQty(idx)}
-                    disabled={!s.selected || qty >= maxQty}
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-                <div className="min-w-[90px] text-right font-medium">
-                  {(Number(item.price || 0) * qty).toLocaleString()} {currency}
-                </div>
+                {s.selected && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                        onClick={() => decrementQty(idx)}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="min-w-[28px] text-center font-medium">
+                        {qty}
+                      </span>
+                      <button
+                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                        onClick={() => incrementQty(idx)}
+                        disabled={qty >= maxQty}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <div className="min-w-[90px] text-right font-medium">
+                      {(Number(item.price || 0) * qty).toLocaleString()}{" "}
+                      {currency}
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}

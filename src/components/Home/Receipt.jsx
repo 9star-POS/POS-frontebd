@@ -17,6 +17,7 @@ import getRestaurantOrders from "../../api/Order/getRestaurantOrders";
 import { setItemsForTable } from "./../../redux/receiptSlice";
 import updateKitchenOrder from "../../api/Order/updatetokitchenorder";
 import checkoutOrder from "../../api/Order/checkout";
+import SplitOrderModal from "../KTV/SplitOrderModal";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -28,6 +29,7 @@ function Receipt({ onClose }) {
   const [orderId, setOrderId] = useState(null);
   const [remoteOrder, setRemoteOrder] = useState(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -310,6 +312,14 @@ function Receipt({ onClose }) {
           >
             Save
           </button>
+          {hasLocalItems && (
+            <button
+              onClick={() => setIsSplitOpen(true)}
+              className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+            >
+              Split Order
+            </button>
+          )}
         </div>
 
         {!selectedTable && (
@@ -440,6 +450,12 @@ function Receipt({ onClose }) {
                   >
                     Send to Kitchen
                   </button>
+                  <button
+                    onClick={() => setIsSplitOpen(true)}
+                    className="flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                  >
+                    Split Order
+                  </button>
                   {orderId && (
                     <button
                       // onClick={handleCheckout}
@@ -461,6 +477,14 @@ function Receipt({ onClose }) {
           total={calculateTotal()}
           onClose={() => setIsCalculatorOpen(false)}
           onConfirm={handleCalculatorConfirm}
+        />
+      )}
+      {isSplitOpen && (
+        <SplitOrderModal
+          isOpen={isSplitOpen}
+          onClose={() => setIsSplitOpen(false)}
+          items={receipts[selectedTable]?.items || []}
+          currency="MMK"
         />
       )}
     </div>
