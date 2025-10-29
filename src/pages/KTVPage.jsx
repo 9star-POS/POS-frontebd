@@ -7,9 +7,11 @@ import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import { useSelector } from "react-redux";
 import VocalistModal from "../components/KTV/VocalistModal";
-import { UserPlus } from "lucide-react";
+import { MoveLeft, UserPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function KTVPage() {
+  const navigate = useNavigate();
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
   const [isVisible, setisVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -72,6 +74,11 @@ function KTVPage() {
         <div className="flex flex-col h-[calc(100vh-110px)]  md:flex-row">
           <div className="w-screen md:w-1/2 lg:w-2/3 overflow-y-auto min-h-screen px-5 pt-2 overflow-x-hidden">
             <div className="flex gap-4 items-center mb-5 flex-wrap">
+              <MoveLeft
+                size={20}
+                className="cursor-pointer"
+                onClick={() => navigate("/ktv")}
+              />
               <span className="sub-header">Menu</span>
               <span className="text-gray-500">
                 ( Ordering for room {selectedRoom} )

@@ -6,11 +6,14 @@ import getItems from "../api/Menu/getItems";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import { useSelector } from "react-redux";
+import { MoveLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 // import TablePage from "../components/Home/TablePage";
 // import { useNavigate } from "react-router-dom";
 // import { selectTable, addItemToReceipt } from "./../redux/receiptS
 
 function HomePage() {
+  const navigate = useNavigate();
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const [isVisible, setisVisible] = useState(false);
   // const navigate = useNavigate();
@@ -72,7 +75,12 @@ function HomePage() {
         {/* <TablePage tables={tables} /> */}
         <div className="flex flex-col h-[calc(100vh-110px)]  md:flex-row">
           <div className="w-screen md:w-1/2 lg:w-2/3 overflow-y-auto min-h-screen px-5 pt-2 overflow-x-hidden">
-            <div className="flex gap-10 items-center mb-5 ">
+            <div className="flex gap-5 items-center mb-5 ">
+              <MoveLeft
+                size={20}
+                className="cursor-pointer"
+                onClick={() => navigate("/")}
+              />
               <span className="sub-header">Menu</span>
               <span className="text-gray-500">
                 ( Ordering for table {selectedTable} )
