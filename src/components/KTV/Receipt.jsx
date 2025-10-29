@@ -28,6 +28,7 @@ import getRoomService from "../../api/KTV/getRoomService";
 import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 import updateKtvOrder from "../../api/KTV/updateKtvOrder";
 import TimestampFormatter from "../Orders/TimestampFormatter";
+import SplitOrderModal from "./SplitOrderModal";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -42,6 +43,7 @@ function Receipt({ onClose }) {
   const [roomServiceId, setRoomServiceId] = useState(null);
   const [localCreationTime, setLocalCreationTime] = useState(null);
 
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
   useEffect(() => {
     const fetchOrdersForTable = async () => {
       if (!selectedRoom) {
@@ -559,7 +561,7 @@ function Receipt({ onClose }) {
 
   return (
     <div className="text-black h-screen px-3 pt-0">
-      <div className="pt-2">
+      <div className="pt-2 h-full">
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
           <button
@@ -568,6 +570,14 @@ function Receipt({ onClose }) {
           >
             Save
           </button>
+          {hasLocalItems && (
+            <button
+              onClick={() => setIsSplitOpen(true)}
+              className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+            >
+              Split Order
+            </button>
+          )}
         </div>
 
         {!selectedRoom && (
@@ -880,13 +890,21 @@ function Receipt({ onClose }) {
                 </button>
               </div> */}
               {(hasLocalItems || roomServiceId || orderId) && (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 ">
                   <button
                     onClick={sendKitchen}
                     className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                   >
                     Send to Kitchen
                   </button>
+                  {hasLocalItems && (
+                    <button
+                      onClick={() => setIsSplitOpen(true)}
+                      className=" flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      Split Order
+                    </button>
+                  )}
                   {orderId && (
                     <button
                       // onClick={handleCheckout}
@@ -908,6 +926,14 @@ function Receipt({ onClose }) {
           total={calculateTotal()}
           onClose={() => setIsCalculatorOpen(false)}
           onConfirm={handleCalculatorConfirm}
+        />
+      )}
+      {isSplitOpen && (
+        <SplitOrderModal
+          isOpen={isSplitOpen}
+          onClose={() => setIsSplitOpen(false)}
+          items={receipts[selectedRoom]?.items || []}
+          currency="MMK"
         />
       )}
     </div>
