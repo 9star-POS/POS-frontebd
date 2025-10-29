@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { RefreshCw, ChefHat, AlertCircle } from "lucide-react";
-import getPendingOrders from "../api/Kitchen/getPendingOrders";
+import getKitchenOrders from "../api/Kitchen/getKitchenOrders";
 import KitchenOrderCard from "../components/Kitchen/KitchenOrderCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 
@@ -9,6 +9,79 @@ const KitchenPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "pending", "ready"
+
+  // Transform flat API data into grouped structure
+  const transformKitchenData = (apiData) => {
+    if (!Array.isArray(apiData)) return [];
+
+    // Filter by status if needed
+    const filteredData =
+      statusFilter === "all"
+        ? apiData
+        : apiData.filter((item) => item.kitchenStatus === statusFilter);
+
+    // Group items by stockName (dish name)
+    const grouped = filteredData.reduce((acc, item) => {
+      const key = item.stockName;
+      if (!acc[key]) {
+        acc[key] = {
+          stockName: item.stockName,
+          stockId: item.orderItemId, // Use orderItemId as fallback
+          category: `${item.stockName} Orders`, // Better category naming
+          orders: [],
+          totalQuantity: 0,
+          unitPrice: 0, // We'll calculate this from first order
+          totalPrice: 0,
+        };
+      }
+
+      // Add order to the group
+      acc[key].orders.push({
+        orderId: item.orderId,
+        orderItemId: item.orderItemId,
+        quantity: item.quantity,
+        kitchenStatus: item.kitchenStatus,
+        notes: item.notes,
+        orderType: item.orderType,
+        orderCreatedAt: item.createdAt || new Date().toISOString(),
+        userName: `${item.orderType.toUpperCase()} #${item.orderId.slice(-6)}`,
+        tableNumber: item.orderType === "restaurant" ? "Table N/A" : undefined,
+        roomNumber: item.orderType === "ktv" ? "Room N/A" : undefined,
+        itemIndex: acc[key].orders.length + 1,
+      });
+
+      // Update totals
+      acc[key].totalQuantity += item.quantity;
+      // Assume a default price if not provided
+      acc[key].unitPrice = acc[key].unitPrice || 1000; // Default 1000 MMK
+      acc[key].totalPrice = acc[key].totalQuantity * acc[key].unitPrice;
+
+      return acc;
+    }, {});
+
+    // Convert to array and group by category (using stockName as category)
+    const itemsArray = Object.values(grouped);
+    const categoriesMap = itemsArray.reduce((acc, item) => {
+      const categoryName = item.category;
+      if (!acc[categoryName]) {
+        acc[categoryName] = {
+          category: categoryName,
+          items: [],
+          totalItems: 0,
+          totalQuantity: 0,
+        };
+      }
+
+      acc[categoryName].items.push(item);
+      acc[categoryName].totalItems += 1;
+      acc[categoryName].totalQuantity += item.totalQuantity;
+
+      return acc;
+    }, {});
+
+    return Object.values(categoriesMap);
+  };
 
   const fetchOrders = async (isRefresh = false) => {
     try {
@@ -19,9 +92,12 @@ const KitchenPage = () => {
       }
       setError(null);
 
-      const response = await getPendingOrders();
-      if (response.status === "success") {
-        setOrders(response.data);
+      const response = await getKitchenOrders();
+      if (response.status === "success" && response.code === 200) {
+        const transformedData = transformKitchenData(response.data);
+        setOrders(transformedData);
+      } else {
+        setError(response.message || "Failed to fetch kitchen orders");
       }
     } catch (err) {
       setError(err.message || "Failed to fetch kitchen orders");
@@ -41,7 +117,7 @@ const KitchenPage = () => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [statusFilter]); // Re-fetch when filter changes
 
   const getTotalItems = () => {
     return orders.reduce((total, category) => total + category.totalItems, 0);
@@ -117,6 +193,47 @@ const KitchenPage = () => {
               {getTotalQuantity()}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Status Filter */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Filter by Status
+          </h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              statusFilter === "all"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            All Items
+          </button>
+          <button
+            onClick={() => setStatusFilter("pending")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              statusFilter === "pending"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Pending
+          </button>
+          <button
+            onClick={() => setStatusFilter("ready")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              statusFilter === "ready"
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Ready
+          </button>
         </div>
       </div>
 
