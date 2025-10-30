@@ -32,6 +32,7 @@ const KitchenPage = () => {
       kitchenStatus: item.kitchenStatus,
       notes: item.notes,
       orderType: item.orderType,
+      roomNumber: item.roomNumber, // Add room number for KTV orders
       createdAt: item.createdAt || new Date().toISOString(),
       requiresCooking: item.requiresCooking,
       // Additional display fields
@@ -375,6 +376,11 @@ const KitchenPage = () => {
                         >
                           {item.orderType.toUpperCase()}
                         </span>
+                        {item.roomNumber && (
+                          <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs font-medium">
+                            {item.roomNumber}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <span className="font-medium">Order ID:</span>{" "}
