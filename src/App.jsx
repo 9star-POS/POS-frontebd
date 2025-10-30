@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import { Receipt as ReceiptIcon } from "lucide-react";
 import { IoMdMenu } from "react-icons/io";
 import Sidebar from "./components/Sidebar";
+import SalesReportPage from "./pages/SalesReportPage";
 
 import "./App.css";
 import EnterID from "./pages/EnterID";
@@ -154,6 +155,14 @@ export default function App() {
                       element={
                         <PrivateRoute>
                           <KTVPage />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/sales-report"
+                      element={
+                        <PrivateRoute>
+                          <SalesReportPage />
                         </PrivateRoute>
                       }
                     />

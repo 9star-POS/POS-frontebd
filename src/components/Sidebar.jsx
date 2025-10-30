@@ -8,6 +8,7 @@ import {
   LogOut,
   ChevronLeft,
   Music,
+  BarChart,
 } from "lucide-react";
 import { useAuth } from "../hook/auth/AuthContext";
 
@@ -18,8 +19,7 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/menu", icon: Menu, label: "Menu" },
     { to: "/orders", icon: Receipt, label: "Orders" },
     { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
-
-    // { to: "/dashboard", icon: Receipt, label: "Reports" },
+    { to: "/sales-report", icon: BarChart, label: "Sales Report" },
   ];
 
   return (
