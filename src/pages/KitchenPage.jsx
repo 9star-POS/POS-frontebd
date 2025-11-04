@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { RefreshCw, ChefHat, AlertCircle } from "lucide-react";
 import getKitchenOrders from "../api/Kitchen/getKitchenOrders";
 import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
+import createNotification from "../api/notification/createNotification";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { toast } from "sonner";
 
 const KitchenPage = () => {
   const [orders, setOrders] = useState([]);
@@ -33,6 +35,7 @@ const KitchenPage = () => {
       notes: item.notes,
       orderType: item.orderType,
       roomNumber: item.roomNumber, // Add room number for KTV orders
+      tableNumber: item.tableNumber, // Add table number for restaurant orders
       createdAt: item.createdAt || new Date().toISOString(),
       requiresCooking: item.requiresCooking,
       // Additional display fields
@@ -78,6 +81,63 @@ const KitchenPage = () => {
 
         // Clear any existing errors
         setError(null);
+
+        // Send notification only when status changes to "ready"
+        if (newStatus === "ready") {
+          try {
+            // Construct notification message
+            const tableOrRoomInfo =
+              item.orderType === "restaurant" && item.tableNumber
+                ? `Table ${item.tableNumber}`
+                : item.orderType === "ktv" && item.roomNumber
+                ? `Room ${item.roomNumber}`
+                : item.orderDisplay;
+
+            const message = `${tableOrRoomInfo} - ${item.stockName} is ready to serve`;
+
+            // Prepare notification data
+            const notificationData = {
+              orderFrom: item.orderType, // "restaurant" or "ktv"
+              orderItemStatus: "ready",
+              message: message,
+              metadata: {
+                orderId: item.orderId,
+                orderItemId: item.orderItemId,
+                stockName: item.stockName,
+                ...(item.orderType === "restaurant" &&
+                  item.tableNumber && { tableNumber: item.tableNumber }),
+                ...(item.orderType === "ktv" &&
+                  item.roomNumber && { roomNumber: item.roomNumber }),
+                quantity: item.quantity,
+                ...(item.notes && { notes: item.notes }),
+              },
+            };
+
+            // Send notification
+            const notificationResponse = await createNotification(
+              notificationData
+            );
+
+            if (
+              notificationResponse.status === "success" ||
+              notificationResponse.code === 201
+            ) {
+              console.log(
+                "Notification sent successfully:",
+                notificationResponse
+              );
+            } else {
+              console.error(
+                "Failed to send notification:",
+                notificationResponse
+              );
+              // Don't show error to user as the main status update succeeded
+            }
+          } catch (notificationError) {
+            console.error("Error sending notification:", notificationError);
+            // Don't show error to user as the main status update succeeded
+          }
+        }
 
         // Optionally refresh from server to ensure consistency
         // fetchOrders(true);

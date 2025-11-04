@@ -10,6 +10,7 @@ import {
   Music,
   BarChart,
   Wallet,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../hook/auth/AuthContext";
 
@@ -22,6 +23,7 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
     { to: "/sales-report", icon: BarChart, label: "Sales Report" },
     { to: "/expense-tracker", icon: Wallet, label: "Expense Tracker" },
+    { to: "/notifications", icon: Bell, label: "Notifications" },
   ];
 
   return (
