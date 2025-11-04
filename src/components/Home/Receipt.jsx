@@ -18,6 +18,7 @@ import { setItemsForTable } from "./../../redux/receiptSlice";
 import updateKitchenOrder from "../../api/Order/updatetokitchenorder";
 import checkoutOrder from "../../api/Order/checkout";
 import SplitOrderModal from "../KTV/SplitOrderModal";
+import getTableService from "../../api/Table/getTableService";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -30,9 +31,11 @@ function Receipt({ onClose }) {
   const [remoteOrder, setRemoteOrder] = useState(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [tableServiceId, setTableServiceId] = useState(null);
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
+      console.log("selectedTable", selectedTable);
       if (!selectedTable) {
         setRemoteOrder(null);
         setOrderId(null);
@@ -47,22 +50,32 @@ function Receipt({ onClose }) {
             Number(o.tableNumber) === Number(selectedTable) &&
             o?.isDeleted === false
         );
-        // Only show pending orders, pick latest by createdAt
+        // Show pending or in_progress orders, pick latest by createdAt
         const pick = (list) =>
           list
             .slice()
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
           null;
-        const pendingOnly = forTable.filter((o) => o.status === "pending");
-        const chosen = pick(pendingOnly);
+        // Filter for active orders (pending, in_progress, or ongoing)
+        const activeOrders = forTable.filter(
+          (o) =>
+            o.status === "pending" ||
+            o.status === "in_progress" ||
+            o.status === "ongoing"
+        );
+        const chosen = pick(activeOrders);
         setRemoteOrder(chosen || null);
         setOrderId(chosen?._id || null);
+        // Extract tableServiceId from order response if available
+        if (chosen?.tableService?.tableServiceId) {
+          setTableServiceId(chosen.tableService.tableServiceId);
+        }
         if (chosen?.orderItems?.length) {
           // Group duplicate items (same stock) and sum quantities
           const grouped = new Map();
           chosen.orderItems.forEach((it) => {
             const key = it?.stockId?._id || it?.stockId;
-            const name = it.stockName || it?.stockId?.name;
+            const name = it.stockName || it?.stockId?.name || "";
             const price = it.price || 0;
             const qty = it.quantity || 1;
             if (!key) return;
@@ -72,6 +85,7 @@ function Receipt({ onClose }) {
                 price,
                 quantity: qty,
                 stockId: key,
+                _id: key, // Add _id for consistency
               });
             } else {
               const existing = grouped.get(key);
@@ -85,7 +99,7 @@ function Receipt({ onClose }) {
             setItemsForTable({ table: selectedTable, items: mappedItems })
           );
         } else {
-          // No pending order
+          // No active order found
           dispatch(setItemsForTable({ table: selectedTable, items: [] }));
         }
       } else {
@@ -96,6 +110,24 @@ function Receipt({ onClose }) {
     };
     fetchOrdersForTable();
   }, [selectedTable]);
+
+  // Reset tableServiceId when table changes
+  useEffect(() => {
+    setTableServiceId(null);
+  }, [selectedTable]);
+
+  // Fetch table service ID when table is selected and no order exists
+  useEffect(() => {
+    const fetchTableService = async () => {
+      // Only fetch if we have a table, no active order, and no tableServiceId yet
+      if (!selectedTable || orderId || tableServiceId) return;
+      const res = await getTableService(selectedTable);
+      if (res?.code === 200 && res?.data?._id) {
+        setTableServiceId(res.data._id);
+      }
+    };
+    fetchTableService();
+  }, [selectedTable, orderId, tableServiceId]);
 
   const handleRemoveItem = (itemName) => {
     dispatch(removeItemFromReceipt({ table: selectedTable, itemName }));
@@ -234,20 +266,46 @@ function Receipt({ onClose }) {
       });
       if (res?.status === "success" || res?.code === 200) {
         toast.success("Order updated in kitchen successfully");
-        // Keep baseline in sync to avoid resending the same items
-        const syncedOrderItems = localItems.map((it) => ({
-          stockId: it.stockId,
-          quantity: it.quantity,
-          notes: it.notes,
-          price: it.price,
-          stockName: it.name,
-        }));
-        setRemoteOrder((prev) => ({
-          ...(prev || {}),
-          orderItems: syncedOrderItems,
-        }));
+        // Update remote order with full response if available
+        if (res?.data) {
+          setRemoteOrder({
+            ...res?.data,
+            createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
+          });
+          // Sync items from server response
+          if (res?.data?.orderItems) {
+            const mappedItems = res.data.orderItems.map((it) => ({
+              stockId: it?.stockId?._id || it?.stockId,
+              name: it.stockName || it?.stockId?.name || "",
+              price: it.price || 0,
+              quantity: it.quantity || 1,
+              _id: it?.stockId?._id || it?.stockId,
+            }));
+            dispatch(
+              setItemsForTable({ table: selectedTable, items: mappedItems })
+            );
+          }
+        } else {
+          // Fallback: keep baseline in sync to avoid resending the same items
+          const syncedOrderItems = localItems.map((it) => ({
+            stockId: it.stockId,
+            quantity: it.quantity,
+            notes: it.notes,
+            price: it.price,
+            stockName: it.name,
+          }));
+          setRemoteOrder((prev) => ({
+            ...(prev || {}),
+            orderItems: syncedOrderItems,
+          }));
+        }
       }
     } else {
+      if (!tableServiceId) {
+        toast.error("Table service not found");
+        return;
+      }
+
       const payload = {
         tableNumber: selectedTable,
         orderItems: localItems.map((it) => ({
@@ -255,23 +313,39 @@ function Receipt({ onClose }) {
           quantity: it.quantity,
           notes: it.notes,
         })),
+        tableService: {
+          tableServiceId: tableServiceId,
+        },
       };
       const res = await sendToKitchen(payload);
       if (res?.status === "success" || res?.code === 201) {
         toast.success("Order sent to kitchen successfully");
-        setOrderId(res?.data?._id);
-        // Initialize baseline with what we just sent
-        const syncedOrderItems = localItems.map((it) => ({
-          stockId: it.stockId,
-          quantity: it.quantity,
-          notes: it.notes,
-          price: it.price,
-          stockName: it.name,
-        }));
-        setRemoteOrder((prev) => ({
-          ...(prev || {}),
-          orderItems: syncedOrderItems,
-        }));
+        const newOrderId = res?.data?._id;
+        setOrderId(newOrderId);
+        // Extract and store tableServiceId from response
+        if (res?.data?.tableService?.tableServiceId) {
+          setTableServiceId(res.data.tableService.tableServiceId);
+        }
+
+        // Update remote order state with full response from API
+        setRemoteOrder({
+          ...res?.data,
+          createdAt: res?.data?.createdAt || new Date().toISOString(),
+        });
+
+        // Sync local state with server response - map items properly
+        if (res?.data?.orderItems) {
+          const mappedItems = res.data.orderItems.map((it) => ({
+            stockId: it?.stockId?._id || it?.stockId,
+            name: it.stockName || it?.stockId?.name || "",
+            price: it.price || 0,
+            quantity: it.quantity || 1,
+            _id: it?.stockId?._id || it?.stockId,
+          }));
+          dispatch(
+            setItemsForTable({ table: selectedTable, items: mappedItems })
+          );
+        }
       }
     }
   };

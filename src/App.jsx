@@ -27,7 +27,6 @@ import RoomPage from "./components/KTV/RoomPage";
 import KitchenPage from "./pages/KitchenPage";
 
 export default function App() {
-  const tables = [1, 2, 3, 4, 5];
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
   const location = window.location.pathname;
@@ -130,7 +129,7 @@ export default function App() {
                       path="/"
                       element={
                         <PrivateRoute>
-                          <TablePage tables={tables} />
+                          <TablePage />
                         </PrivateRoute>
                       }
                     />

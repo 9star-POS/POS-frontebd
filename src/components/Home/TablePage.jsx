@@ -1,12 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import { selectTable, setOrderType } from "./../../redux/receiptSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect } from "react";
+import getAllTables from "../../api/Table/getAllTables";
+import { toast } from "sonner";
+import Loading from "../Loading";
 
-const TablePage = ({ tables }) => {
+const TablePage = () => {
   const Navigate = useNavigate();
   const dispatch = useDispatch();
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
+  const [tables, setTables] = useState([]);
+  const [loading, setLoading] = useState(true);
   //   const orderType = useSelector(
   //     (state) => state.receipts.receipts[selectedTable]?.orderType || "Dine In"
   //   );
@@ -18,10 +24,37 @@ const TablePage = ({ tables }) => {
   //   };
   //   console.log(receipts);
 
-  const handleTableSelect = (table) => {
-    dispatch(selectTable(table));
-    Navigate(`/order/${table}`);
+  useEffect(() => {
+    fetchTables();
+  }, []);
+
+  const fetchTables = async () => {
+    setLoading(true);
+    const res = await getAllTables();
+    if (Array.isArray(res)) {
+      // const activeTables = res.filter(
+      //   (t) => t.status === "active" && !t.isDeleted
+      // );
+      setTables(res);
+    } else {
+      setTables([]);
+      toast.error("Failed to load tables");
+    }
+    setLoading(false);
   };
+
+  const handleTableSelect = (tableNumber) => {
+    dispatch(selectTable(tableNumber));
+    Navigate(`/order/${tableNumber}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen pt-10 bg-white">
@@ -59,24 +92,37 @@ const TablePage = ({ tables }) => {
           </div>
         </div> */}
 
-        <div className="my-5">
-          {/* <p className="text-[20px] font-semibold mb-2">Select Table</p> */}
-          <div className="grid grid-cols-3 md:grid-cols-7 gap-4">
-            {tables.map((table) => (
-              <button
-                key={table}
-                className={`${
-                  receipts[table] || selectedTable === table
-                    ? "bg-primary text-white"
-                    : "bg-white text-primary"
-                } border border-gray-300 px-2 py-4 rounded-lg font-bold`}
-                onClick={() => handleTableSelect(table)}
-              >
-                Table {table}
-              </button>
-            ))}
+        {tables.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <p className="text-gray-500 text-lg">No tables available</p>
+            <button
+              onClick={fetchTables}
+              className="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              Refresh
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="my-5">
+            {/* <p className="text-[20px] font-semibold mb-2">Select Table</p> */}
+            <div className="grid grid-cols-3 md:grid-cols-7 gap-4">
+              {tables.map((table) => (
+                <button
+                  key={table._id}
+                  className={`${
+                    receipts[table.tableNumber] ||
+                    selectedTable === table.tableNumber
+                      ? "bg-primary text-white"
+                      : "bg-white text-primary"
+                  } border border-gray-300 px-2 py-4 rounded-lg font-bold hover:shadow-lg transition-all`}
+                  onClick={() => handleTableSelect(table.tableNumber)}
+                >
+                  Table {table.tableNumber}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* <div className="flex gap-4 my-4 justify-end mt-20">
           <button
