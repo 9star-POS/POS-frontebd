@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   Music,
   BarChart,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "../hook/auth/AuthContext";
 
@@ -20,6 +21,7 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/orders", icon: Receipt, label: "Orders" },
     { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
     { to: "/sales-report", icon: BarChart, label: "Sales Report" },
+    { to: "/expense-tracker", icon: Wallet, label: "Expense Tracker" },
   ];
 
   return (

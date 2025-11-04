@@ -14,6 +14,7 @@ import { Receipt as ReceiptIcon } from "lucide-react";
 import { IoMdMenu } from "react-icons/io";
 import Sidebar from "./components/Sidebar";
 import SalesReportPage from "./pages/SalesReportPage";
+import ExpenseTrackerPage from "./pages/ExpenseTrackerPage";
 
 import "./App.css";
 import EnterID from "./pages/EnterID";
@@ -162,6 +163,14 @@ export default function App() {
                       element={
                         <PrivateRoute>
                           <SalesReportPage />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/expense-tracker"
+                      element={
+                        <PrivateRoute>
+                          <ExpenseTrackerPage />
                         </PrivateRoute>
                       }
                     />

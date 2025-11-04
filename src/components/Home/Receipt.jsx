@@ -45,11 +45,12 @@ function Receipt({ onClose }) {
       const res = await getRestaurantOrders();
       console.log(res);
       if (res?.code === 200 && Array.isArray(res.data)) {
-        const forTable = res.data.filter(
-          (o) =>
-            Number(o.tableNumber) === Number(selectedTable) &&
-            o?.isDeleted === false
-        );
+        const forTable = res.data.filter((o) => {
+          const tableNum = o.tableNumber || o.tableService?.tableNumber;
+          return (
+            Number(tableNum) === Number(selectedTable) && o?.isDeleted === false
+          );
+        });
         // Show pending or in_progress orders, pick latest by createdAt
         const pick = (list) =>
           list
@@ -307,15 +308,12 @@ function Receipt({ onClose }) {
       }
 
       const payload = {
-        tableNumber: selectedTable,
+        tableId: tableServiceId,
         orderItems: localItems.map((it) => ({
           stockId: it.stockId,
           quantity: it.quantity,
           notes: it.notes,
         })),
-        tableService: {
-          tableServiceId: tableServiceId,
-        },
       };
       const res = await sendToKitchen(payload);
       if (res?.status === "success" || res?.code === 201) {

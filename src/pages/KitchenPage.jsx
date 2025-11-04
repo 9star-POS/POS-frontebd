@@ -158,18 +158,16 @@ const KitchenPage = () => {
   }
 
   return (
-    <div className="bg-gray-50 p-4 md:p-6 overflow-y-auto h-[calc(100vh-100px)]">
+    <div className="p-4">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-2 mb-6">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <ChefHat size={32} className="text-orange-600" />
+            <div className="p-3 bg-secondary rounded-lg">
+              <ChefHat size={32} className="text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                Kitchen Orders
-              </h1>
+              <h1 className="sub-header font-bold">Kitchen Orders</h1>
               <p className="text-sm text-gray-500">
                 Manage your pending orders
               </p>
@@ -178,7 +176,7 @@ const KitchenPage = () => {
           <button
             onClick={() => fetchOrders(true)}
             disabled={refreshing}
-            className={`p-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors ${
+            className={`p-3 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold ${
               refreshing ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
@@ -188,33 +186,33 @@ const KitchenPage = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-sm text-blue-600 font-medium mb-1">
+          <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+            <div className="text-sm text-gray-600 font-medium mb-1">
               Total Items
             </div>
-            <div className="text-2xl font-bold text-blue-700">
+            <div className="text-[36px] font-futura text-primary">
               {getTotalItems()}
             </div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-4">
-            <div className="text-sm text-orange-600 font-medium mb-1">
+          <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+            <div className="text-sm text-gray-600 font-medium mb-1">
               Pending
             </div>
-            <div className="text-2xl font-bold text-orange-700">
+            <div className="text-[36px] font-futura text-primary">
               {getPendingCount()}
             </div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-sm text-green-600 font-medium mb-1">Ready</div>
-            <div className="text-2xl font-bold text-green-700">
+          <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+            <div className="text-sm text-gray-600 font-medium mb-1">Ready</div>
+            <div className="text-[36px] font-futura text-primary">
               {getReadyCount()}
             </div>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <div className="text-sm text-purple-600 font-medium mb-1">
+          <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+            <div className="text-sm text-gray-600 font-medium mb-1">
               Total Quantity
             </div>
-            <div className="text-2xl font-bold text-purple-700">
+            <div className="text-[36px] font-futura text-primary">
               {getTotalQuantity()}
             </div>
           </div>
@@ -233,9 +231,9 @@ const KitchenPage = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setStatusFilter("all")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
               statusFilter === "all"
-                ? "bg-blue-500 text-white"
+                ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -243,9 +241,9 @@ const KitchenPage = () => {
           </button>
           <button
             onClick={() => setStatusFilter("pending")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
               statusFilter === "pending"
-                ? "bg-orange-500 text-white"
+                ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -253,9 +251,9 @@ const KitchenPage = () => {
           </button>
           <button
             onClick={() => setStatusFilter("ready")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
               statusFilter === "ready"
-                ? "bg-green-500 text-white"
+                ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -287,7 +285,7 @@ const KitchenPage = () => {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-100px)]">
           {/* Order Items */}
           <div className="divide-y divide-gray-200">
             {orders.map((item, index) => (

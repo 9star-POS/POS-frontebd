@@ -38,7 +38,7 @@ const Calendar = ({ sendDate }) => {
     <div className="text-sm">
       {/* Button to toggle the calendar */}
       <button
-        className="bg-white border border-gray-300 flex gap-2 items-center text-primary font-semibold px-4 py-2 md:px-8 md:py-4 rounded-sm hover:bg-primary hover:text-white hover:border-primary transition-colors duration-300"
+        className="bg-primary border border-gray-300 flex gap-2 items-center text-white font-semibold px-4 py-2 md:px-8 md:py-2 rounded-lg hover:bg-primary/80 transition-colors duration-300"
         onClick={toggleCalendar}
       >
         <CalendarIcon className="h-4 w-4" />

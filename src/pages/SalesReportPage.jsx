@@ -97,7 +97,7 @@ const SalesReportPage = () => {
     }
   }, [activeTab, startDate, endDate]);
 
-  const ReportCard = ({ title, data, color }) => {
+  const ReportCard = ({ title, data }) => {
     // Handle both combined and individual order data structures
     const orderCount =
       data.totalOrderCount !== undefined
@@ -107,16 +107,16 @@ const SalesReportPage = () => {
       data.totalTotal !== undefined ? data.totalTotal : data.total || 0;
 
     return (
-      <div className={`border-l-4 ${color} bg-white p-4 rounded-lg shadow-md`}>
+      <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <p className="text-sm text-gray-500">Total Orders</p>
-            <p className="text-xl font-bold">{orderCount}</p>
+            <p className="text-[36px] font-futura">{orderCount}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Amount</p>
-            <p className="text-xl font-bold">
+            <p className="text-[36px] font-futura text-primary">
               {(totalAmount / 1000).toFixed(2)}K KS
             </p>
           </div>
@@ -127,20 +127,22 @@ const SalesReportPage = () => {
 
   const AnalyticsSummaryCard = ({ data }) => {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="border-l-4 border-blue-500 bg-white p-4 rounded-lg shadow-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
           <h3 className="text-lg font-semibold mb-2">Unique Items</h3>
-          <p className="text-xl font-bold">{data?.totalUniqueStocks || 0}</p>
+          <p className="text-[36px] font-futura">
+            {data?.totalUniqueStocks || 0}
+          </p>
           <p className="text-sm text-gray-500">Different items sold</p>
         </div>
-        <div className="border-l-4 border-purple-500 bg-white p-4 rounded-lg shadow-md">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
           <h3 className="text-lg font-semibold mb-2">Total Quantity</h3>
-          <p className="text-xl font-bold">{data?.totalItemsSold || 0}</p>
+          <p className="text-[36px] font-futura">{data?.totalItemsSold || 0}</p>
           <p className="text-sm text-gray-500">Items sold</p>
         </div>
-        <div className="border-l-4 border-green-500 bg-white p-4 rounded-lg shadow-md">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
           <h3 className="text-lg font-semibold mb-2">Total Revenue</h3>
-          <p className="text-xl font-bold">
+          <p className="text-[36px] font-futura text-primary">
             {(data?.totalRevenue / 1000).toFixed(2) || "0.00"}K KS
           </p>
           <p className="text-sm text-gray-500">Revenue generated</p>
@@ -172,14 +174,14 @@ const SalesReportPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 overflow-y-auto h-[calc(100vh-100px)]">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Reports</h1>
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="sub-header font-bold">Reports</h1>
         <div className="flex items-center gap-4">
           <Calendar sendDate={handleDateChange} />
           <button
             onClick={generateReport}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="bg-primary text-white px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold"
             disabled={activeTab === "sales" ? loading : analyticsLoading}
           >
             {(activeTab === "sales" ? loading : analyticsLoading)
@@ -190,11 +192,11 @@ const SalesReportPage = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b mb-6">
+      <div className="flex border-b border-gray-200 mb-5">
         <button
-          className={`py-2 px-4 font-medium ${
+          className={`px-6 py-3 font-semibold transition-all ${
             activeTab === "sales"
-              ? "border-b-2 border-blue-500 text-blue-600"
+              ? "text-primary border-b-2 border-primary"
               : "text-gray-500 hover:text-gray-700"
           }`}
           onClick={() => setActiveTab("sales")}
@@ -202,9 +204,9 @@ const SalesReportPage = () => {
           Sales Report
         </button>
         <button
-          className={`py-2 px-4 font-medium ${
+          className={`px-6 py-3 font-semibold transition-all ${
             activeTab === "analytics"
-              ? "border-b-2 border-blue-500 text-blue-600"
+              ? "text-primary border-b-2 border-primary"
               : "text-gray-500 hover:text-gray-700"
           }`}
           onClick={() => setActiveTab("analytics")}
@@ -214,8 +216,8 @@ const SalesReportPage = () => {
       </div>
 
       {/* Date Range Display */}
-      {(activeTab === "sales" ? reportData : analyticsData) && (
-        <div className="bg-gray-100 p-4 rounded-lg mb-4">
+      {/* {(activeTab === "sales" ? reportData : analyticsData) && (
+        <div className="bg-white p-4 rounded-lg shadow-md mb-4">
           <h2 className="text-lg font-semibold mb-2">Date Range</h2>
           <p>
             From:{" "}
@@ -232,28 +234,19 @@ const SalesReportPage = () => {
             </span>
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Sales Report Tab Content */}
       {activeTab === "sales" && (
         <>
           {reportData && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <ReportCard
                 title="Restaurant Orders"
                 data={reportData.restaurantOrders}
-                color="border-blue-500"
               />
-              <ReportCard
-                title="KTV Orders"
-                data={reportData.ktvOrders}
-                color="border-purple-500"
-              />
-              <ReportCard
-                title="Combined Total"
-                data={reportData.combined}
-                color="border-green-500"
-              />
+              <ReportCard title="KTV Orders" data={reportData.ktvOrders} />
+              <ReportCard title="Combined Total" data={reportData.combined} />
             </div>
           )}
 
@@ -281,10 +274,10 @@ const SalesReportPage = () => {
             <div>
               <AnalyticsSummaryCard data={analyticsData.summary} />
 
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="bg-white rounded-lg shadow-md pb-10 overflow-hidden">
+                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 sticky top-0">
                       <tr>
                         <th
                           scope="col"
@@ -350,7 +343,7 @@ const SalesReportPage = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
+                            <div className="text-sm font-semibold text-primary">
                               {(item.totalRevenue / 1000).toFixed(2)}K KS
                             </div>
                           </td>
