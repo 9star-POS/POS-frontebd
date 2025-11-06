@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import getAllRooms from "../../api/KTV/getAllRooms";
 import createRoom from "../../api/KTV/createRoom";
+import updateRoomStatus from "../../api/KTV/updateRoomStatus";
 import { toast } from "sonner";
 import Loading from "../Loading";
 import { Plus, X } from "lucide-react";
@@ -11,8 +12,7 @@ import { Plus, X } from "lucide-react";
 const RoomPage = () => {
   const Navigate = useNavigate();
   const dispatch = useDispatch();
-  const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
-  const receipts = useSelector((state) => state.ktvReceipts.receipts);
+
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -30,10 +30,11 @@ const RoomPage = () => {
     setLoading(true);
     const res = await getAllRooms();
     if (res?.code === 200 && Array.isArray(res.data)) {
-      const activeRooms = res.data.filter(
-        (r) => r.status === "active" && !r.isDeleted
-      );
-      setRooms(activeRooms);
+      console.log("rooms", res.data);
+      // const activeRooms = res.data.filter(
+      //   (r) => r.status === "active" && !r.isDeleted
+      // );
+      setRooms(res.data);
     } else {
       setRooms([]);
       toast.error("Failed to load rooms");
@@ -41,9 +42,20 @@ const RoomPage = () => {
     setLoading(false);
   };
 
-  const handleTableSelect = (room) => {
-    dispatch(selectRoom(room));
-    Navigate(`/ktv/${room}`);
+  const handleTableSelect = async (roomNumber, roomId) => {
+    // Update room status to active
+    const res = await updateRoomStatus(roomId, "active");
+    if (res?.code === 200 && res?.status === "success") {
+      // Update local state to reflect the change
+      setRooms((prevRooms) =>
+        prevRooms.map((r) =>
+          r._id === roomId ? { ...r, status: "active" } : r
+        )
+      );
+    }
+
+    dispatch(selectRoom(roomNumber));
+    Navigate(`/ktv/${roomNumber}`);
   };
 
   const handleCreateRoom = async () => {
@@ -108,17 +120,16 @@ const RoomPage = () => {
           </div>
         ) : (
           <div className="my-5">
-            <div className="grid grid-cols-3 md:grid-cols-7 gap-4">
+            <div className="grid grid-cols-7 gap-4">
               {rooms.map((room) => (
                 <button
                   key={room._id}
                   className={`${
-                    receipts[room.roomNumber] ||
-                    selectedRoom === room.roomNumber
+                    room.status === "active"
                       ? "bg-primary text-white"
                       : "bg-white text-primary"
                   } border border-gray-300 px-2 py-4 rounded-lg font-bold hover:shadow-lg transition-all`}
-                  onClick={() => handleTableSelect(room.roomNumber)}
+                  onClick={() => handleTableSelect(room.roomNumber, room._id)}
                 >
                   <div className="flex flex-col">
                     <span className="text-lg">Room {room.roomNumber}</span>

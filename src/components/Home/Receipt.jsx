@@ -273,15 +273,32 @@ function Receipt({ onClose }) {
             ...res?.data,
             createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
           });
-          // Sync items from server response
+          // Sync items from server response with grouping
           if (res?.data?.orderItems) {
-            const mappedItems = res.data.orderItems.map((it) => ({
-              stockId: it?.stockId?._id || it?.stockId,
-              name: it.stockName || it?.stockId?.name || "",
-              price: it.price || 0,
-              quantity: it.quantity || 1,
-              _id: it?.stockId?._id || it?.stockId,
-            }));
+            // Group duplicate items (same stock) and sum quantities
+            const grouped = new Map();
+            res.data.orderItems.forEach((it) => {
+              const key = it?.stockId?._id || it?.stockId;
+              const name = it.stockName || it?.stockId?.name || "";
+              const price = it.price || 0;
+              const qty = it.quantity || 1;
+              if (!key) return;
+              if (!grouped.has(key)) {
+                grouped.set(key, {
+                  name,
+                  price,
+                  quantity: qty,
+                  stockId: key,
+                  _id: key,
+                });
+              } else {
+                const existing = grouped.get(key);
+                existing.quantity += qty;
+                // Prefer latest price if it changes
+                existing.price = price || existing.price;
+              }
+            });
+            const mappedItems = Array.from(grouped.values());
             dispatch(
               setItemsForTable({ table: selectedTable, items: mappedItems })
             );
@@ -331,15 +348,32 @@ function Receipt({ onClose }) {
           createdAt: res?.data?.createdAt || new Date().toISOString(),
         });
 
-        // Sync local state with server response - map items properly
+        // Sync local state with server response - map items properly with grouping
         if (res?.data?.orderItems) {
-          const mappedItems = res.data.orderItems.map((it) => ({
-            stockId: it?.stockId?._id || it?.stockId,
-            name: it.stockName || it?.stockId?.name || "",
-            price: it.price || 0,
-            quantity: it.quantity || 1,
-            _id: it?.stockId?._id || it?.stockId,
-          }));
+          // Group duplicate items (same stock) and sum quantities
+          const grouped = new Map();
+          res.data.orderItems.forEach((it) => {
+            const key = it?.stockId?._id || it?.stockId;
+            const name = it.stockName || it?.stockId?.name || "";
+            const price = it.price || 0;
+            const qty = it.quantity || 1;
+            if (!key) return;
+            if (!grouped.has(key)) {
+              grouped.set(key, {
+                name,
+                price,
+                quantity: qty,
+                stockId: key,
+                _id: key,
+              });
+            } else {
+              const existing = grouped.get(key);
+              existing.quantity += qty;
+              // Prefer latest price if it changes
+              existing.price = price || existing.price;
+            }
+          });
+          const mappedItems = Array.from(grouped.values());
           dispatch(
             setItemsForTable({ table: selectedTable, items: mappedItems })
           );

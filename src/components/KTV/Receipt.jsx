@@ -34,6 +34,7 @@ function Receipt({ onClose }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
+  console.log("selectedRoom", selectedRoom);
   const receipts = useSelector((state) => state.ktvReceipts.receipts);
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -58,7 +59,7 @@ function Receipt({ onClose }) {
         // Only show active orders (not completed or cancelled)
         const forTable = res.data.filter(
           (o) =>
-            Number(o.roomService.roomNumber) === Number(selectedRoom) &&
+            String(o.roomService.roomNumber) === String(selectedRoom) &&
             o?.isDeleted === false &&
             (o.status === "pending" ||
               o.status === "ongoing" ||
@@ -156,6 +157,7 @@ function Receipt({ onClose }) {
       // Only fetch if we have a room, no active order, and no roomServiceId yet
       if (!selectedRoom || orderId || roomServiceId) return;
       const res = await getRoomService(selectedRoom);
+      console.log("room service id", res);
       if (res?.code === 200 && res?.data?._id) {
         setRoomServiceId(res.data._id);
         // Initialize room service in state only if no order exists
@@ -172,6 +174,7 @@ function Receipt({ onClose }) {
     };
     fetchRoomService();
   }, [selectedRoom, orderId, roomServiceId]);
+  console.log("room service id", roomServiceId);
 
   const handleRemoveItem = (itemName) => {
     dispatch(removeItemFromRoomReceipt({ room: selectedRoom, itemName }));
@@ -321,7 +324,7 @@ function Receipt({ onClose }) {
 
     try {
       const res = await finalizeKtvOrder(orderId, payload);
-      console.log(res);
+      // console.log(res);
       if (res?.status === "success" || res?.code === 200) {
         toast.success("KTV order checkout completed successfully");
         setIsCalculatorOpen(false);
@@ -345,8 +348,6 @@ function Receipt({ onClose }) {
     const hasItems = receipts[selectedRoom]?.items?.length > 0;
     const hasVocalists = receipts[selectedRoom]?.vocalists?.length > 0;
 
-    // For first order (no orderId), allow sending only room service
-    // For existing orders (has orderId), allow room service updates or require items/vocalists
     const hasRoomServiceUpdates =
       selectedRoom && receipts[selectedRoom]?.roomService;
     if (
