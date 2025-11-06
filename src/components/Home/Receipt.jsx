@@ -19,6 +19,7 @@ import updateKitchenOrder from "../../api/Order/updatetokitchenorder";
 import checkoutOrder from "../../api/Order/checkout";
 import SplitOrderModal from "../KTV/SplitOrderModal";
 import getTableService from "../../api/Table/getTableService";
+import printReceipt from "../../utils/printReceipt";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -207,6 +208,34 @@ function Receipt({ onClose }) {
       if (res?.status === "success" || res?.code === 200) {
         toast.success("Checkout completed successfully");
         setIsCalculatorOpen(false);
+        
+        // Prepare order data for printing
+        const orderForPrint = {
+          ...res?.data,
+          tableService: res?.data?.tableService || {
+            tableNumber: selectedTable,
+          },
+          tableNumber: selectedTable,
+          table: selectedTable,
+          orderItems: res?.data?.orderItems || receipts[selectedTable]?.items?.map(item => ({
+            stockName: item.name,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity || 1,
+            _id: item._id || item.stockId,
+          })) || [],
+          subTotal: res?.data?.subTotal || calculateSubtotal(),
+          tax: res?.data?.tax || taxRate,
+          discount: res?.data?.discount || 0,
+          total: res?.data?.total || calculateTotal(),
+          paymentMethod: "cash",
+          createdAt: res?.data?.createdAt || new Date().toISOString(),
+          updatedAt: res?.data?.updatedAt || new Date().toISOString(),
+        };
+        
+        // Print receipt
+        printReceipt(orderForPrint, false);
+        
         setRemoteOrder(res?.data || null);
         setOrderId(null);
         navigate("/");

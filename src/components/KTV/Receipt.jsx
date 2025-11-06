@@ -29,6 +29,7 @@ import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 import updateKtvOrder from "../../api/KTV/updateKtvOrder";
 import TimestampFormatter from "../Orders/TimestampFormatter";
 import SplitOrderModal from "./SplitOrderModal";
+import printReceipt from "../../utils/printReceipt";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -328,6 +329,39 @@ function Receipt({ onClose }) {
       if (res?.status === "success" || res?.code === 200) {
         toast.success("KTV order checkout completed successfully");
         setIsCalculatorOpen(false);
+
+        // Prepare order data for printing
+        const orderForPrint = {
+          ...res?.data,
+          roomService: res?.data?.roomService || {
+            roomNumber: selectedRoom,
+          },
+          roomNumber: selectedRoom,
+          orderItems:
+            res?.data?.orderItems ||
+            receipts[selectedRoom]?.items?.map((item) => ({
+              stockName: item.name,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity || 1,
+              _id: item._id || item.stockId,
+            })) ||
+            [],
+          subTotal: res?.data?.subTotal || calculateSubtotal(),
+          roomCharges: res?.data?.roomCharges || calculateRoomCharges(),
+          vocalistCharges:
+            res?.data?.vocalistCharges || calculateVocalistCharges(),
+          tax: res?.data?.tax || calculateTax(),
+          discount: res?.data?.discount || 0,
+          total: res?.data?.total || calculateTotal(),
+          paymentMethod: "cash",
+          createdAt: res?.data?.createdAt || new Date().toISOString(),
+          updatedAt: res?.data?.updatedAt || new Date().toISOString(),
+        };
+
+        // Print receipt
+        printReceipt(orderForPrint, true);
+
         setRemoteOrder(res?.data || null);
         setOrderId(null);
         navigate("/ktv");
