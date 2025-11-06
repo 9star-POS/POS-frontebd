@@ -102,7 +102,7 @@ function OrderDetail() {
       navigate("/ktv");
     } else {
       // Restaurant Order - redirect to homepage
-      const tableNumber = order.tableNumber;
+      const tableNumber = order.tableService?.tableNumber || order.tableNumber;
       dispatch(selectTable(tableNumber));
       navigate("/");
     }
@@ -199,7 +199,11 @@ function OrderDetail() {
             <p className="text-2xl font-bold text-gray-800">
               {isKtvOrder()
                 ? `Room ${order.roomService.roomNumber}`
-                : `Table ${order.tableNumber}`}
+                : order.tableService?.tableNumber
+                ? `Table ${order.tableService.tableNumber}`
+                : order.tableNumber
+                ? `Table ${order.tableNumber}`
+                : "N/A"}
             </p>
           </div>
 
@@ -276,11 +280,6 @@ function OrderDetail() {
                             <p className="text-sm text-gray-500 mt-1">
                               Note: {item.notes}
                             </p>
-                          )}
-                          {item.requiresCooking && (
-                            <span className="inline-block mt-1 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                              Requires Cooking
-                            </span>
                           )}
                         </div>
                       </td>

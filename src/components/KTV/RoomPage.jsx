@@ -30,7 +30,7 @@ const RoomPage = () => {
     setLoading(true);
     const res = await getAllRooms();
     if (res?.code === 200 && Array.isArray(res.data)) {
-      console.log("rooms", res.data);
+      // console.log("rooms", res.data);
       // const activeRooms = res.data.filter(
       //   (r) => r.status === "active" && !r.isDeleted
       // );

@@ -345,7 +345,7 @@ const KitchenPage = () => {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-100px)]">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-500px)]">
           {/* Order Items */}
           <div className="divide-y divide-gray-200">
             {orders.map((item, index) => (

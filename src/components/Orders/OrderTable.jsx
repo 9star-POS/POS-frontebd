@@ -126,7 +126,9 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
                 {index + 1}
               </td>
               <td className="hidden lg:block px-2 lg:px-6 py-4 whitespace-nowrap">
-                {order.tableNumber
+                {order.tableService?.tableNumber
+                  ? `Table ${order.tableService.tableNumber}`
+                  : order.tableNumber
                   ? `Table ${order.tableNumber}`
                   : order.roomService?.roomNumber
                   ? `Room ${order.roomService.roomNumber}`
