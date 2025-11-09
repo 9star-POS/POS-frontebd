@@ -115,20 +115,23 @@ const TablePage = () => {
           <div className="my-5">
             {/* <p className="text-[20px] font-semibold mb-2">Select Table</p> */}
             <div className="grid grid-cols-3 md:grid-cols-7 gap-4">
-              {tables.map((table) => (
-                <button
-                  key={table._id}
-                  className={`${
-                    receipts[table.tableNumber] ||
-                    selectedTable === table.tableNumber
-                      ? "bg-primary text-white"
-                      : "bg-white text-primary"
-                  } border border-gray-300 px-2 py-4 rounded-lg font-bold hover:shadow-lg transition-all`}
-                  onClick={() => handleTableSelect(table.tableNumber)}
-                >
-                  Table {table.tableNumber}
-                </button>
-              ))}
+              {tables.map((table) => {
+                const isActive = table.status === "active";
+
+                const buttonClasses = isActive
+                  ? "border border-green-300 bg-primary text-white px-2 py-4 rounded-lg font-bold hover:shadow-lg transition-all"
+                  : "border border-gray-300 bg-white text-primary px-2 py-4 rounded-lg font-bold hover:shadow-lg transition-all";
+
+                return (
+                  <button
+                    key={table._id}
+                    className={buttonClasses}
+                    onClick={() => handleTableSelect(table.tableNumber)}
+                  >
+                    Table {table.tableNumber}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

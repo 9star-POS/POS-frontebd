@@ -12,6 +12,7 @@ import box from "./../../assets/box.png";
 import "./../input.css";
 import CalculatorModal from "./CalculatorModel";
 import sendToKitchen from "../../api/Order/sendtokitchen";
+import updateTableStatus from "../../api/Table/updateTableStatus";
 import { toast } from "sonner";
 import getRestaurantOrders from "../../api/Order/getRestaurantOrders";
 import { setItemsForTable } from "./../../redux/receiptSlice";
@@ -242,6 +243,16 @@ function Receipt({ onClose }) {
         setRemoteOrder(res?.data || null);
         setOrderId(null);
         navigate("/");
+        if (tableServiceId) {
+          try {
+            await updateTableStatus({
+              tableServiceId,
+              status: "inactive",
+            });
+          } catch (error) {
+            console.error("Failed to reset table status:", error);
+          }
+        }
         if (selectedTable) {
           dispatch(removeTable(selectedTable));
         }
@@ -371,7 +382,16 @@ function Receipt({ onClose }) {
         setOrderId(newOrderId);
         // Extract and store tableServiceId from response
         if (res?.data?.tableService?.tableServiceId) {
-          setTableServiceId(res.data.tableService.tableServiceId);
+          const newTableServiceId = res.data.tableService.tableServiceId;
+          setTableServiceId(newTableServiceId);
+          try {
+            await updateTableStatus({
+              tableServiceId: newTableServiceId,
+              status: "active",
+            });
+          } catch (error) {
+            console.error("Failed to update table status:", error);
+          }
         }
 
         // Update remote order state with full response from API
@@ -431,6 +451,16 @@ function Receipt({ onClose }) {
         setOrderId(null);
         if (selectedTable) {
           dispatch(removeTable(selectedTable));
+        }
+        if (tableServiceId) {
+          try {
+            await updateTableStatus({
+              tableServiceId,
+              status: "inactive",
+            });
+          } catch (error) {
+            console.error("Failed to reset table status:", error);
+          }
         }
         if (onClose) onClose();
       }

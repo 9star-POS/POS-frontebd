@@ -374,9 +374,17 @@ function Receipt({ onClose }) {
         setRemoteOrder(res?.data || null);
         setOrderId(null);
         navigate("/ktv");
+        if (roomServiceId) {
+          try {
+            await updateRoomStatus(roomServiceId, "inactive");
+          } catch (error) {
+            console.error("Failed to reset room status:", error);
+          }
+        }
         if (selectedRoom) {
           dispatch(removeRoom(selectedRoom));
         }
+
         if (onClose) onClose();
       } else {
         toast.error(res?.message || "Failed to complete checkout");
@@ -498,7 +506,15 @@ function Receipt({ onClose }) {
         toast.success(successMessage);
         const newOrderId = res?.data?._id;
         setOrderId(newOrderId);
-        setRoomServiceId(res?.data?.roomService?.roomServiceId);
+        if (res?.data?.roomService?.roomServiceId) {
+          const newRoomServiceId = res.data.roomService.roomServiceId;
+          setRoomServiceId(newRoomServiceId);
+          try {
+            await updateRoomStatus(newRoomServiceId, "active");
+          } catch (error) {
+            console.error("Failed to update room status", error);
+          }
+        }
         if (newOrderId && selectedRoom) {
           dispatch(
             setOrderIdForRoom({ room: selectedRoom, orderId: newOrderId })
@@ -510,6 +526,7 @@ function Receipt({ onClose }) {
               selectedRoomId,
               "active"
             );
+            console.log(statusResponse);
             if (statusResponse?.code === 200) {
               dispatch(
                 setRoomStatus({

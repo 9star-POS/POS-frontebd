@@ -434,9 +434,15 @@ const KitchenPage = () => {
                         >
                           {item.orderType.toUpperCase()}
                         </span>
-                        {item.roomNumber && (
+                        {item.orderType === "restaurant" &&
+                          item.tableNumber && (
+                            <span className="ml-2 px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-medium">
+                              Table {item.tableNumber}
+                            </span>
+                          )}
+                        {item.orderType === "ktv" && item.roomNumber && (
                           <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs font-medium">
-                            {item.roomNumber}
+                            Room {item.roomNumber}
                           </span>
                         )}
                       </div>
