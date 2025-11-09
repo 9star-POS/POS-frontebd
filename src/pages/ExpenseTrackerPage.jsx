@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import getExpenses from "../api/expense/getExpenses";
 import addExpense from "../api/expense/addExpense";
 import { format } from "date-fns";
+import Calendar from "../components/Calender";
 import {
   DollarSign,
-  Calendar,
+  Calendar as CalendarIcon,
   FileText,
   TrendingUp,
   Plus,
@@ -22,11 +23,17 @@ const ExpenseTrackerPage = () => {
     description: "",
     expense: "",
   });
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+  const [filters, setFilters] = useState({
+    startDate: today,
+    endDate: today,
+  });
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (overrideFilters) => {
     setLoading(true);
     try {
-      const response = await getExpenses();
+      const appliedFilters = overrideFilters ?? filters;
+      const response = await getExpenses(appliedFilters);
       console.log("Expenses Response:", response);
       if (response.status === "success" || response.code === 200) {
         const expensesData = response.data || [];
@@ -48,7 +55,8 @@ const ExpenseTrackerPage = () => {
   };
 
   useEffect(() => {
-    fetchExpenses();
+    fetchExpenses(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const calculateTotal = () => {
@@ -69,6 +77,21 @@ const ExpenseTrackerPage = () => {
 
   const formatCurrency = (amount) => {
     return amount.toLocaleString();
+  };
+
+  const handleDateRangeChange = (dates) => {
+    const newFilters = {
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+    };
+    setFilters(newFilters);
+    fetchExpenses(newFilters);
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters = { startDate: today, endDate: today };
+    setFilters(resetFilters);
+    fetchExpenses(resetFilters);
   };
 
   const handleInputChange = (e) => {
@@ -140,7 +163,22 @@ const ExpenseTrackerPage = () => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Expense Tracker</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <Calendar
+            sendDate={handleDateRangeChange}
+            selectedStartDate={filters.startDate}
+            selectedEndDate={filters.endDate}
+            defaultStartDate={today}
+            defaultEndDate={today}
+          />
+          {(filters.startDate !== today || filters.endDate !== today) && (
+            <button
+              onClick={handleResetFilters}
+              className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold"
+            >
+              Reset
+            </button>
+          )}
           <button
             onClick={() => setIsModalOpen(true)}
             className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 font-semibold"
@@ -149,7 +187,7 @@ const ExpenseTrackerPage = () => {
             Add Expense
           </button>
           <button
-            onClick={fetchExpenses}
+            onClick={() => fetchExpenses(filters)}
             className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 font-semibold"
             disabled={loading}
           >
@@ -203,7 +241,7 @@ const ExpenseTrackerPage = () => {
       </div>
 
       {/* Expenses Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden pb-10">
+      <div className="bg-white rounded-lg overflow-hidden pb-10">
         <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
@@ -273,7 +311,6 @@ const ExpenseTrackerPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="w-4 h-4 mr-2" />
                         {formatDate(expense.createdAt)}
                       </div>
                     </td>

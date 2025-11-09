@@ -172,7 +172,7 @@ const OrdersPage = () => {
                 Reset
               </button>
             )}
-            <button
+            {/* <button
               disabled={orderIds.length == 0}
               className={`p-2 md:p-4 rounded-md text-white bg-red-500 transition-all duration-300 ease-in-out ${
                 orderIds.length == 0
@@ -182,7 +182,7 @@ const OrdersPage = () => {
               onClick={() => setIsDeleteOpen(true)}
             >
               <Trash2Icon size={20} />
-            </button>
+            </button> */}
           </div>
         </div>
 

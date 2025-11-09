@@ -199,7 +199,13 @@ const SalesReportPage = () => {
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Reports</h1>
         <div className="flex items-center gap-4 flex-wrap justify-end">
-          <Calendar sendDate={handleDateChange} />
+          <Calendar
+            sendDate={handleDateChange}
+            selectedStartDate={startDate}
+            selectedEndDate={endDate}
+            defaultStartDate={new Date()}
+            defaultEndDate={new Date()}
+          />
           {activeTab === "sales" && reportData && (
             <PDFDownloadLink
               document={

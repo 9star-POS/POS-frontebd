@@ -138,7 +138,7 @@ const Calendar = ({
       {/* Button to toggle the calendar */}
       <button
         ref={buttonRef}
-        className="bg-primary border border-gray-300 flex gap-2 items-center text-white font-semibold px-4 py-2 md:px-8 md:py-2 rounded-lg hover:bg-primary/80 transition-colors duration-300"
+        className="bg-primary border border-gray-300 flex gap-2 items-center text-white font-semibold px-4 py-2 md:px-8 md:py-2.5 rounded-lg hover:bg-primary/80 transition-colors duration-300"
         onClick={handleToggle}
       >
         <CalendarIcon className="h-4 w-4" />
