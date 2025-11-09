@@ -6,6 +6,7 @@ const ktvReceiptSlice = createSlice({
     selectedRoom: null,
     receipts: {},
     orderIds: {}, // Track order IDs by room number
+    roomDetails: {}, // Track metadata like roomId/status by room number
   },
   reducers: {
     selectRoom(state, action) {
@@ -19,9 +20,22 @@ const ktvReceiptSlice = createSlice({
       const roomToRemove = action.payload;
       delete state.receipts[roomToRemove];
       delete state.orderIds[roomToRemove];
+      delete state.roomDetails[roomToRemove];
       if (state.selectedRoom === roomToRemove) {
         state.selectedRoom = null;
       }
+    },
+    setRoomDetails(state, action) {
+      const { room, roomId, status } = action.payload;
+      if (!room) return;
+      if (!state.roomDetails) {
+        state.roomDetails = {};
+      }
+      state.roomDetails[room] = {
+        ...(state.roomDetails[room] || {}),
+        ...(roomId ? { roomId } : {}),
+        ...(status ? { status } : {}),
+      };
     },
     addItemToRoomReceipt(state, action) {
       const { room, item } = action.payload;
@@ -202,6 +216,18 @@ const ktvReceiptSlice = createSlice({
         state.receipts[room].orderType = orderType;
       }
     },
+    setRoomStatus(state, action) {
+      const { room, status } = action.payload;
+      if (!room || !status) return;
+      if (!state.roomDetails) {
+        state.roomDetails = {};
+      }
+      if (!state.roomDetails[room]) {
+        state.roomDetails[room] = { status };
+      } else {
+        state.roomDetails[room].status = status;
+      }
+    },
   },
 });
 
@@ -223,6 +249,8 @@ export const {
   incrementRoomItemQuantity,
   decrementRoomItemQuantity,
   setItemsForRoom,
+  setRoomDetails,
+  setRoomStatus,
 } = ktvReceiptSlice.actions;
 
 export default ktvReceiptSlice.reducer;

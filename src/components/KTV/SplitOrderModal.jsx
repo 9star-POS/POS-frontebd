@@ -135,7 +135,7 @@ function SplitOrderModal({ isOpen, onClose, items = [], currency = "MMK" }) {
               {selectedTotal.toLocaleString()} {currency}
             </p>
           </div>
-          <div className="flex gap-3">
+          {/* <div className="flex gap-3">
             <button
               onClick={onClose}
               className="flex-1 bg-white text-primary font-semibold py-3 rounded-full border border-primary hover:bg-gray-50"
@@ -148,7 +148,7 @@ function SplitOrderModal({ isOpen, onClose, items = [], currency = "MMK" }) {
             >
               Confirm
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

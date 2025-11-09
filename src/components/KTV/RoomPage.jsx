@@ -1,10 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { selectRoom } from "./../../redux/ktvReceiptSlice";
+import { selectRoom, setRoomDetails } from "./../../redux/ktvReceiptSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import getAllRooms from "../../api/KTV/getAllRooms";
 import createRoom from "../../api/KTV/createRoom";
-import updateRoomStatus from "../../api/KTV/updateRoomStatus";
 import { toast } from "sonner";
 import Loading from "../Loading";
 import { Plus, X } from "lucide-react";
@@ -42,20 +41,17 @@ const RoomPage = () => {
     setLoading(false);
   };
 
-  const handleTableSelect = async (roomNumber, roomId) => {
-    // Update room status to active
-    const res = await updateRoomStatus(roomId, "active");
-    if (res?.code === 200 && res?.status === "success") {
-      // Update local state to reflect the change
-      setRooms((prevRooms) =>
-        prevRooms.map((r) =>
-          r._id === roomId ? { ...r, status: "active" } : r
-        )
-      );
-    }
-
-    dispatch(selectRoom(roomNumber));
-    Navigate(`/ktv/${roomNumber}`);
+  const handleTableSelect = (room) => {
+    if (!room) return;
+    dispatch(
+      setRoomDetails({
+        room: room.roomNumber,
+        roomId: room._id,
+        status: room.status,
+      })
+    );
+    dispatch(selectRoom(room.roomNumber));
+    Navigate(`/ktv/${room.roomNumber}`);
   };
 
   const handleCreateRoom = async () => {
@@ -129,7 +125,7 @@ const RoomPage = () => {
                       ? "bg-primary text-white"
                       : "bg-white text-primary"
                   } border border-gray-300 px-2 py-4 rounded-lg font-bold hover:shadow-lg transition-all`}
-                  onClick={() => handleTableSelect(room.roomNumber, room._id)}
+                  onClick={() => handleTableSelect(room)}
                 >
                   <div className="flex flex-col">
                     <span className="text-lg">Room {room.roomNumber}</span>

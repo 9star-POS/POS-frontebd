@@ -1,5 +1,5 @@
 // import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
   Menu,
@@ -15,6 +15,9 @@ import {
 import { useAuth } from "../hook/auth/AuthContext";
 
 const Sidebar = ({ closeSidebar }) => {
+  const location = useLocation();
+  const pathname = location.pathname;
+
   const navItems = [
     { to: "/", icon: Home, label: "Restaurant" },
     { to: "/ktv", icon: Music, label: "KTV" },
@@ -26,25 +29,31 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/notifications", icon: Bell, label: "Notifications" },
   ];
 
+  const isNavActive = (navTo) => {
+    if (navTo === "/") {
+      if (pathname === "/") return true;
+      if (pathname.startsWith("/order/")) return true;
+      if (/^\/\d+/.test(pathname)) return true;
+      return false;
+    }
+    return pathname === navTo || pathname.startsWith(`${navTo}/`);
+  };
+
   return (
     <div>
-      {navItems.map((nav, index) => {
-        return (
-          <NavLink
-            key={index}
-            to={nav.to}
-            className={({ isActive }) =>
-              isActive ? "text-primary" : "text-gray-500"
-            }
-            onClick={closeSidebar}
-          >
-            <div className="flex items-center p-2 my-2 rounded-lg hover:bg-gray-100">
-              {/* <nav.icon className="w-6 h-6" /> */}
-              <span className="ml-2 font-bold text-lg">{nav.label}</span>
-            </div>
-          </NavLink>
-        );
-      })}
+      {navItems.map((nav, index) => (
+        <NavLink
+          key={index}
+          to={nav.to}
+          className={`flex items-center p-2 my-2 rounded-lg transition-colors hover:bg-gray-100 ${
+            isNavActive(nav.to) ? "text-primary bg-prilight" : "text-gray-500"
+          }`}
+          onClick={closeSidebar}
+        >
+          {/* <nav.icon className="w-6 h-6" /> */}
+          <span className="ml-2 font-bold text-lg">{nav.label}</span>
+        </NavLink>
+      ))}
     </div>
   );
 };

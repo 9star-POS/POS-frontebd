@@ -136,7 +136,7 @@ export default function App() {
                       }
                     />
                     <Route
-                      path="/order/:table"
+                      path="/:table"
                       element={
                         <PrivateRoute>
                           <HomePage />

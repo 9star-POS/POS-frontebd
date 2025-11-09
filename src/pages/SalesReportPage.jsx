@@ -5,6 +5,9 @@ import Calendar from "../components/Calender";
 import getSaleReport from "../api/report/getSaleReport";
 import getStockAnalytics from "../api/report/getStockAnalytics";
 import { ArrowUpDown } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import SalesSummaryPDF from "../components/Home/pdf/SalesSummaryPDF";
+import StockAnalyticsPDF from "../components/Home/pdf/StockAnalyticsPDF";
 
 const SalesReportPage = () => {
   const [loading, setLoading] = useState(false);
@@ -22,6 +25,24 @@ const SalesReportPage = () => {
   const handleDateChange = (dates) => {
     setStartDate(dates.startDate);
     setEndDate(dates.endDate);
+  };
+
+  const formatDisplayDate = (date) => {
+    if (!date) return "";
+    try {
+      return format(new Date(date), "yyyy MMM dd");
+    } catch {
+      return String(date);
+    }
+  };
+
+  const formatFileDate = (date) => {
+    if (!date) return "unknown-date";
+    try {
+      return format(new Date(date), "yyyyMMdd");
+    } catch {
+      return "unknown-date";
+    }
   };
 
   const fetchReport = async () => {
@@ -177,8 +198,46 @@ const SalesReportPage = () => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Reports</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap justify-end">
           <Calendar sendDate={handleDateChange} />
+          {activeTab === "sales" && reportData && (
+            <PDFDownloadLink
+              document={
+                <SalesSummaryPDF
+                  reportData={reportData}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              }
+              fileName={`sales-report-${formatFileDate(
+                startDate
+              )}-${formatFileDate(endDate)}.pdf`}
+              className="bg-white border border-primary text-primary px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors"
+            >
+              {({ loading: pdfLoading }) =>
+                pdfLoading ? "Preparing PDF..." : "Download Sales PDF"
+              }
+            </PDFDownloadLink>
+          )}
+          {activeTab === "analytics" && analyticsData && (
+            <PDFDownloadLink
+              document={
+                <StockAnalyticsPDF
+                  analyticsData={analyticsData}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              }
+              fileName={`stock-analytics-${formatFileDate(
+                startDate
+              )}-${formatFileDate(endDate)}.pdf`}
+              className="bg-white border border-primary text-primary px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors"
+            >
+              {({ loading: pdfLoading }) =>
+                pdfLoading ? "Preparing PDF..." : "Download Analytics PDF"
+              }
+            </PDFDownloadLink>
+          )}
           <button
             onClick={generateReport}
             className="bg-primary text-white px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold"

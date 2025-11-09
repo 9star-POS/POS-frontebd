@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import getAllTables from "../../api/Table/getAllTables";
 import { toast } from "sonner";
 import Loading from "../Loading";
+import CreateTableModal from "./CreateTableModal";
 
 const TablePage = () => {
   const Navigate = useNavigate();
@@ -13,6 +14,7 @@ const TablePage = () => {
   const receipts = useSelector((state) => state.receipts.receipts);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   //   const orderType = useSelector(
   //     (state) => state.receipts.receipts[selectedTable]?.orderType || "Dine In"
   //   );
@@ -45,7 +47,7 @@ const TablePage = () => {
 
   const handleTableSelect = (tableNumber) => {
     dispatch(selectTable(tableNumber));
-    Navigate(`/order/${tableNumber}`);
+    Navigate(`/${tableNumber}`);
   };
 
   if (loading) {
@@ -61,6 +63,13 @@ const TablePage = () => {
       <div className="w-full px-5">
         <div className="flex justify-between items-center mb-2">
           <h2 className="sub-header">Tables</h2>
+          <button
+            type="button"
+            className="rounded-md border border-primary bg-primary px-4 py-2 text-white transition hover:bg-white hover:text-primary"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Create Table
+          </button>
         </div>
 
         {/* <div className="mb-4 ">
@@ -139,6 +148,13 @@ const TablePage = () => {
           </button>
         </div> */}
       </div>
+      <CreateTableModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          fetchTables();
+        }}
+      />
     </div>
   );
 };

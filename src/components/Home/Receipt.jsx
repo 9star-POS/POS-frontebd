@@ -175,18 +175,18 @@ function Receipt({ onClose }) {
       return;
     }
 
-    const orderData = {
-      table: selectedTable,
-      orderType: receipts[selectedTable].orderType,
-      orders: receipts[selectedTable].items.map((item) => ({
-        dishName: item.name,
-        price: item.price,
-        quantity: item.quantity || 1,
-      })),
-      totalPrice: calculateSubtotal(),
-      finalPrice: calculateTotal(),
-      tax: taxRate / 100,
-    };
+    // const orderData = {
+    //   table: selectedTable,
+    //   orderType: receipts[selectedTable].orderType,
+    //   orders: receipts[selectedTable].items.map((item) => ({
+    //     dishName: item.name,
+    //     price: item.price,
+    //     quantity: item.quantity || 1,
+    //   })),
+    //   totalPrice: calculateSubtotal(),
+    //   finalPrice: calculateTotal(),
+    //   tax: taxRate / 100,
+    // };
 
     setIsCalculatorOpen(true);
   };
@@ -208,7 +208,7 @@ function Receipt({ onClose }) {
       if (res?.status === "success" || res?.code === 200) {
         toast.success("Checkout completed successfully");
         setIsCalculatorOpen(false);
-        
+
         // Prepare order data for printing
         const orderForPrint = {
           ...res?.data,
@@ -217,13 +217,16 @@ function Receipt({ onClose }) {
           },
           tableNumber: selectedTable,
           table: selectedTable,
-          orderItems: res?.data?.orderItems || receipts[selectedTable]?.items?.map(item => ({
-            stockName: item.name,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity || 1,
-            _id: item._id || item.stockId,
-          })) || [],
+          orderItems:
+            res?.data?.orderItems ||
+            receipts[selectedTable]?.items?.map((item) => ({
+              stockName: item.name,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity || 1,
+              _id: item._id || item.stockId,
+            })) ||
+            [],
           subTotal: res?.data?.subTotal || calculateSubtotal(),
           tax: res?.data?.tax || taxRate,
           discount: res?.data?.discount || 0,
@@ -232,10 +235,10 @@ function Receipt({ onClose }) {
           createdAt: res?.data?.createdAt || new Date().toISOString(),
           updatedAt: res?.data?.updatedAt || new Date().toISOString(),
         };
-        
+
         // Print receipt
         printReceipt(orderForPrint, false);
-        
+
         setRemoteOrder(res?.data || null);
         setOrderId(null);
         navigate("/");

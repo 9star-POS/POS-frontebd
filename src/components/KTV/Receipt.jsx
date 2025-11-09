@@ -15,6 +15,8 @@ import {
   decrementVocalistServiceTime,
   removeVocalistFromRoom,
   setOrderIdForRoom,
+  setRoomDetails,
+  setRoomStatus,
 } from "./../../redux/ktvReceiptSlice";
 import { useNavigate } from "react-router-dom";
 import box from "./../../assets/box.png";
@@ -27,6 +29,7 @@ import sendKtvOrder from "../../api/KTV/sendKtvOrder";
 import getRoomService from "../../api/KTV/getRoomService";
 import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 import updateKtvOrder from "../../api/KTV/updateKtvOrder";
+import updateRoomStatus from "../../api/KTV/updateRoomStatus";
 import TimestampFormatter from "../Orders/TimestampFormatter";
 import SplitOrderModal from "./SplitOrderModal";
 import printReceipt from "../../utils/printReceipt";
@@ -37,6 +40,12 @@ function Receipt({ onClose }) {
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
   console.log("selectedRoom", selectedRoom);
   const receipts = useSelector((state) => state.ktvReceipts.receipts);
+  const roomDetails = useSelector((state) => state.ktvReceipts.roomDetails);
+  const selectedRoomDetails = selectedRoom
+    ? roomDetails?.[selectedRoom] || null
+    : null;
+  const selectedRoomId = selectedRoomDetails?.roomId;
+  const selectedRoomStatus = selectedRoomDetails?.status;
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -494,6 +503,33 @@ function Receipt({ onClose }) {
           dispatch(
             setOrderIdForRoom({ room: selectedRoom, orderId: newOrderId })
           );
+        }
+        if (selectedRoom && selectedRoomId && selectedRoomStatus !== "active") {
+          try {
+            const statusResponse = await updateRoomStatus(
+              selectedRoomId,
+              "active"
+            );
+            if (statusResponse?.code === 200) {
+              dispatch(
+                setRoomStatus({
+                  room: selectedRoom,
+                  status: statusResponse?.data?.status || "active",
+                })
+              );
+              dispatch(
+                setRoomDetails({
+                  room: selectedRoom,
+                  roomId: selectedRoomId,
+                  status: statusResponse?.data?.status || "active",
+                })
+              );
+            } else if (statusResponse?.message) {
+              toast.info(statusResponse.message);
+            }
+          } catch (error) {
+            console.error("Failed to update room status", error);
+          }
         }
 
         // Update remote order state with full response

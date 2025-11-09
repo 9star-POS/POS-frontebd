@@ -101,7 +101,7 @@ const OrdersPage = () => {
       const completedOrders = res.data.filter(
         (order) => order.status === "completed"
       );
-      setOrders(completedOrders.reverse() || []);
+      setOrders(completedOrders || []);
     } else {
       setLoading(false);
       setOrders([]);
