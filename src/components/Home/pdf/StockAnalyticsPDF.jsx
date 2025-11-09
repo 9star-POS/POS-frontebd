@@ -15,11 +15,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 10,
     fontFamily: "NotoSansMyanmar",
+    fontWeight: "bold",
   },
   subHeader: {
     textAlign: "center",
     fontSize: 11,
     marginBottom: 16,
+    fontFamily: "NotoSansMyanmar",
   },
   section: {
     marginBottom: 14,
@@ -38,10 +40,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     color: "#333333",
+    fontFamily: "NotoSansMyanmar",
   },
   value: {
     fontSize: 11,
     fontWeight: "bold",
+    fontFamily: "NotoSansMyanmar",
   },
   tableHeader: {
     flexDirection: "row",
@@ -52,6 +56,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontFamily: "NotoSansMyanmar",
+    fontWeight: "bold",
   },
   tableRow: {
     flexDirection: "row",
@@ -83,9 +88,7 @@ const formatDate = (date) => {
 };
 
 const formatCurrency = (value) =>
-  typeof value === "number"
-    ? `${value.toLocaleString("en-US")} MMK`
-    : "0 MMK";
+  typeof value === "number" ? `${value.toLocaleString("en-US")} MMK` : "0 MMK";
 
 const StockAnalyticsPDF = ({ analyticsData, startDate, endDate }) => {
   const summary = analyticsData?.summary;
@@ -180,4 +183,3 @@ const StockAnalyticsPDF = ({ analyticsData, startDate, endDate }) => {
 };
 
 export default StockAnalyticsPDF;
-

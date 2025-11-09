@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-// import { format } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 // import getAllOrders from "../api/Order/getAllOrders";
 // import getKtvOrdersByDate from "../api/KTV/getKtvOrdersByDate";
 import getRestaurantOrders from "../api/Order/getRestaurantOrders";
 import getKtvOrders from "../api/Order/getKtvOrders";
 import OrderTable from "../components/Orders/OrderTable";
 // import { TbReport } from "react-icons/tb";
-// import Calendar from "../components/Calender";
+import Calendar from "../components/Calender";
 import deleteOrders from "../api/Order/deleteOrder";
 import EditOrder from "./EditOrder";
 // import getReport from "../api/report/getReport";
@@ -23,6 +23,11 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("restaurant"); // "restaurant" or "ktv"
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+  const [filters, setFilters] = useState(() => ({
+    startDate: today,
+    endDate: today,
+  }));
 
   // Callback function to receive data from child
   const handleDataFromChild = (childData) => {
@@ -85,14 +90,23 @@ const OrdersPage = () => {
   // };
   // console.log(orders.length);
 
-  const getOrders = async () => {
+  const getOrders = async (overrideFilters) => {
     setLoading(true);
     let res;
+    const params = {};
+    const appliedFilters = overrideFilters ?? filters;
+
+    if (appliedFilters.startDate) {
+      params.startDate = appliedFilters.startDate;
+    }
+    if (appliedFilters.endDate) {
+      params.endDate = appliedFilters.endDate;
+    }
 
     if (activeTab === "restaurant") {
-      res = await getRestaurantOrders();
+      res = await getRestaurantOrders(params);
     } else {
-      res = await getKtvOrders();
+      res = await getKtvOrders(params);
     }
 
     if (res?.code === 200 && res?.status !== "error") {
@@ -108,29 +122,67 @@ const OrdersPage = () => {
     }
   };
 
+  const handleDateRangeChange = (dates) => {
+    const newFilters = {
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+    };
+    setFilters(newFilters);
+    getOrders(newFilters);
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters = { startDate: today, endDate: today };
+    setFilters(resetFilters);
+    getOrders(resetFilters);
+  };
+
   useEffect(() => {
     getOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  useEffect(() => {
+    getOrders(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const currentFilters = filters;
+  const showResetButton =
+    currentFilters.startDate !== today || currentFilters.endDate !== today;
 
   return (
     <div className="p-5">
       <div className="min-h-screen">
         <div className="md:flex justify-between mb-5">
           <h1 className="sub-header font-bold">Orders Management</h1>
-          <div className="flex gap-4">
-            <div>
+          <div className="flex items-center gap-4 flex-wrap justify-end">
+            <Calendar
+              sendDate={handleDateRangeChange}
+              selectedStartDate={currentFilters.startDate}
+              selectedEndDate={currentFilters.endDate}
+              defaultStartDate={today}
+              defaultEndDate={today}
+            />
+            {showResetButton && (
               <button
-                disabled={orderIds.length == 0}
-                className={`p-2 md:p-4 rounded-md text-white bg-red-500 transition-all duration-300 ease-in-out ${
-                  orderIds.length == 0
-                    ? "opacity-50"
-                    : "hover:scale-95 active:scale-105"
-                }`}
-                onClick={() => setIsDeleteOpen(true)}
+                className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100"
+                onClick={handleResetFilters}
               >
-                <Trash2Icon size={20} />
+                Reset
               </button>
-            </div>
+            )}
+            <button
+              disabled={orderIds.length == 0}
+              className={`p-2 md:p-4 rounded-md text-white bg-red-500 transition-all duration-300 ease-in-out ${
+                orderIds.length == 0
+                  ? "opacity-50"
+                  : "hover:scale-95 active:scale-105"
+              }`}
+              onClick={() => setIsDeleteOpen(true)}
+            >
+              <Trash2Icon size={20} />
+            </button>
           </div>
         </div>
 

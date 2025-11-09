@@ -195,7 +195,7 @@ const SalesReportPage = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 h-screen">
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Reports</h1>
         <div className="flex items-center gap-4 flex-wrap justify-end">

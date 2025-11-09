@@ -14,11 +14,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     marginBottom: 16,
+    fontFamily: "NotoSansMyanmar",
+    fontWeight: "bold",
   },
   subHeader: {
     fontSize: 12,
     marginBottom: 12,
     textAlign: "center",
+    fontFamily: "NotoSansMyanmar",
   },
   section: {
     marginBottom: 16,

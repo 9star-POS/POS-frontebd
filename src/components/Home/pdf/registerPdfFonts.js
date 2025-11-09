@@ -1,4 +1,6 @@
 import { Font } from "@react-pdf/renderer";
+import NotoSansMyanmarRegular from "../../../assets/Font/NotoSansMyanmar-Regular.ttf";
+import NotoSansMyanmarBold from "../../../assets/Font/NotoSansMyanmar-Bold.ttf";
 
 let fontsRegistered = false;
 
@@ -9,11 +11,11 @@ const registerPdfFonts = () => {
     family: "NotoSansMyanmar",
     fonts: [
       {
-        src: "https://fonts.gstatic.com/s/notosansmyanmar/v13/ZGhIjOwIsZRM0bbLB8N0Mbv9M18-RJW4nxaYHjY.ttf",
+        src: NotoSansMyanmarRegular,
         fontWeight: "normal",
       },
       {
-        src: "https://fonts.gstatic.com/s/notosansmyanmar/v13/ZGhKjOwIsZRM0bbLB8N0Mbv9M18ydJaiuAeqJDs0s_c.ttf",
+        src: NotoSansMyanmarBold,
         fontWeight: "bold",
       },
     ],
@@ -23,4 +25,3 @@ const registerPdfFonts = () => {
 };
 
 export default registerPdfFonts;
-
