@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { RefreshCw, Search, Users, Plus, X } from "lucide-react";
+import { RefreshCw, Search, Users, Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import getAccounts from "../api/admin/getAccounts";
 import createAccount from "../api/admin/createAccount";
+import updateAccount from "../api/admin/updateAccount";
+import softDeleteAccount from "../api/admin/softDeleteAccount";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 
@@ -16,6 +18,16 @@ const AccountManagementPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingAccountId, setDeletingAccountId] = useState(null);
+  const [pendingDeleteAccount, setPendingDeleteAccount] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [detailFormData, setDetailFormData] = useState({
+    name: "",
+    role: "waiter",
+  });
   const [formData, setFormData] = useState({
     name: "",
     role: "waiter",
@@ -107,6 +119,70 @@ const AccountManagementPage = () => {
         {role}
       </span>
     );
+  };
+
+  const openDetailModal = (account) => {
+    setSelectedAccount(account);
+    setDetailFormData({
+      name: account.name || "",
+      role: account.role || "waiter",
+    });
+    setIsDetailOpen(true);
+  };
+
+  const handleUpdateAccount = async (event) => {
+    event.preventDefault();
+    if (!selectedAccount?._id) return;
+    if (!detailFormData.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+      const res = await updateAccount({
+        accountId: selectedAccount._id,
+        name: detailFormData.name.trim(),
+        role: detailFormData.role,
+      });
+
+      if (res?.success || res?.code === 200) {
+        toast.success(res?.message || "Account updated successfully");
+        setIsDetailOpen(false);
+        await fetchAccounts();
+      } else {
+        toast.error(res?.message || "Failed to update account");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to update account");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteClick = (account) => {
+    setPendingDeleteAccount(account);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmSoftDelete = async () => {
+    if (!pendingDeleteAccount?._id) return;
+    try {
+      setDeletingAccountId(pendingDeleteAccount._id);
+      const res = await softDeleteAccount(pendingDeleteAccount._id);
+      if (res?.status === "success" || res?.code === 200) {
+        toast.success(res?.message || "Account deactivated successfully");
+        await fetchAccounts();
+        setIsDeleteModalOpen(false);
+        setPendingDeleteAccount(null);
+      } else {
+        toast.error(res?.message || "Failed to deactivate account");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to deactivate account");
+    } finally {
+      setDeletingAccountId(null);
+    }
   };
 
   const handleCreateAccount = async (event) => {
@@ -226,7 +302,7 @@ const AccountManagementPage = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-5 overflow-x-auto max-h-[65vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-md p-5">
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-3 text-gray-400" size={18} />
@@ -264,9 +340,9 @@ const AccountManagementPage = () => {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="h-[calc(100vh-450px)] overflow-y-auto">
+            <table className="min-w-full divide-y divide-gray-200 ">
+              <thead className="bg-gray-50 sticky top-0">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Name
@@ -283,6 +359,9 @@ const AccountManagementPage = () => {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -298,7 +377,9 @@ const AccountManagementPage = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="px-4 py-3">{renderRoleBadge(account.role)}</td>
+                    <td className="px-4 py-3">
+                      {renderRoleBadge(account.role)}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatDate(account.createdAt)}
                     </td>
@@ -315,6 +396,62 @@ const AccountManagementPage = () => {
                       >
                         {account.softDeleted ? "Deactivated" : "Active"}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors"
+                          onClick={() => openDetailModal(account)}
+                          aria-label="View account details"
+                          title="View / Edit"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-primary"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={1.8}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M1.5 12s3.75-6.75 10.5-6.75S22.5 12 22.5 12s-3.75 6.75-10.5 6.75S1.5 12 1.5 12z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          onClick={() => handleDeleteClick(account)}
+                          aria-label="Soft delete account"
+                          title="Deactivate"
+                          disabled={deletingAccountId === account._id}
+                        >
+                          {deletingAccountId === account._id ? (
+                            <svg
+                              className="w-5 h-5 text-red-500 animate-spin"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4 12a8 8 0 018-8"
+                              />
+                            </svg>
+                          ) : (
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -334,9 +471,7 @@ const AccountManagementPage = () => {
             >
               <X size={20} />
             </button>
-            <h2 className="text-xl font-semibold mb-1">
-              Create New Account
-            </h2>
+            <h2 className="text-xl font-semibold mb-1">Create New Account</h2>
             <p className="text-sm text-gray-500 mb-4">
               Provide details to add a new staff account.
             </p>
@@ -439,9 +574,184 @@ const AccountManagementPage = () => {
           </div>
         </div>
       )}
+
+      {isDetailOpen && selectedAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={() => setIsDetailOpen(false)}
+              disabled={isUpdating}
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-semibold mb-1">Account Details</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Review account activity or update the display name and role.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <p className="text-sm text-gray-500 mb-1">Account ID</p>
+                <p className="font-mono text-sm">{selectedAccount._id}</p>
+              </div>
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <p className="text-sm text-gray-500 mb-1">Created</p>
+                <p className="text-sm">
+                  {formatDate(selectedAccount.createdAt)}
+                </p>
+              </div>
+              {/* <div className="border rounded-lg p-4 bg-gray-50">
+                <p className="text-sm text-gray-500 mb-1">Last Active</p>
+                <p className="text-sm">
+                  {formatDate(selectedAccount.lastActiveAt)}
+                </p>
+              </div>
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <p className="text-sm text-gray-500 mb-1">Status</p>
+                <p>
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded ${
+                      selectedAccount.softDeleted
+                        ? "bg-red-100 text-red-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {selectedAccount.softDeleted ? "Deactivated" : "Active"}
+                  </span>
+                </p>
+              </div> */}
+            </div>
+
+            <form className="space-y-4" onSubmit={handleUpdateAccount}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={detailFormData.name}
+                  onChange={(e) =>
+                    setDetailFormData((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Enter name"
+                  disabled={isUpdating}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={detailFormData.role}
+                  onChange={(e) =>
+                    setDetailFormData((prev) => ({
+                      ...prev,
+                      role: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40 capitalize"
+                  disabled={isUpdating}
+                >
+                  {ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
+                  onClick={() => setIsDetailOpen(false)}
+                  disabled={isUpdating}
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && pendingDeleteAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                if (deletingAccountId) return;
+                setIsDeleteModalOpen(false);
+                setPendingDeleteAccount(null);
+              }}
+              disabled={Boolean(deletingAccountId)}
+            >
+              <X size={20} />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 text-red-600 rounded-full">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Deactivate Account?</h2>
+                <p className="text-sm text-gray-500">
+                  This will mark the account as inactive. You can reactivate it
+                  later if needed.
+                </p>
+              </div>
+            </div>
+
+            <div className="border rounded-lg bg-gray-50 p-3 mb-4">
+              <p className="text-sm text-gray-500 mb-1">Account</p>
+              <p className="font-semibold text-gray-900">
+                {pendingDeleteAccount.name || "Unnamed User"}
+              </p>
+              <p className="text-xs text-gray-500">
+                ID: {pendingDeleteAccount._id}
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
+                onClick={() => {
+                  if (deletingAccountId) return;
+                  setIsDeleteModalOpen(false);
+                  setPendingDeleteAccount(null);
+                }}
+                disabled={Boolean(deletingAccountId)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                onClick={confirmSoftDelete}
+                disabled={Boolean(deletingAccountId)}
+              >
+                {deletingAccountId ? "Deactivating..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AccountManagementPage;
-

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import Calendar from "../components/Calender";
@@ -15,6 +15,7 @@ const SalesReportPage = () => {
   const [reportData, setReportData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [activeTab, setActiveTab] = useState("sales"); // "sales" or "analytics"
+  const [analyticsFilter, setAnalyticsFilter] = useState("all"); // all, restaurant, ktv
   const [sortConfig, setSortConfig] = useState({
     key: "totalQuantity",
     direction: "descending",
@@ -118,6 +119,85 @@ const SalesReportPage = () => {
     }
   }, [activeTab, startDate, endDate]);
 
+  const analyticsItems = analyticsData?.analytics || [];
+
+  const filteredAnalyticsItems = useMemo(() => {
+    if (!analyticsItems.length) return [];
+    if (analyticsFilter === "restaurant") {
+      return analyticsItems.filter(
+        (item) => (item.restaurantQuantity ?? 0) > 0
+      );
+    }
+    if (analyticsFilter === "ktv") {
+      return analyticsItems.filter(
+        (item) =>
+          (item.restaurantQuantity ?? 0) === 0 &&
+          (item.ktvQuantity ?? item.totalQuantity ?? 0) > 0
+      );
+    }
+    return analyticsItems;
+  }, [analyticsFilter, analyticsItems]);
+
+  const filteredSummary = useMemo(() => {
+    if (!analyticsData) {
+      return { totalUniqueStocks: 0, totalItemsSold: 0, totalRevenue: 0 };
+    }
+
+    if (analyticsFilter === "all") {
+      if (analyticsData.summary) return analyticsData.summary;
+      const totalItemsSold = analyticsItems.reduce(
+        (acc, item) => acc + (item.totalQuantity ?? 0),
+        0
+      );
+      const totalRevenue = analyticsItems.reduce(
+        (acc, item) => acc + (item.totalRevenue ?? 0),
+        0
+      );
+      return {
+        totalUniqueStocks: analyticsItems.length,
+        totalItemsSold,
+        totalRevenue,
+      };
+    }
+
+    const items = filteredAnalyticsItems;
+    const totalItemsSold = items.reduce((acc, item) => {
+      if (analyticsFilter === "restaurant") {
+        return acc + (item.restaurantQuantity ?? 0);
+      }
+      return acc + (item.ktvQuantity ?? 0);
+    }, 0);
+
+    const totalRevenue = items.reduce((acc, item) => {
+      if (analyticsFilter === "restaurant") {
+        if (typeof item.restaurantRevenue === "number") {
+          return acc + item.restaurantRevenue;
+        }
+        if (typeof item.totalRevenue === "number") {
+          const ktvRevenue = Number(item.ktvRevenue ?? 0);
+          return acc + Math.max(item.totalRevenue - ktvRevenue, 0);
+        }
+        return acc;
+      }
+
+      // KTV filter
+      if (typeof item.ktvRevenue === "number") {
+        return acc + item.ktvRevenue;
+      }
+      if (typeof item.totalRevenue === "number") {
+        const restaurantRevenue = Number(item.restaurantRevenue ?? 0);
+        return acc + Math.max(item.totalRevenue - restaurantRevenue, 0);
+      }
+      return acc;
+    }, 0);
+
+    return {
+      totalUniqueStocks: items.length,
+      totalItemsSold,
+      totalRevenue,
+    };
+  }, [analyticsData, analyticsItems, analyticsFilter, filteredAnalyticsItems]);
+
   const ReportCard = ({ title, data }) => {
     // Handle both combined and individual order data structures
     const orderCount =
@@ -195,7 +275,7 @@ const SalesReportPage = () => {
   };
 
   return (
-    <div className="p-4 h-screen">
+    <div className="p-4 h-[calc(100vh-110px)]">
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Reports</h1>
         <div className="flex items-center gap-4 flex-wrap justify-end">
@@ -337,10 +417,30 @@ const SalesReportPage = () => {
         <>
           {analyticsData && (
             <div>
-              <AnalyticsSummaryCard data={analyticsData.summary} />
+              <div className="flex gap-3 mb-4">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "restaurant", label: "Restaurant" },
+                  { key: "ktv", label: "KTV" },
+                ].map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => setAnalyticsFilter(option.key)}
+                    className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+                      analyticsFilter === option.key
+                        ? "bg-primary text-white border-primary"
+                        : "border-gray-300 text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <AnalyticsSummaryCard data={filteredSummary} />
 
               <div className="bg-white rounded-lg shadow-md pb-10 overflow-hidden">
-                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
+                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-47  0px)]">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>
@@ -395,7 +495,7 @@ const SalesReportPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {sortData(analyticsData.analytics).map((item) => (
+                      {sortData(filteredAnalyticsItems).map((item) => (
                         <tr key={item.stockId} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">

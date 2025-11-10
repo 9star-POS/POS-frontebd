@@ -6,7 +6,7 @@ function Loading({ type, color }) {
     <div className="flex w-full md:h-screen justify-center items-center">
       <ReactLoading
         type="balls"
-        color="#FF6F00"
+        color="#2b2f33"
         height={"3%"}
         width={"4%"}
         className="mt-[200px] md:mt-0"

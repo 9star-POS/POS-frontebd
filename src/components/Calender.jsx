@@ -174,7 +174,7 @@ const Calendar = ({
             }}
             moveRangeOnFirstSelection={false}
             ranges={state}
-            rangeColors={["#EB5B00"]}
+            rangeColors={["#2b2f33"]}
           />
           <div className="flex justify-end gap-2">
             <button

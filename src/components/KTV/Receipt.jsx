@@ -897,7 +897,7 @@ function Receipt({ onClose }) {
               )}
             </div>
 
-            <div className="sticky bottom-[-60px] bg-white border-t pt-3">
+            <div className="sticky bottom-[0] pb-2 bg-white border-t pt-3">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Subtotal</p>

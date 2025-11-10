@@ -43,7 +43,7 @@ const MenuList = ({ category }) => {
             subHeader="Set Up your Shop Menu"
           />
           <button
-            className=" mt-5 bg-primary text-xl text-black py-2 px-10 rounded-md
+            className=" mt-5 bg-primary text-xl text-white py-2 px-10 rounded-md
                      transition duration-200 hover:text-primary hover:bg-black hover:border hover:border-primary"
             onClick={() => setIsModalOpen(true)}
           >
