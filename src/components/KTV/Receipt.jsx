@@ -47,6 +47,7 @@ function Receipt({ onClose }) {
   const selectedRoomId = selectedRoomDetails?.roomId;
   const selectedRoomStatus = selectedRoomDetails?.status;
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
+  const [discountRate, setDiscountRate] = useState(0); // Default 0% discount
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [remoteOrder, setRemoteOrder] = useState(null);
@@ -205,6 +206,13 @@ function Receipt({ onClose }) {
     }
   };
 
+  const handleDiscountChange = (e) => {
+    const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
+    if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
+      setDiscountRate(value === "" ? 0 : Number(value));
+    }
+  };
+
   const hasLocalItems =
     !!selectedRoom && !!receipts[selectedRoom]?.items?.length;
 
@@ -265,13 +273,23 @@ function Receipt({ onClose }) {
     return baseAmount * (taxRate / 100);
   };
 
+  const calculateDiscount = () => {
+    // Discount applies to subtotal + room charges + vocalist charges
+    const subtotal = calculateSubtotal();
+    const roomCharges = calculateRoomCharges();
+    const vocalistCharges = calculateVocalistCharges();
+    const baseAmount = subtotal + roomCharges + vocalistCharges;
+    return baseAmount * (discountRate / 100);
+  };
+
   const calculateTotal = () => {
     if (remoteOrder?.total != null) return Number(remoteOrder.total) || 0;
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
+    const discount = calculateDiscount();
     const roomCharges = calculateRoomCharges();
     const vocalistCharges = calculateVocalistCharges();
-    return subtotal + tax + roomCharges + vocalistCharges;
+    return subtotal + tax - discount + roomCharges + vocalistCharges;
   };
 
   const handlePayment = () => {
@@ -326,7 +344,7 @@ function Receipt({ onClose }) {
       vocalistCharges: calculateVocalistCharges(),
       subTotal: calculateSubtotal(),
       tax: calculateTax(),
-      discount: 0,
+      discount: discountRate,
       total: calculateTotal(),
       status: "completed",
       paymentMethod: "cash", // Can be extended to support other payment methods
@@ -361,7 +379,7 @@ function Receipt({ onClose }) {
           vocalistCharges:
             res?.data?.vocalistCharges || calculateVocalistCharges(),
           tax: res?.data?.tax || calculateTax(),
-          discount: res?.data?.discount || 0,
+          discount: res?.data?.discount || discountRate,
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",
           createdAt: res?.data?.createdAt || new Date().toISOString(),
@@ -749,7 +767,7 @@ function Receipt({ onClose }) {
 
               {(receipts[selectedRoom]?.roomService ||
                 remoteOrder?.roomService) && (
-                <div className="flex justify-between items-center bg-white py-3 rounded-lg shadow-sm px-3">
+                <div className="flex justify-between items-center bg-white py-3 rounded-lg shadow-sm">
                   <div className="flex-1">
                     <p className="font-medium">Room Service</p>
                     <p className="text-sm text-gray-500 flex items-center gap-2">
@@ -814,7 +832,7 @@ function Receipt({ onClose }) {
               {(receipts[selectedRoom]?.vocalists?.length > 0 ||
                 (Array.isArray(remoteOrder?.vocalist) &&
                   remoteOrder.vocalist.length > 0)) && (
-                <div className="bg-white rounded-lg shadow-sm px-3 py-3">
+                <div className="bg-white rounded-lg shadow-sm py-3">
                   <p className="font-medium mb-2">Vocalists</p>
                   <div className="space-y-2">
                     {(
@@ -897,7 +915,7 @@ function Receipt({ onClose }) {
               )}
             </div>
 
-            <div className="sticky bottom-[0] pb-2 bg-white border-t pt-3">
+            <div className="sticky bottom-[-100px] md:bottom-[0] pb-2 bg-white border-t pt-3">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Subtotal</p>
@@ -939,7 +957,7 @@ function Receipt({ onClose }) {
                     <div className="relative">
                       <input
                         type="text"
-                        value={taxRate === 0 ? "" : taxRate}
+                        value={taxRate === 0 ? "0" : taxRate}
                         onChange={handleTaxChange}
                         className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
                         min="0"
@@ -952,6 +970,28 @@ function Receipt({ onClose }) {
                   </div>
                   <p className="font-medium text-gray-600">
                     {calculateTax().toLocaleString()} MMK
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-600">Discount</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={discountRate === 0 ? "0" : discountRate}
+                        onChange={handleDiscountChange}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-600">
+                    {calculateDiscount().toLocaleString()} MMK
                   </p>
                 </div>
 

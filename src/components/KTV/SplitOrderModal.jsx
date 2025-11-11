@@ -60,8 +60,8 @@ function SplitOrderModal({ isOpen, onClose, items = [], currency = "MMK" }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40">
-      <div className="w-full md:max-w-xl bg-white rounded-t-2xl md:rounded-2xl p-4 md:p-6 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 md:bg-black/40">
+      <div className="w-[350px] md:w-full md:max-w-xl bg-white rounded-2xl border-2 border-primary  md:rounded-2xl p-4 md:p-6 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <p className="text-lg font-semibold">Split Order</p>
           <button

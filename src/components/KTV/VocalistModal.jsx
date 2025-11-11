@@ -6,17 +6,22 @@ import createVocalist from "../../api/KTV/createVocalist";
 import {
   addVocalistToRoom,
   setVocalistsForRoom,
+  setOrderIdForRoom,
 } from "../../redux/ktvReceiptSlice";
 import { toast } from "sonner";
 import Loading from "../Loading";
 import addVocalistToOrder from "../../api/KTV/addVocalistToOrder";
+import getKtvOrders from "../../api/Order/getKtvOrders";
 
 const VocalistModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
-  const orderId = useSelector(
+  console.log(selectedRoom);
+  const orderIdFromRedux = useSelector(
     (state) => state.ktvReceipts.orderIds?.[selectedRoom] || null
   );
+  const [orderId, setOrderId] = useState(orderIdFromRedux);
+
   console.log(orderId);
   const existingVocalists = useSelector(
     (state) => state.ktvReceipts.receipts[selectedRoom]?.vocalists || []
@@ -31,11 +36,54 @@ const VocalistModal = ({ isOpen, onClose }) => {
   });
   const [isCreating, setIsCreating] = useState(false);
 
+  // Fetch orderId when modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && selectedRoom) {
+      fetchCurrentOrder();
       fetchVocalists();
     }
-  }, [isOpen]);
+  }, [isOpen, selectedRoom]);
+
+  // Sync orderId from Redux
+  useEffect(() => {
+    setOrderId(orderIdFromRedux);
+  }, [orderIdFromRedux]);
+
+  const fetchCurrentOrder = async () => {
+    if (!selectedRoom) return;
+
+    try {
+      const res = await getKtvOrders();
+      if (res?.code === 200 && Array.isArray(res.data)) {
+        // Find active order for this room
+        const forRoom = res.data.filter(
+          (o) =>
+            String(o.roomService?.roomNumber) === String(selectedRoom) &&
+            o?.isDeleted === false &&
+            (o.status === "pending" ||
+              o.status === "ongoing" ||
+              o.status === "in_progress")
+        );
+        // Pick the latest active order by createdAt
+        const pickLatest = (list) =>
+          list
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
+          null;
+        const chosen = pickLatest(forRoom);
+        if (chosen?._id) {
+          const foundOrderId = chosen._id;
+          setOrderId(foundOrderId);
+          // Also update Redux state
+          dispatch(
+            setOrderIdForRoom({ room: selectedRoom, orderId: foundOrderId })
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch current order:", error);
+    }
+  };
 
   const fetchVocalists = async () => {
     setLoading(true);

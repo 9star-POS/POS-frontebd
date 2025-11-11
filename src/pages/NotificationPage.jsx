@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import React from "react";
 import {
   Bell,
   X,
@@ -9,105 +8,18 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
-import { io } from "socket.io-client";
+import { useNotifications } from "../contexts/NotificationContext";
 
 const NotificationPage = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const socketRef = useRef(null);
-
-  useEffect(() => {
-    // Connect to Socket.IO server
-    const socket = io.connect(
-      import.meta.env.VITE_APP_API || import.meta.env.VITE_API_URL,
-      {
-        transports: ["websocket"],
-        secure: true,
-      }
-    );
-
-    socketRef.current = socket;
-
-    // Connection event handlers
-    socket.on("connect", () => {
-      console.log("Socket.IO connected");
-      setIsConnected(true);
-      toast.success("Connected to notification service");
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Socket.IO disconnected");
-      setIsConnected(false);
-    });
-
-    socket.on("connect_error", (error) => {
-      console.error("Socket.IO connection error:", error);
-      setIsConnected(false);
-    });
-
-    // Listen for "new-notification" event
-    socket.on("new-notification", (data) => {
-      console.log("data", data);
-      try {
-        const notification = {
-          id: data.notificationId || Date.now() + Math.random(),
-          message: data.message || "New Notification",
-          createdAt: data.createdAt || new Date().toISOString(),
-          read: data.isRead || false,
-          orderFrom: data.orderFrom || "",
-          orderItemStatus: data.orderItemStatus || "",
-          metadata: data.metadata || {},
-        };
-
-        setNotifications((prev) => [notification, ...prev]);
-        if (!notification.read) {
-          setUnreadCount((prev) => prev + 1);
-        }
-
-        // Show toast notification
-        toast.info(notification.message, {
-          duration: 5000,
-        });
-      } catch (error) {
-        console.error("Error processing notification:", error);
-      }
-    });
-
-    // Cleanup on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
-
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
-    setUnreadCount(0);
-  };
-
-  const deleteNotification = (id) => {
-    setNotifications((prev) => {
-      const notification = prev.find((n) => n.id === id);
-      if (notification && !notification.read) {
-        setUnreadCount((count) => Math.max(0, count - 1));
-      }
-      return prev.filter((n) => n.id !== id);
-    });
-  };
-
-  const clearAll = () => {
-    setNotifications([]);
-    setUnreadCount(0);
-  };
+  const {
+    notifications,
+    isConnected,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAll,
+  } = useNotifications();
 
   const getNotificationIcon = (orderItemStatus) => {
     switch (orderItemStatus) {
@@ -221,52 +133,52 @@ const NotificationPage = () => {
       </div>
 
       {/* Stats Cards - Mobile Responsive */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-6">
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2 md:p-3">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 sm:gap-2 md:gap-4 mb-3 md:mb-6">
+        <div className="border-l-2 sm:border-l-4 border-primary bg-white rounded-lg shadow-sm md:shadow-md p-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
-                Total Notifications
+              <h3 className="text-base md:text-lg font-semibold mb-0.5 sm:mb-1 md:mb-2 leading-tight">
+                Total
               </h3>
-              <p className="text-2xl md:text-[36px] font-futura text-primary">
+              <p className="text-2xl md:text-[36px] font-futura text-primary leading-none">
                 {notifications.length}
               </p>
             </div>
-            <Bell className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0" />
+            <Bell className="w-4 h-4 sm:w-6 sm:h-6 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 hidden sm:block" />
           </div>
         </div>
 
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2 md:p-3">
-          <div className="flex items-center justify-between">
+        <div className="border-l-2 sm:border-l-4 border-primary bg-white rounded-lg shadow-sm md:shadow-md p-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+              <h3 className="text-base md:text-lg font-semibold mb-0.5 sm:mb-1 md:mb-2 leading-tight">
                 Unread
               </h3>
-              <p className="text-2xl md:text-[36px] font-futura text-primary">
+              <p className="text-2xl md:text-[36px] font-futura text-primary leading-none">
                 {unreadCount}
               </p>
             </div>
-            <Bell className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0" />
+            <Bell className="w-4 h-4 sm:w-6 sm:h-6 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 hidden sm:block" />
           </div>
         </div>
 
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2 md:p-3 sm:col-span-2 md:col-span-1">
-          <div className="flex items-center justify-between">
+        <div className="hidden md:block border-l-2 sm:border-l-4 border-primary bg-white rounded-lg shadow-sm md:shadow-md p-1.5 sm:p-2 md:p-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+              <h3 className="text-[10px] sm:text-xs md:text-lg font-semibold mb-0.5 sm:mb-1 md:mb-2 leading-tight">
                 Status
               </h3>
-              <p className="text-base md:text-[18px] font-futura text-primary">
+              <p className="text-xs sm:text-sm md:text-[18px] font-futura text-primary leading-none">
                 {isConnected ? "Active" : "Inactive"}
               </p>
             </div>
             <div
-              className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+              className={`w-4 h-4 sm:w-6 sm:h-6 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                 isConnected ? "bg-green-100" : "bg-red-100"
               }`}
             >
               <div
-                className={`w-4 h-4 md:w-6 md:h-6 rounded-full ${
+                className={`w-2 h-2 sm:w-3 sm:h-3 md:w-6 md:h-6 rounded-full ${
                   isConnected ? "bg-green-500" : "bg-red-500"
                 }`}
               />
@@ -276,7 +188,7 @@ const NotificationPage = () => {
       </div>
 
       {/* Notifications List - Mobile Responsive */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden pb-4 md:pb-10">
+      <div className="bg-white overflow-hidden pb-4 md:pb-5">
         {notifications.length === 0 ? (
           <div className="p-8 md:p-12 text-center">
             <Bell className="w-12 h-12 md:w-16 md:h-16 text-gray-300 mx-auto mb-3 md:mb-4" />
@@ -290,7 +202,7 @@ const NotificationPage = () => {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 overflow-y-auto h-[calc(100vh-380px)] md:h-[calc(100vh-350px)]">
             {notifications.map((notification) => (
               <div
                 key={notification.id}
@@ -311,9 +223,9 @@ const NotificationPage = () => {
                               {notification.message}
                             </p>
                           </div>
-                          {!notification.read && (
+                          {/* {!notification.read && (
                             <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1.5"></span>
-                          )}
+                          )} */}
                         </div>
 
                         {/* Order Info Badges */}
@@ -352,7 +264,7 @@ const NotificationPage = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 self-start sm:self-center">
-                        {!notification.read && (
+                        {/* {!notification.read && (
                           <button
                             onClick={() => markAsRead(notification.id)}
                             className="text-primary hover:text-primary/80 text-xs md:text-sm font-semibold px-2 py-1 rounded hover:bg-primary/10 transition-colors"
@@ -360,7 +272,7 @@ const NotificationPage = () => {
                           >
                             Mark Read
                           </button>
-                        )}
+                        )} */}
                         <button
                           onClick={() => deleteNotification(notification.id)}
                           className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"

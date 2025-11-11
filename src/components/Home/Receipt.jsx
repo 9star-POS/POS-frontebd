@@ -28,6 +28,7 @@ function Receipt({ onClose }) {
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
+  const [discountRate, setDiscountRate] = useState(0); // Default 0% discount
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [remoteOrder, setRemoteOrder] = useState(null);
@@ -151,6 +152,13 @@ function Receipt({ onClose }) {
     }
   };
 
+  const handleDiscountChange = (e) => {
+    const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
+    if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
+      setDiscountRate(value === "" ? 0 : Number(value));
+    }
+  };
+
   const hasLocalItems =
     !!selectedTable && !!receipts[selectedTable]?.items?.length;
 
@@ -165,10 +173,15 @@ function Receipt({ onClose }) {
     return subtotal * (taxRate / 100);
   };
 
+  const calculateDiscount = (subtotal) => {
+    return subtotal * (discountRate / 100);
+  };
+
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
+    const discount = calculateDiscount(subtotal);
     const tax = calculateTax(subtotal);
-    return subtotal + tax;
+    return subtotal - discount + tax;
   };
 
   const handlePayment = () => {
@@ -201,7 +214,7 @@ function Receipt({ onClose }) {
       status: "completed",
       subTotal: calculateSubtotal(),
       tax: taxRate,
-      discount: 0,
+      discount: discountRate,
       total: calculateTotal(),
     };
     try {
@@ -230,7 +243,7 @@ function Receipt({ onClose }) {
             [],
           subTotal: res?.data?.subTotal || calculateSubtotal(),
           tax: res?.data?.tax || taxRate,
-          discount: res?.data?.discount || 0,
+          discount: res?.data?.discount || discountRate,
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",
           createdAt: res?.data?.createdAt || new Date().toISOString(),
@@ -440,7 +453,7 @@ function Receipt({ onClose }) {
       status: "completed",
       subTotal: calculateSubtotal(),
       tax: taxRate,
-      discount: 0,
+      discount: discountRate,
       total: calculateTotal(),
     };
     try {
@@ -513,7 +526,7 @@ function Receipt({ onClose }) {
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto mb-5 space-y-4">
+            <div className="flex-1 overflow-y-auto mb-2 space-y-4">
               {receipts[selectedTable].items.map((item, index) => (
                 <div
                   key={index}
@@ -557,8 +570,8 @@ function Receipt({ onClose }) {
               ))}
             </div>
 
-            <div className="sticky bottom-[0] pb-2 bg-white border-t">
-              <div className="space-y-3 mb-4">
+            <div className="sticky bottom-[-100px] md:bottom-[0] pb-2 bg-white border-t">
+              <div className="space-y-3 my-4">
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Subtotal</p>
                   <p className="font-medium">
@@ -585,6 +598,29 @@ function Receipt({ onClose }) {
                   </div>
                   <p className="font-medium text-gray-600">
                     {calculateTax(calculateSubtotal()).toLocaleString()} MMK
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-600">Discount</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={discountRate === 0 ? 0 : discountRate}
+                        onChange={handleDiscountChange}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-600">
+                    {calculateDiscount(calculateSubtotal()).toLocaleString()}{" "}
+                    MMK
                   </p>
                 </div>
 
