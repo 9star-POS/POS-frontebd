@@ -1,7 +1,7 @@
 // CreateMenu.js
 import { useState, useEffect, useRef } from "react";
 import axios from "../../api/axios";
-import defaultMenu from "./../../assets/defaultMenu.jpg";
+import defaultMenu from "./../../assets/black.jpg";
 import PropTypes from "prop-types";
 import getItems from "../../api/Menu/getItems";
 

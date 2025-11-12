@@ -76,12 +76,12 @@ export default function App() {
             <div className="px-4 md:px-5 mt-3 md:mt-2 flex justify-between">
               <button
                 onClick={toggleSidebar}
-                className="px-5 border bg-white border-gray-300 text-primary rounded-lg focus:outline-none"
+                className="p-3 border bg-white border-gray-300 text-primary rounded-lg focus:outline-none"
               >
                 <IoMdMenu size={30} />
               </button>
 
-              <div className="">
+              <div className="flex items-center gap-2">
                 <User user={user} />
               </div>
               {/* <button

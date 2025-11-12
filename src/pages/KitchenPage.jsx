@@ -93,7 +93,7 @@ const KitchenPage = () => {
                 ? `Room ${item.roomNumber}`
                 : item.orderDisplay;
 
-            const message = `${tableOrRoomInfo} - ${item.stockName} is ready to serve`;
+            const message = `${tableOrRoomInfo} - ${item.quantity}x ${item.stockName} is ready to serve`;
 
             // Prepare notification data
             const notificationData = {

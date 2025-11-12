@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaUser } from "react-icons/fa";
 import { GoSignOut } from "react-icons/go";
 // import { useAuth } from "../hook/auth/AuthContext";
 
 const User = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const id = localStorage.getItem("biz-bozz-id");
   // const { logout } = useAuth();
 
@@ -19,54 +20,55 @@ const User = ({ user }) => {
     // logout();
   };
 
-  return (
-    <div className="relative w-64 h-20 flex items-center">
-      <div
-        className={`cursor-pointer transition duration-300 absolute border border-primary rounded-full bg-white flex items-center gap-4 px-4 py-2 z-10 hover:scale-105 ${
-          isOpen ? "-translate-x-[120px]" : "translate-x-0"
-        }`}
-        onClick={toggleDropdown}
-      >
-        <div className="text-primary border border-primary rounded-full p-2">
-          <FaUser size={20} />
-        </div>
-        <div>
-          <p className="font-bold text-primary">{user?.name}</p>
-        </div>
-      </div>
-      <div
-        className="absolute left-20 flex text-primary rounded border border-primary items-center cursor-pointer bg-white hover:text-orange-700"
-        onClick={handleClose}
-      >
-        <GoSignOut size={25} />
-        <p className="bg-white  font-futura text-xl font-semibold rounded-md px-4 py-2">
-          Logout
-        </p>
-      </div>
-      {/* <button
-        onClick={toggleDropdown}
-        className={`cursor-pointer absolute top-0 right-0 left-0 z-20 flex items-center gap-4 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-md ${
-          isOpen ? "bg-red-500" : "bg-red-50"
-        } `}
-      >
-        <div className="text-primary border border-primary rounded-full p-2">
-          <FaUser size={20} />
-        </div>
-        <div>
-          <p className="font-bold text-primary">{user?.name}</p>
-        </div>
-      </button> */}
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
 
-      {/* Dropdown menu */}
-      {/* <button
-        onClick={handleClose}
-        className={`absolute right-0 z-10 top-0 w-[162px] py-4 rounded-md shadow-lg flex justify-center items-center gap-2`}
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Profile Icon Button */}
+      <button
+        onClick={toggleDropdown}
+        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        aria-label="User menu"
       >
-        <GoSignOut size={25} className="text-primary" />
-        <p className="bg-white text-primary font-futura text-xl font-semibold rounded-md px-4 py-2">
-          Logout
-        </p>
-      </button> */}
+        <FaUser size={20} />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 transform transition-all duration-200 ease-in-out opacity-100 translate-y-0">
+          {/* Username Section */}
+          <div className="px-4 py-3 border-b border-gray-200">
+            <p className="text-sm font-medium text-gray-500">Signed in as</p>
+            <p className="text-base font-bold text-primary mt-1 truncate">
+              {user?.name || "User"}
+            </p>
+          </div>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleClose}
+            className="w-full px-4 py-3 flex items-center gap-3 text-left text-red-600 hover:bg-red-50 transition-colors rounded-b-lg"
+          >
+            <GoSignOut size={20} />
+            <span className="font-semibold">Logout</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

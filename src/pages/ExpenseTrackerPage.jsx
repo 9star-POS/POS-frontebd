@@ -11,12 +11,15 @@ import {
   TrendingUp,
   Plus,
   X,
+  Eye,
 } from "lucide-react";
 
 const ExpenseTrackerPage = () => {
   const [loading, setLoading] = useState(false);
   const [expenses, setExpenses] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -270,13 +273,19 @@ const ExpenseTrackerPage = () => {
                 >
                   Date
                 </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
                   <td
-                    colSpan="4"
+                    colSpan="5"
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     Loading expenses...
@@ -285,7 +294,7 @@ const ExpenseTrackerPage = () => {
               ) : expenses.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="4"
+                    colSpan="5"
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     No expenses found. Add your first expense to get started.
@@ -313,6 +322,19 @@ const ExpenseTrackerPage = () => {
                       <div className="flex items-center text-sm text-gray-500">
                         {formatDate(expense.createdAt)}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => {
+                          setSelectedExpense(expense);
+                          setIsDetailModalOpen(true);
+                        }}
+                        className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                        title="View Details"
+                      >
+                        <Eye size={18} />
+                        <span className="text-sm">View</span>
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -410,6 +432,93 @@ const ExpenseTrackerPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Expense Detail Modal */}
+      {isDetailModalOpen && selectedExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b sticky top-0 bg-white">
+              <h3 className="text-lg font-bold">Expense Details</h3>
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setSelectedExpense(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">
+                  Title
+                </label>
+                <div className="text-lg font-semibold text-gray-900">
+                  {selectedExpense.title || "N/A"}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">
+                  Description
+                </label>
+                <div className="text-base text-gray-900 whitespace-pre-wrap break-words bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                  {selectedExpense.description || "No description provided"}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">
+                  Amount
+                </label>
+                <div className="text-2xl font-bold text-primary">
+                  {formatCurrency(selectedExpense.expense || 0)} MMK
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">
+                  Date Created
+                </label>
+                <div className="text-base text-gray-900 flex items-center gap-2">
+                  <CalendarIcon size={18} className="text-gray-400" />
+                  {formatDate(selectedExpense.createdAt)}
+                </div>
+              </div>
+
+              {selectedExpense.updatedAt &&
+                selectedExpense.updatedAt !== selectedExpense.createdAt && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-2">
+                      Last Updated
+                    </label>
+                    <div className="text-base text-gray-900 flex items-center gap-2">
+                      <CalendarIcon size={18} className="text-gray-400" />
+                      {formatDate(selectedExpense.updatedAt)}
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5 flex justify-end sticky bottom-0 bg-white">
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setSelectedExpense(null);
+                }}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
