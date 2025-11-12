@@ -422,12 +422,12 @@ function KtvOrderDetail() {
                   {order.tax} MMK
                 </span>
               </div>
-              {order.discount > 0 && (
-                <div className="flex justify-between text-lg text-green-600">
-                  <span>Discount:</span>
-                  <span className="font-semibold">-{order.discount} MMK</span>
-                </div>
-              )}
+              {/* {order.discount > 0 && ( */}
+              <div className="flex justify-between text-lg text-green-600">
+                <span>Discount:</span>
+                <span className="font-semibold">{order.discount} %</span>
+              </div>
+              {/* )} */}
               <div className="border-t-2 border-purple-300 pt-3 mt-3">
                 <div className="flex justify-between text-2xl">
                   <span className="font-bold text-gray-800">Grand Total:</span>
