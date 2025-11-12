@@ -24,10 +24,29 @@ const OrdersPage = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("restaurant"); // "restaurant" or "ktv"
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
-  const [filters, setFilters] = useState(() => ({
-    startDate: today,
-    endDate: today,
-  }));
+
+  // Initialize filters from localStorage or default to today
+  const [filters, setFilters] = useState(() => {
+    const savedFilters = localStorage.getItem("orderPageDateRange");
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        // Validate that dates are valid
+        if (parsed.startDate && parsed.endDate) {
+          return {
+            startDate: parsed.startDate,
+            endDate: parsed.endDate,
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing saved date range:", e);
+      }
+    }
+    return {
+      startDate: today,
+      endDate: today,
+    };
+  });
 
   // Callback function to receive data from child
   const handleDataFromChild = (childData) => {
@@ -128,12 +147,16 @@ const OrdersPage = () => {
       endDate: dates.endDate,
     };
     setFilters(newFilters);
+    // Save to localStorage
+    localStorage.setItem("orderPageDateRange", JSON.stringify(newFilters));
     getOrders(newFilters);
   };
 
   const handleResetFilters = () => {
     const resetFilters = { startDate: today, endDate: today };
     setFilters(resetFilters);
+    // Save to localStorage
+    localStorage.setItem("orderPageDateRange", JSON.stringify(resetFilters));
     getOrders(resetFilters);
   };
 

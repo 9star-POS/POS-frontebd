@@ -470,18 +470,22 @@ const SalesReportPage = () => {
                             <ArrowUpDown size={14} className="ml-1" />
                           </div>
                         </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Restaurant
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          KTV
-                        </th>
+                        {analyticsFilter !== "ktv" && (
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Restaurant
+                          </th>
+                        )}
+                        {analyticsFilter !== "restaurant" && (
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            KTV
+                          </th>
+                        )}
                         <th
                           scope="col"
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -512,16 +516,20 @@ const SalesReportPage = () => {
                               {(item.totalRevenue / 1000).toFixed(2)}K KS
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {item.restaurantQuantity}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {item.ktvQuantity}
-                            </div>
-                          </td>
+                          {analyticsFilter !== "ktv" && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {item.restaurantQuantity}
+                              </div>
+                            </td>
+                          )}
+                          {analyticsFilter !== "restaurant" && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {item.ktvQuantity}
+                              </div>
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
                               {item.orderCount}
