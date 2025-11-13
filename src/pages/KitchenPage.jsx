@@ -7,7 +7,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
 
 const KitchenPage = () => {
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]); // Store all orders for stats calculation
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -18,14 +18,8 @@ const KitchenPage = () => {
   const transformKitchenData = (apiData) => {
     if (!Array.isArray(apiData)) return [];
 
-    // Filter by status if needed
-    const filteredData =
-      statusFilter === "all"
-        ? apiData
-        : apiData.filter((item) => item.kitchenStatus === statusFilter);
-
-    // Transform each item into order item structure
-    return filteredData.map((item) => ({
+    // Transform each item into order item structure (without filtering)
+    return apiData.map((item) => ({
       id: item.orderItemId, // Unique identifier for checkboxes
       orderId: item.orderId,
       orderItemId: item.orderItemId,
@@ -51,6 +45,14 @@ const KitchenPage = () => {
     }));
   };
 
+  // Filter orders based on status filter
+  const getFilteredOrders = () => {
+    if (statusFilter === "all") {
+      return allOrders;
+    }
+    return allOrders.filter((item) => item.kitchenStatus === statusFilter);
+  };
+
   // Individual item status update
   const handleItemStatusToggle = async (item) => {
     // Prevent multiple simultaneous updates for the same item
@@ -74,10 +76,10 @@ const KitchenPage = () => {
 
       if (response.status === "success" || response.code === 200) {
         // Update local state immediately for better UX
-        const updatedOrders = orders.map((order) =>
+        const updatedAllOrders = allOrders.map((order) =>
           order.id === item.id ? { ...order, kitchenStatus: newStatus } : order
         );
-        setOrders(updatedOrders);
+        setAllOrders(updatedAllOrders);
 
         // Clear any existing errors
         setError(null);
@@ -169,7 +171,7 @@ const KitchenPage = () => {
       const response = await getKitchenOrders();
       if (response.status === "success" && response.code === 200) {
         const transformedData = transformKitchenData(response.data);
-        setOrders(transformedData);
+        setAllOrders(transformedData); // Store all orders
       } else {
         setError(response.message || "Failed to fetch kitchen orders");
       }
@@ -191,22 +193,22 @@ const KitchenPage = () => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [statusFilter]); // Re-fetch when filter changes
+  }, []); // Only fetch on mount, filtering is done client-side
 
   const getTotalItems = () => {
-    return orders.length;
+    return allOrders.length;
   };
 
   const getTotalQuantity = () => {
-    return orders.reduce((total, item) => total + item.quantity, 0);
+    return allOrders.reduce((total, item) => total + item.quantity, 0);
   };
 
   const getPendingCount = () => {
-    return orders.filter((item) => item.kitchenStatus === "pending").length;
+    return allOrders.filter((item) => item.kitchenStatus === "pending").length;
   };
 
   const getReadyCount = () => {
-    return orders.filter((item) => item.kitchenStatus === "ready").length;
+    return allOrders.filter((item) => item.kitchenStatus === "ready").length;
   };
 
   if (loading) {
@@ -334,7 +336,7 @@ const KitchenPage = () => {
       )}
 
       {/* Order Items List */}
-      {orders.length === 0 ? (
+      {getFilteredOrders().length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <ChefHat size={64} className="text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 mb-2">
@@ -348,7 +350,7 @@ const KitchenPage = () => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-500px)]">
           {/* Order Items */}
           <div className="divide-y divide-gray-200">
-            {orders.map((item, index) => (
+            {getFilteredOrders().map((item, index) => (
               <div
                 key={item.id}
                 className={`p-4 hover:bg-gray-50 transition-colors ${
