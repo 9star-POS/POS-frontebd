@@ -214,7 +214,7 @@ function OrderDetail() {
             </div>
             <p className="text-xl font-semibold text-gray-800 capitalize">
               {order.paymentMethod === "none"
-                ? "Not Paid"
+                ? "Cash"
                 : order.paymentMethod}
             </p>
           </div>
