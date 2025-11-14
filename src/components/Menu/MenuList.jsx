@@ -35,7 +35,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
       const filteredMenus = menus.filter((menu) => menu.type === menuType);
       const categoryList = [
         "All",
-        ...new Set(filteredMenus.map((menu) => menu.category)),
+        ...new Set(filteredMenus.map((menu) => menu.subCategory)),
       ];
       setCategoryList(categoryList);
       console.log("categoryList", categoryList);
@@ -76,7 +76,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
           <MenuModel
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            categories={categoryList.filter((cat) => cat !== "All")}
+            subcategories={categoryList.filter((cat) => cat !== "All")}
             menuType={menuType}
           />
         </div>
@@ -152,9 +152,9 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
       ) : (
         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-5">
           {filteredMenus.map((menu) => {
-            // Show all items if "All" is selected, otherwise filter by category
+            // Show all items if "All" is selected, otherwise filter by subCategory
             return selectedCategory === "All" ||
-              selectedCategory === menu.category ? (
+              selectedCategory === menu.subCategory ? (
               <MenuCard key={menu._id} menu={menu} refreshMenu={getMenuList} />
             ) : null;
           })}

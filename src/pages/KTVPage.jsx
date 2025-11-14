@@ -30,7 +30,7 @@ function KTVPage() {
     if (res?.status === "success") {
       const restaurantItems = res.data.filter((i) => i.type === "ktv");
       const categoryArray = [
-        ...new Set(restaurantItems.map((item) => item.category)),
+        ...new Set(restaurantItems.map((item) => item.subCategory)),
       ];
       setCategorys(categoryArray);
       setSelectedCategory(categoryArray[0]);

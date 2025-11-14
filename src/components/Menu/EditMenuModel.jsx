@@ -15,39 +15,40 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     menu.requiresCooking || false
   );
   const [newCategory, setNewCategory] = useState(menu.category || "");
-  const [existingCategories, setExistingCategories] = useState([]);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [subcategory, setSubcategory] = useState(menu.subCategory || "");
+  const [existingSubcategories, setExistingSubcategories] = useState([]);
+  const [showSubcategoryDropdown, setShowSubcategoryDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const categoryInputRef = useRef(null);
+  const subcategoryInputRef = useRef(null);
 
-  // Fetch categories when modal opens
+  // Fetch subcategories when modal opens
   useEffect(() => {
     if (isOpen) {
-      const fetchCategories = async () => {
+      const fetchSubcategories = async () => {
         const res = await getItems();
         if (res.status === "success") {
           const filteredMenus = res.data.filter(
             (menuItem) => menuItem.type === itemType
           );
-          const cats = [
-            ...new Set(filteredMenus.map((menuItem) => menuItem.category)),
+          const subcats = [
+            ...new Set(filteredMenus.map((menuItem) => menuItem.subCategory)),
           ].filter(Boolean);
-          setExistingCategories(cats);
+          setExistingSubcategories(subcats);
         }
       };
-      fetchCategories();
+      fetchSubcategories();
     }
   }, [isOpen, itemType]);
 
-  // Close dropdown when clicking outside
+  // Close subcategory dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        categoryInputRef.current &&
-        !categoryInputRef.current.contains(event.target)
+        subcategoryInputRef.current &&
+        !subcategoryInputRef.current.contains(event.target)
       ) {
-        setShowCategoryDropdown(false);
+        setShowSubcategoryDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -69,9 +70,9 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     setImage(null); // Clear the image state
   };
 
-  const handleCategorySelect = (selectedCat) => {
-    setNewCategory(selectedCat);
-    setShowCategoryDropdown(false);
+  const handleSubcategorySelect = (selectedSubcat) => {
+    setSubcategory(selectedSubcat);
+    setShowSubcategoryDropdown(false);
   };
 
   const handleClose = () => {
@@ -117,6 +118,9 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
       const chosenCategory = newCategory && newCategory.trim();
       if (chosenCategory) {
         formData.append("category", chosenCategory);
+      }
+      if (subcategory && subcategory.trim()) {
+        formData.append("subCategory", subcategory.trim());
       }
 
       formData.append("type", itemType);
@@ -266,39 +270,65 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
             </div>
           </div>
           <div className="w-full">
-            <div className="mb-4" ref={categoryInputRef}>
+            <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                value={newCategory}
+                onChange={(e) => {
+                  setNewCategory(e.target.value);
+                  clearErrorOnChange();
+                }}
+                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">Select Category</option>
+                <option value="food">Food</option>
+                <option value="drink">Drink</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="mb-4" ref={subcategoryInputRef}>
+              <label className="block text-sm font-medium mb-1">
+                Subcategory
+              </label>
               <div className="relative">
                 <input
                   type="text"
-                  value={newCategory}
+                  value={subcategory}
                   onChange={(e) => {
-                    setNewCategory(e.target.value);
+                    setSubcategory(e.target.value);
                     clearErrorOnChange();
                   }}
-                  onFocus={() => setShowCategoryDropdown(true)}
-                  placeholder="Type a new category or select existing"
+                  onFocus={() => setShowSubcategoryDropdown(true)}
+                  placeholder="Type a new subcategory or select existing"
                   className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
-                {showCategoryDropdown && existingCategories.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    <div className="p-2">
-                      <p className="text-xs text-gray-500 mb-2 font-semibold">
-                        Existing Categories:
-                      </p>
-                      {existingCategories.map((cat, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleCategorySelect(cat)}
-                          className="w-full text-left px-3 py-2 hover:bg-prilight hover:text-primary rounded-md transition-colors"
-                        >
-                          {cat}
-                        </button>
-                      ))}
+                {showSubcategoryDropdown &&
+                  existingSubcategories &&
+                  existingSubcategories.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      <div className="p-2">
+                        <p className="text-xs text-gray-500 mb-2 font-semibold">
+                          Existing Subcategories:
+                        </p>
+                        {existingSubcategories
+                          .filter((subcat) =>
+                            subcat
+                              .toLowerCase()
+                              .includes(subcategory.toLowerCase())
+                          )
+                          .map((subcat, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSubcategorySelect(subcat)}
+                              className="w-full text-left px-3 py-2 hover:bg-prilight hover:text-primary rounded-md transition-colors"
+                            >
+                              {subcat}
+                            </button>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
             <div className="mb-4">

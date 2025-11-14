@@ -9,15 +9,22 @@ const MenuList = ({ category }) => {
   const [menuLists, setMenuList] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subcategories, setSubcategories] = useState([]);
 
   const getMenuList = async () => {
     const res = await getItems();
     if (res?.status === "success") {
       const restaurantItems = res.data.filter((i) => i.type === "restaurant");
       setMenuList(restaurantItems);
+      // Extract unique subcategories
+      const subcats = [
+        ...new Set(restaurantItems.map((menu) => menu.subCategory)),
+      ].filter(Boolean);
+      setSubcategories(subcats);
       setLoading(false);
     } else {
       setMenuList([]);
+      setSubcategories([]);
       setLoading(false);
     }
   };
@@ -54,6 +61,8 @@ const MenuList = ({ category }) => {
           <MenuModel
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+            subcategories={subcategories}
+            menuType="restaurant"
           />
         </div>
       </div>
@@ -64,7 +73,7 @@ const MenuList = ({ category }) => {
     return (
       <div className="flex flex-col lg:flex-row lg:flex-wrap gap-5 mt-5 pb-40">
         {menuLists.map((menu) => {
-          return category === menu.category ? (
+          return category === menu.subCategory ? (
             <MenuCard key={menu._id} menu={menu} />
           ) : null;
         })}

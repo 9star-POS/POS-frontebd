@@ -3,9 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import axios from "../../api/axios";
 import defaultMenu from "./../../assets/black.jpg";
 import PropTypes from "prop-types";
-import getItems from "../../api/Menu/getItems";
 
-const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
+const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
   const [dishCategory, setDishCategory] = useState();
   const [dishName, setDishName] = useState("");
   const [price, setPrice] = useState("");
@@ -14,11 +13,11 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
   const [quantity, setQuantity] = useState("");
   const [requireCooking, setRequireCooking] = useState(false);
   const [newCategory, setNewCategory] = useState("");
-  const [existingCategories, setExistingCategories] = useState([]);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [subcategory, setSubcategory] = useState("");
+  const [showSubcategoryDropdown, setShowSubcategoryDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const categoryInputRef = useRef(null);
+  const subcategoryInputRef = useRef(null);
   // console.log(dishCategory);
 
   // Update itemType when menuType prop changes
@@ -35,37 +34,14 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
     }
   }, [requireCooking]);
 
-  // Use passed categories or fetch if not provided
-  useEffect(() => {
-    if (categories && categories.length > 0) {
-      // Use categories passed from parent
-      setExistingCategories(categories);
-    } else if (isOpen) {
-      // Fallback: fetch categories if not provided
-      const fetchCategories = async () => {
-        const res = await getItems();
-        if (res.status === "success") {
-          const filteredMenus = res.data.filter(
-            (menu) => menu.type === itemType
-          );
-          const cats = [
-            ...new Set(filteredMenus.map((menu) => menu.category)),
-          ].filter(Boolean);
-          setExistingCategories(cats);
-        }
-      };
-      fetchCategories();
-    }
-  }, [isOpen, itemType, categories]);
-
-  // Close dropdown when clicking outside
+  // Close subcategory dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        categoryInputRef.current &&
-        !categoryInputRef.current.contains(event.target)
+        subcategoryInputRef.current &&
+        !subcategoryInputRef.current.contains(event.target)
       ) {
-        setShowCategoryDropdown(false);
+        setShowSubcategoryDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -80,9 +56,9 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
     setImage(null); // Clear the image state
   };
 
-  const handleCategorySelect = (selectedCat) => {
-    setNewCategory(selectedCat);
-    setShowCategoryDropdown(false);
+  const handleSubcategorySelect = (selectedSubcat) => {
+    setSubcategory(selectedSubcat);
+    setShowSubcategoryDropdown(false);
   };
 
   const handleClose = () => {
@@ -123,11 +99,12 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
       }
       formData.append("requiresCooking", requireCooking);
       const chosenCategory =
-        (newCategory && newCategory.trim()) ||
-        dishCategory ||
-        (category && category[0]);
+        (newCategory && newCategory.trim()) || dishCategory;
       if (chosenCategory) {
         formData.append("category", chosenCategory);
+      }
+      if (subcategory && subcategory.trim()) {
+        formData.append("subCategory", subcategory.trim());
       }
       formData.append("type", itemType);
       if (image) {
@@ -148,6 +125,7 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
         setQuantity("");
         setRequireCooking(false);
         setNewCategory("");
+        setSubcategory("");
         setImage(null);
         setError("");
         setLoading(false);
@@ -266,39 +244,65 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
             </div>
           </div>
           <div className="w-full">
-            <div className="mb-4" ref={categoryInputRef}>
+            <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                value={newCategory}
+                onChange={(e) => {
+                  setNewCategory(e.target.value);
+                  clearErrorOnChange();
+                }}
+                className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">Select Category</option>
+                <option value="food">Food</option>
+                <option value="drink">Drink</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="mb-4" ref={subcategoryInputRef}>
+              <label className="block text-sm font-medium mb-1">
+                Subcategory
+              </label>
               <div className="relative">
                 <input
                   type="text"
-                  value={newCategory}
+                  value={subcategory}
                   onChange={(e) => {
-                    setNewCategory(e.target.value);
+                    setSubcategory(e.target.value);
                     clearErrorOnChange();
                   }}
-                  onFocus={() => setShowCategoryDropdown(true)}
-                  placeholder="Type a new category or select existing"
+                  onFocus={() => setShowSubcategoryDropdown(true)}
+                  placeholder="Type a new subcategory or select existing"
                   className="border border-primary rounded-md p-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
-                {showCategoryDropdown && existingCategories.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    <div className="p-2">
-                      <p className="text-xs text-gray-500 mb-2 font-semibold">
-                        Existing Categories:
-                      </p>
-                      {existingCategories.map((cat, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleCategorySelect(cat)}
-                          className="w-full text-left px-3 py-2 hover:bg-prilight hover:text-primary rounded-md transition-colors"
-                        >
-                          {cat}
-                        </button>
-                      ))}
+                {showSubcategoryDropdown &&
+                  subcategories &&
+                  subcategories.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      <div className="p-2">
+                        <p className="text-xs text-gray-500 mb-2 font-semibold">
+                          Existing Subcategories:
+                        </p>
+                        {subcategories
+                          .filter((subcat) =>
+                            subcat
+                              .toLowerCase()
+                              .includes(subcategory.toLowerCase())
+                          )
+                          .map((subcat, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSubcategorySelect(subcat)}
+                              className="w-full text-left px-3 py-2 hover:bg-prilight hover:text-primary rounded-md transition-colors"
+                            >
+                              {subcat}
+                            </button>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
             <div className="mb-4">
@@ -430,8 +434,7 @@ const MenuModel = ({ isOpen, onClose, category, categories, menuType }) => {
 MenuModel.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  category: PropTypes.array,
-  categories: PropTypes.array,
+  subcategories: PropTypes.array,
   menuType: PropTypes.string,
 };
 

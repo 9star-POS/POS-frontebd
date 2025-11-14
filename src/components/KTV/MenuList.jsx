@@ -49,7 +49,7 @@ const KtvMenuList = ({ category }) => {
     return (
       <div className="flex flex-col lg:flex-row lg:flex-wrap gap-5 mt-5 pb-40">
         {menuLists.map((menu) => {
-          return category === menu.category ? (
+          return category === menu.subCategory ? (
             <KtvMenuCard key={menu._id} menu={menu} />
           ) : null;
         })}

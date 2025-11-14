@@ -32,7 +32,7 @@ function HomePage() {
     if (res?.status === "success") {
       const restaurantItems = res.data.filter((i) => i.type === "restaurant");
       const categoryArray = [
-        ...new Set(restaurantItems.map((item) => item.category)),
+        ...new Set(restaurantItems.map((item) => item.subCategory)),
       ];
       setCategorys(categoryArray);
       setSelectedCategory(categoryArray[0]);

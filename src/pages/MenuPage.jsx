@@ -12,6 +12,7 @@ function MenuPage() {
   const [categorys, setCategorys] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState();
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [menuType, setMenuType] = useState("restaurant");
 
   useEffect(() => {
@@ -23,6 +24,11 @@ function MenuPage() {
           ...new Set(filteredMenus.map((menu) => menu.category)),
         ].filter(Boolean);
         setCategories(cats);
+        // Extract unique subcategories
+        const subcats = [
+          ...new Set(filteredMenus.map((menu) => menu.subCategory)),
+        ].filter(Boolean);
+        setSubcategories(subcats);
       }
     };
     fetchCategories();
@@ -53,7 +59,7 @@ function MenuPage() {
         <MenuModel
           isOpen={isModalOpen2}
           onClose={() => setIsModalOpen2(false)}
-          categories={categories}
+          subcategories={subcategories}
           menuType={menuType}
         />
       </div>
