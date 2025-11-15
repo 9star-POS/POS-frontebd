@@ -425,7 +425,9 @@ function KtvOrderDetail() {
               {/* {order.discount > 0 && ( */}
               <div className="flex justify-between text-lg text-green-600">
                 <span>Discount:</span>
-                <span className="font-semibold">{order.discount} %</span>
+                <span className="font-semibold">
+                  -{order.discount.toLocaleString()} MMK
+                </span>
               </div>
               {/* )} */}
               <div className="border-t-2 border-purple-300 pt-3 mt-3">

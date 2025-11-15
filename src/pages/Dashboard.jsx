@@ -14,13 +14,36 @@ function Dashboard() {
   const [orderCount, setOrderCount] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [dishes, setDishes] = useState([]);
-  const [dataFromCalendar, setDataFromCalendar] = useState({
-    startDate: formattedDate,
-    endDate: formattedDate,
+  
+  // Initialize date range from sessionStorage or default to today
+  // sessionStorage automatically clears when browser closes, so it resets to today
+  const [dataFromCalendar, setDataFromCalendar] = useState(() => {
+    const savedFilters = sessionStorage.getItem("dashboardDateRange");
+    
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.startDate && parsed.endDate) {
+          return {
+            startDate: parsed.startDate,
+            endDate: parsed.endDate,
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing saved date range:", e);
+      }
+    }
+    
+    return {
+      startDate: formattedDate,
+      endDate: formattedDate,
+    };
   });
 
   const handleDataFromCalendar = (childData) => {
     setDataFromCalendar(childData);
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem("dashboardDateRange", JSON.stringify(childData));
   };
 
   const getReportData = async () => {

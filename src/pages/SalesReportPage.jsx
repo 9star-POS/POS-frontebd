@@ -20,12 +20,52 @@ const SalesReportPage = () => {
     key: "totalQuantity",
     direction: "descending",
   });
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  
+  // Initialize dates from sessionStorage or default to today
+  // sessionStorage automatically clears when browser closes, so it resets to today
+  const [startDate, setStartDate] = useState(() => {
+    const savedFilters = sessionStorage.getItem("salesReportDateRange");
+    
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.startDate && parsed.endDate) {
+          return new Date(parsed.startDate);
+        }
+      } catch (e) {
+        console.error("Error parsing saved date range:", e);
+      }
+    }
+    
+    return new Date();
+  });
+  
+  const [endDate, setEndDate] = useState(() => {
+    const savedFilters = sessionStorage.getItem("salesReportDateRange");
+    
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.startDate && parsed.endDate) {
+          return new Date(parsed.endDate);
+        }
+      } catch (e) {
+        console.error("Error parsing saved date range:", e);
+      }
+    }
+    
+    return new Date();
+  });
 
   const handleDateChange = (dates) => {
     setStartDate(dates.startDate);
     setEndDate(dates.endDate);
+    // Save to sessionStorage (clears when browser closes)
+    const dateRange = {
+      startDate: format(dates.startDate, "yyyy-MM-dd"),
+      endDate: format(dates.endDate, "yyyy-MM-dd"),
+    };
+    sessionStorage.setItem("salesReportDateRange", JSON.stringify(dateRange));
   };
 
   const formatDisplayDate = (date) => {

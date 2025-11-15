@@ -32,11 +32,32 @@ const ExpenseTrackerPage = () => {
     expense: "",
     manualDate: format(new Date(), "yyyy-MM-dd"),
     manualDateDisplay: format(new Date(), "dd/MM/yyyy"),
+    manualTime: format(new Date(), "HH:mm"),
   });
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
-  const [filters, setFilters] = useState({
-    startDate: today,
-    endDate: today,
+  // Initialize filters from sessionStorage or default to today
+  // sessionStorage automatically clears when browser closes, so it resets to today
+  const [filters, setFilters] = useState(() => {
+    const savedFilters = sessionStorage.getItem("expenseTrackerDateRange");
+
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.startDate && parsed.endDate) {
+          return {
+            startDate: parsed.startDate,
+            endDate: parsed.endDate,
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing saved date range:", e);
+      }
+    }
+
+    return {
+      startDate: today,
+      endDate: today,
+    };
   });
 
   const fetchExpenses = async (overrideFilters) => {
@@ -212,12 +233,22 @@ const ExpenseTrackerPage = () => {
       endDate: dates.endDate,
     };
     setFilters(newFilters);
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem(
+      "expenseTrackerDateRange",
+      JSON.stringify(newFilters)
+    );
     fetchExpenses(newFilters);
   };
 
   const handleResetFilters = () => {
     const resetFilters = { startDate: today, endDate: today };
     setFilters(resetFilters);
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem(
+      "expenseTrackerDateRange",
+      JSON.stringify(resetFilters)
+    );
     fetchExpenses(resetFilters);
   };
 
@@ -251,13 +282,46 @@ const ExpenseTrackerPage = () => {
 
     setIsSubmitting(true);
     try {
-      // Convert manualDate to UTC ISO 8601 format with +00:00 timezone
+      // Convert manualDate and manualTime to ISO 8601 format with timezone
       let manualDateUTC = "";
       if (formData.manualDate) {
-        // Create a Date object at midnight UTC from the date input (YYYY-MM-DD format)
-        const dateOnly = new Date(formData.manualDate + "T00:00:00Z");
-        // Convert to UTC ISO 8601 format and replace Z with +00:00
-        manualDateUTC = dateOnly.toISOString().replace("Z", "+00:00");
+        // Combine date and time (default to 00:00 if time not provided)
+        const timePart = formData.manualTime || "00:00";
+
+        // Create a Date object from the date and time inputs (local time)
+        const [hours, minutes] = timePart.split(":");
+        const [year, month, day] = formData.manualDate.split("-");
+
+        // Create date in local timezone
+        const dateTime = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes),
+          0,
+          0
+        );
+
+        // Get timezone offset in minutes and convert to hours and minutes
+        const timezoneOffset = dateTime.getTimezoneOffset();
+        const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
+          .toString()
+          .padStart(2, "0");
+        const offsetMinutes = (Math.abs(timezoneOffset) % 60)
+          .toString()
+          .padStart(2, "0");
+        const offsetSign = timezoneOffset <= 0 ? "+" : "-";
+
+        // Format the date with timezone offset
+        const yearStr = dateTime.getFullYear();
+        const monthStr = (dateTime.getMonth() + 1).toString().padStart(2, "0");
+        const dayStr = dateTime.getDate().toString().padStart(2, "0");
+        const hourStr = dateTime.getHours().toString().padStart(2, "0");
+        const minuteStr = dateTime.getMinutes().toString().padStart(2, "0");
+        const secondStr = dateTime.getSeconds().toString().padStart(2, "0");
+
+        manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offsetSign}${offsetHours}:${offsetMinutes}`;
       }
 
       const expenseData = {
@@ -267,31 +331,31 @@ const ExpenseTrackerPage = () => {
         manualDate: manualDateUTC,
       };
 
-      console.log("Expense Data:", expenseData);
+      // console.log("Expense Data:", expenseData);
 
-      // const response = await addExpense(expenseData);
+      const response = await addExpense(expenseData);
 
-      // if (
-      //   response.status === "success" ||
-      //   response.code === 201 ||
-      //   response.code === 200
-      // ) {
-      //   toast.success("Expense added successfully");
-      //   setIsModalOpen(false);
-      //   const today = format(new Date(), "yyyy-MM-dd");
-      //   const todayDisplay = format(new Date(), "dd/MM/yyyy");
-      //   setFormData({
-      //     title: "",
-      //     description: "",
-      //     expense: "",
-      //     manualDate: today,
-      //     manualDateDisplay: todayDisplay,
-      //   });
-      //   // Refresh expenses list
-      //   fetchExpenses();
-      // } else {
-      //   toast.error(response.message || "Failed to add expense");
-      // }
+      if (
+        response.status === "success" ||
+        response.code === 201 ||
+        response.code === 200
+      ) {
+        toast.success("Expense added successfully");
+        setIsModalOpen(false);
+        const today = format(new Date(), "yyyy-MM-dd");
+        const todayDisplay = format(new Date(), "dd/MM/yyyy");
+        setFormData({
+          title: "",
+          description: "",
+          expense: "",
+          manualDate: today,
+          manualDateDisplay: todayDisplay,
+        });
+        // Refresh expenses list
+        fetchExpenses();
+      } else {
+        toast.error(response.message || "Failed to add expense");
+      }
     } catch (error) {
       toast.error("Error adding expense");
       console.error("Error adding expense:", error);
@@ -304,12 +368,14 @@ const ExpenseTrackerPage = () => {
     setIsModalOpen(false);
     const today = format(new Date(), "yyyy-MM-dd");
     const todayDisplay = format(new Date(), "dd/MM/yyyy");
+    const currentTime = format(new Date(), "HH:mm");
     setFormData({
       title: "",
       description: "",
       expense: "",
       manualDate: today,
       manualDateDisplay: todayDisplay,
+      manualTime: currentTime,
     });
   };
 
@@ -605,6 +671,21 @@ const ExpenseTrackerPage = () => {
                       />
                     </div>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time{" "}
+                    <span className="text-xs text-gray-500 ml-2">(HH:mm)</span>
+                  </label>
+                  <input
+                    type="time"
+                    name="manualTime"
+                    value={formData.manualTime || ""}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                    disabled={isSubmitting}
+                  />
                 </div>
               </div>
 

@@ -25,9 +25,11 @@ const OrdersPage = () => {
   const [activeTab, setActiveTab] = useState("restaurant"); // "restaurant" or "ktv"
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
-  // Initialize filters from localStorage or default to today
+  // Initialize filters from sessionStorage or default to today
+  // sessionStorage automatically clears when browser closes, so it resets to today
   const [filters, setFilters] = useState(() => {
-    const savedFilters = localStorage.getItem("orderPageDateRange");
+    const savedFilters = sessionStorage.getItem("orderPageDateRange");
+
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters);
@@ -42,6 +44,8 @@ const OrdersPage = () => {
         console.error("Error parsing saved date range:", e);
       }
     }
+
+    // If no saved filters, default to today
     return {
       startDate: today,
       endDate: today,
@@ -147,16 +151,16 @@ const OrdersPage = () => {
       endDate: dates.endDate,
     };
     setFilters(newFilters);
-    // Save to localStorage
-    localStorage.setItem("orderPageDateRange", JSON.stringify(newFilters));
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem("orderPageDateRange", JSON.stringify(newFilters));
     getOrders(newFilters);
   };
 
   const handleResetFilters = () => {
     const resetFilters = { startDate: today, endDate: today };
     setFilters(resetFilters);
-    // Save to localStorage
-    localStorage.setItem("orderPageDateRange", JSON.stringify(resetFilters));
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem("orderPageDateRange", JSON.stringify(resetFilters));
     getOrders(resetFilters);
   };
 

@@ -28,7 +28,7 @@ function Receipt({ onClose }) {
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
-  const [discountRate, setDiscountRate] = useState(0); // Default 0% discount
+  const [discountAmount, setDiscountAmount] = useState(0); // Default 0 MMK discount
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [remoteOrder, setRemoteOrder] = useState(null);
@@ -154,8 +154,8 @@ function Receipt({ onClose }) {
 
   const handleDiscountChange = (e) => {
     const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
-    if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
-      setDiscountRate(value === "" ? 0 : Number(value));
+    if (value === "" || (Number(value) >= 0 && !isNaN(Number(value)))) {
+      setDiscountAmount(value === "" ? 0 : Number(value));
     }
   };
 
@@ -173,13 +173,14 @@ function Receipt({ onClose }) {
     return subtotal * (taxRate / 100);
   };
 
-  const calculateDiscount = (subtotal) => {
-    return subtotal * (discountRate / 100);
+  const calculateDiscount = () => {
+    // Return the fixed discount amount in MMK
+    return discountAmount || 0;
   };
 
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
-    const discount = calculateDiscount(subtotal);
+    const discount = calculateDiscount();
     const tax = calculateTax(subtotal);
     return subtotal - discount + tax;
   };
@@ -214,7 +215,7 @@ function Receipt({ onClose }) {
       status: "completed",
       subTotal: calculateSubtotal(),
       tax: taxRate,
-      discount: discountRate,
+      discount: calculateDiscount(),
       total: calculateTotal(),
     };
     try {
@@ -243,7 +244,7 @@ function Receipt({ onClose }) {
             [],
           subTotal: res?.data?.subTotal || calculateSubtotal(),
           tax: res?.data?.tax || taxRate,
-          discount: res?.data?.discount || discountRate,
+          discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",
           createdAt: res?.data?.createdAt || new Date().toISOString(),
@@ -453,7 +454,7 @@ function Receipt({ onClose }) {
       status: "completed",
       subTotal: calculateSubtotal(),
       tax: taxRate,
-      discount: discountRate,
+      discount: calculateDiscount(),
       total: calculateTotal(),
     };
     try {
@@ -602,26 +603,17 @@ function Receipt({ onClose }) {
                 </div>
 
                 <div className="flex justify-between items-center">
+                  <p className="text-gray-600">Discount</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-gray-600">Discount</p>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={discountRate === 0 ? 0 : discountRate}
-                        onChange={handleDiscountChange}
-                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
-                        min="0"
-                        max="100"
-                      />
-                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                        %
-                      </span>
-                    </div>
+                    <input
+                      type="text"
+                      value={discountAmount === 0 ? "" : discountAmount}
+                      onChange={handleDiscountChange}
+                      className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium"
+                      placeholder="0"
+                    />
+                    <span className="text-gray-600 text-sm">MMK</span>
                   </div>
-                  <p className="font-medium text-gray-600">
-                    {calculateDiscount(calculateSubtotal()).toLocaleString()}{" "}
-                    MMK
-                  </p>
                 </div>
 
                 <div className="flex justify-between items-center pt-3 border-t">
