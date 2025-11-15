@@ -12,7 +12,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
   const [itemType, setItemType] = useState(menu.type || "restaurant");
   const [quantity, setQuantity] = useState(menu.quantity?.toString() || "");
   const [requireCooking, setRequireCooking] = useState(
-    menu.requiresCooking || false
+    menu.requiresPreparation || false
   );
   const [newCategory, setNewCategory] = useState(menu.category || "");
   const [subcategory, setSubcategory] = useState(menu.subCategory || "");
@@ -113,7 +113,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         formData.append("quantity", quantity);
       }
 
-      formData.append("requiresCooking", requireCooking);
+      formData.append("requiresPreparation", requireCooking);
 
       const chosenCategory = newCategory && newCategory.trim();
       if (chosenCategory) {
@@ -401,7 +401,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                   className="mr-2 h-4 w-4 text-primary focus:ring-primary border-primary rounded"
                 />
                 <label htmlFor="requireCooking" className="text-sm font-medium">
-                  Requires Cooking
+                  Requires Preparation
                 </label>
               </div>
               <p className="text-xs text-gray-500 mt-1">

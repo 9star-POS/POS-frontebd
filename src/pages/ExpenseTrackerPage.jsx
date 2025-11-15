@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import getExpenses from "../api/expense/getExpenses";
 import addExpense from "../api/expense/addExpense";
 import { format } from "date-fns";
 import Calendar from "../components/Calender";
+import { Calendar as DatePickerCalendar } from "react-date-range";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import {
   DollarSign,
   Calendar as CalendarIcon,
@@ -21,10 +24,14 @@ const ExpenseTrackerPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const datePickerRef = useRef(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     expense: "",
+    manualDate: format(new Date(), "yyyy-MM-dd"),
+    manualDateDisplay: format(new Date(), "dd/MM/yyyy"),
   });
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const [filters, setFilters] = useState({
@@ -82,6 +89,123 @@ const ExpenseTrackerPage = () => {
     return amount.toLocaleString();
   };
 
+  // Convert yyyy-MM-dd to dd/mm/yyyy for display
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const [year, month, day] = dateString.split("-");
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Convert dd/mm/yyyy to yyyy-MM-dd for API
+  const parseDateFromDisplay = (displayDate) => {
+    if (!displayDate) return "";
+    try {
+      const [day, month, year] = displayDate.split("/");
+      if (
+        day &&
+        month &&
+        year &&
+        day.length === 2 &&
+        month.length === 2 &&
+        year.length === 4
+      ) {
+        return `${year}-${month}-${day}`;
+      }
+      return "";
+    } catch (error) {
+      return "";
+    }
+  };
+
+  // Format date input as user types (dd/mm/yyyy)
+  const handleDateInputChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+
+    // Format as dd/mm/yyyy
+    if (value.length > 0) {
+      if (value.length <= 2) {
+        value = value;
+      } else if (value.length <= 4) {
+        value = value.slice(0, 2) + "/" + value.slice(2);
+      } else {
+        value =
+          value.slice(0, 2) + "/" + value.slice(2, 4) + "/" + value.slice(4, 8);
+      }
+    }
+
+    // Update display value
+    const displayValue = value;
+
+    // Convert to yyyy-MM-dd format for internal storage
+    const internalValue = parseDateFromDisplay(displayValue);
+
+    setFormData((prev) => ({
+      ...prev,
+      manualDate: internalValue || prev.manualDate,
+      manualDateDisplay: displayValue,
+    }));
+  };
+
+  // Handle date selection from calendar picker
+  const handleDateSelect = (date) => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    const displayDate = format(date, "dd/MM/yyyy");
+
+    setFormData((prev) => ({
+      ...prev,
+      manualDate: formattedDate,
+      manualDateDisplay: displayDate,
+    }));
+
+    setShowDatePicker(false);
+  };
+
+  // Validate date format (dd/mm/yyyy)
+  const isValidDate = (dateString) => {
+    if (!dateString || dateString.length !== 10) return false;
+    const [day, month, year] = dateString.split("/");
+    if (!day || !month || !year) return false;
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+
+    if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) return false;
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (dayNum < 1 || dayNum > 31) return false;
+
+    // Check if date is valid
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+    return (
+      date.getFullYear() === yearNum &&
+      date.getMonth() === monthNum - 1 &&
+      date.getDate() === dayNum
+    );
+  };
+
+  // Close date picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        datePickerRef.current &&
+        !datePickerRef.current.contains(event.target)
+      ) {
+        setShowDatePicker(false);
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDatePicker]);
+
   const handleDateRangeChange = (dates) => {
     const newFilters = {
       startDate: dates.startDate,
@@ -117,34 +241,57 @@ const ExpenseTrackerPage = () => {
       toast.error("Please enter a valid expense amount");
       return;
     }
+    if (
+      !formData.manualDateDisplay ||
+      !isValidDate(formData.manualDateDisplay)
+    ) {
+      toast.error("Please enter a valid date in dd/mm/yyyy format");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      // Convert manualDate to UTC ISO 8601 format with +00:00 timezone
+      let manualDateUTC = "";
+      if (formData.manualDate) {
+        // Create a Date object at midnight UTC from the date input (YYYY-MM-DD format)
+        const dateOnly = new Date(formData.manualDate + "T00:00:00Z");
+        // Convert to UTC ISO 8601 format and replace Z with +00:00
+        manualDateUTC = dateOnly.toISOString().replace("Z", "+00:00");
+      }
+
       const expenseData = {
         title: formData.title.trim(),
         description: formData.description.trim() || "",
         expense: parseFloat(formData.expense),
+        manualDate: manualDateUTC,
       };
 
-      const response = await addExpense(expenseData);
+      console.log("Expense Data:", expenseData);
 
-      if (
-        response.status === "success" ||
-        response.code === 201 ||
-        response.code === 200
-      ) {
-        toast.success("Expense added successfully");
-        setIsModalOpen(false);
-        setFormData({
-          title: "",
-          description: "",
-          expense: "",
-        });
-        // Refresh expenses list
-        fetchExpenses();
-      } else {
-        toast.error(response.message || "Failed to add expense");
-      }
+      // const response = await addExpense(expenseData);
+
+      // if (
+      //   response.status === "success" ||
+      //   response.code === 201 ||
+      //   response.code === 200
+      // ) {
+      //   toast.success("Expense added successfully");
+      //   setIsModalOpen(false);
+      //   const today = format(new Date(), "yyyy-MM-dd");
+      //   const todayDisplay = format(new Date(), "dd/MM/yyyy");
+      //   setFormData({
+      //     title: "",
+      //     description: "",
+      //     expense: "",
+      //     manualDate: today,
+      //     manualDateDisplay: todayDisplay,
+      //   });
+      //   // Refresh expenses list
+      //   fetchExpenses();
+      // } else {
+      //   toast.error(response.message || "Failed to add expense");
+      // }
     } catch (error) {
       toast.error("Error adding expense");
       console.error("Error adding expense:", error);
@@ -155,10 +302,14 @@ const ExpenseTrackerPage = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const todayDisplay = format(new Date(), "dd/MM/yyyy");
     setFormData({
       title: "",
       description: "",
       expense: "",
+      manualDate: today,
+      manualDateDisplay: todayDisplay,
     });
   };
 
@@ -410,6 +561,50 @@ const ExpenseTrackerPage = () => {
                     disabled={isSubmitting}
                     required
                   />
+                </div>
+
+                <div className="relative" ref={datePickerRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      (dd/mm/yyyy)
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="manualDate"
+                      value={formData.manualDateDisplay || ""}
+                      onChange={handleDateInputChange}
+                      placeholder="dd/mm/yyyy"
+                      maxLength={10}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                      disabled={isSubmitting}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDatePicker(!showDatePicker)}
+                      disabled={isSubmitting}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-primary transition-colors"
+                      title="Open calendar"
+                    >
+                      <CalendarIcon size={20} />
+                    </button>
+                  </div>
+                  {showDatePicker && (
+                    <div className="absolute z-50 top-[-300px] mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+                      <DatePickerCalendar
+                        date={
+                          formData.manualDate
+                            ? new Date(formData.manualDate)
+                            : new Date()
+                        }
+                        onChange={handleDateSelect}
+                        color="#2b2f33"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

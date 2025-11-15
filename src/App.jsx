@@ -28,6 +28,7 @@ import TablePage from "./components/Home/TablePage";
 import KTVPage from "./pages/KTVPage";
 import RoomPage from "./components/KTV/RoomPage";
 import KitchenPage from "./pages/KitchenPage";
+import BarPage from "./pages/BarPage";
 
 export default function App() {
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
@@ -240,6 +241,14 @@ export default function App() {
                       element={
                         <PrivateRoute>
                           <KitchenPage />
+                        </PrivateRoute>
+                      }
+                    />
+                    <Route
+                      path="/bar"
+                      element={
+                        <PrivateRoute>
+                          <BarPage />
                         </PrivateRoute>
                       }
                     />

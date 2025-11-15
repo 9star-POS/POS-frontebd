@@ -2,7 +2,7 @@ import axios from "../axios";
 
 const getKitchenOrders = async () => {
   try {
-    const res = await axios.get("api/v1/kitchen");
+    const res = await axios.get("api/v1/kitchen?category=food");
     return res.data;
   } catch (error) {
     console.error("Error fetching kitchen orders:", error);

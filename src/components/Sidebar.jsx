@@ -12,6 +12,7 @@ import {
   Wallet,
   Bell,
   Users,
+  Wine,
 } from "lucide-react";
 import { useAuth } from "../hook/auth/AuthContext";
 
@@ -25,6 +26,7 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/menu", icon: Menu, label: "Menu" },
     { to: "/orders", icon: Receipt, label: "Orders" },
     { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
+    { to: "/bar", icon: Wine, label: "Bar" },
     { to: "/sales-report", icon: BarChart, label: "Sales Report" },
     { to: "/expense-tracker", icon: Wallet, label: "Expense Tracker" },
     { to: "/notifications", icon: Bell, label: "Notifications" },

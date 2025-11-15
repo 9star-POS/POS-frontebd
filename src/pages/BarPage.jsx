@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, ChefHat, AlertCircle } from "lucide-react";
-import getKitchenOrders from "../api/Kitchen/getKitchenOrders";
+import { RefreshCw, Wine, AlertCircle } from "lucide-react";
+import getBarOrders from "../api/Kitchen/getBarOrders";
 import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
 import createNotification from "../api/notification/createNotification";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
 
-const KitchenPage = () => {
+const BarPage = () => {
   const [allOrders, setAllOrders] = useState([]); // Store all orders for stats calculation
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,7 +15,7 @@ const KitchenPage = () => {
   const [updatingItems, setUpdatingItems] = useState(new Set()); // Track items being updated
 
   // Transform flat API data into simple list structure
-  const transformKitchenData = (apiData) => {
+  const transformBarData = (apiData) => {
     if (!Array.isArray(apiData)) return [];
 
     // Transform each item into order item structure (without filtering)
@@ -31,7 +31,7 @@ const KitchenPage = () => {
       roomNumber: item.roomNumber, // Add room number for KTV orders
       tableNumber: item.tableNumber, // Add table number for restaurant orders
       createdAt: item.createdAt || new Date().toISOString(),
-      requiresCooking: item.requiresCooking,
+      requiresPreparation: item.requiresPreparation,
       // Additional display fields
       orderDisplay: `${item.orderType.toUpperCase()} #${item.orderId.slice(
         -6
@@ -165,15 +165,15 @@ const KitchenPage = () => {
       }
       setError(null);
 
-      const response = await getKitchenOrders();
+      const response = await getBarOrders();
       if (response.status === "success" && response.code === 200) {
-        const transformedData = transformKitchenData(response.data);
+        const transformedData = transformBarData(response.data);
         setAllOrders(transformedData); // Store all orders
       } else {
-        setError(response.message || "Failed to fetch kitchen orders");
+        setError(response.message || "Failed to fetch bar orders");
       }
     } catch (err) {
-      setError(err.message || "Failed to fetch kitchen orders");
+      setError(err.message || "Failed to fetch bar orders");
       console.error("Error fetching orders:", err);
     } finally {
       setLoading(false);
@@ -223,12 +223,12 @@ const KitchenPage = () => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-secondary rounded-lg">
-              <ChefHat size={32} className="text-primary" />
+              <Wine size={32} className="text-primary" />
             </div>
             <div>
-              <h1 className="sub-header font-bold">Kitchen Orders</h1>
+              <h1 className="sub-header font-bold">Bar Orders</h1>
               <p className="text-sm text-gray-500">
-                Manage your pending orders
+                Manage your pending drink orders
               </p>
             </div>
           </div>
@@ -282,7 +282,7 @@ const KitchenPage = () => {
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
           <h3 className="text-lg font-semibold text-gray-800">
-            Kitchen Orders - Check items when ready
+            Bar Orders - Check items when ready
           </h3>
         </div>
 
@@ -325,9 +325,9 @@ const KitchenPage = () => {
       {/* Order Items List */}
       {getFilteredOrders().length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <ChefHat size={64} className="text-gray-300 mx-auto mb-4" />
+          <Wine size={64} className="text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 mb-2">
-            No Kitchen Orders
+            No Bar Orders
           </h3>
           <p className="text-gray-500">
             All orders have been completed or there are no new orders yet.
@@ -377,7 +377,7 @@ const KitchenPage = () => {
                         ? "Updating..."
                         : item.kitchenStatus === "ready"
                         ? "Ready"
-                        : "Cook"}
+                        : "Prepare"}
                     </span>
                   </div>
 
@@ -469,4 +469,4 @@ const KitchenPage = () => {
   );
 };
 
-export default KitchenPage;
+export default BarPage;

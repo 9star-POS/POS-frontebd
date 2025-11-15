@@ -97,7 +97,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
       if (!requireCooking && quantity && quantity.trim() !== "") {
         formData.append("quantity", quantity);
       }
-      formData.append("requiresCooking", requireCooking);
+      formData.append("requiresPreparation", requireCooking);
       const chosenCategory =
         (newCategory && newCategory.trim()) || dishCategory;
       if (chosenCategory) {
@@ -375,7 +375,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
                   className="mr-2 h-4 w-4 text-primary focus:ring-primary border-primary rounded"
                 />
                 <label htmlFor="requireCooking" className="text-sm font-medium">
-                  Requires Cooking
+                  Requires Preparation
                 </label>
               </div>
               <p className="text-xs text-gray-500 mt-1">
