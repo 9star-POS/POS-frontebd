@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { XCircle, Plus, Minus } from "lucide-react";
+import { XCircle, Plus, Minus, X } from "lucide-react";
 import {
   removeItemFromReceipt,
   incrementQuantity,
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import getRestaurantOrders from "../../api/Order/getRestaurantOrders";
 import { setItemsForTable } from "./../../redux/receiptSlice";
 import updateKitchenOrder from "../../api/Order/updatetokitchenorder";
+import removeOrderItems from "../../api/Order/removeOrderItems";
 import checkoutOrder from "../../api/Order/checkout";
 import SplitOrderModal from "../KTV/SplitOrderModal";
 import getTableService from "../../api/Table/getTableService";
@@ -34,6 +35,9 @@ function Receipt({ onClose }) {
   const [remoteOrder, setRemoteOrder] = useState(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [isRemoveOrderOpen, setIsRemoveOrderOpen] = useState(false);
+  const [orderItemsForRemove, setOrderItemsForRemove] = useState([]);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [tableServiceId, setTableServiceId] = useState(null);
 
   useEffect(() => {
@@ -143,6 +147,163 @@ function Receipt({ onClose }) {
 
   const handleDecrement = (itemName) => {
     dispatch(decrementQuantity({ table: selectedTable, itemName }));
+  };
+
+  const handleOpenRemoveOrder = () => {
+    if (!orderId || !remoteOrder) {
+      toast.warning("No active order to remove items from");
+      return;
+    }
+    // Initialize order items for removal modal
+    const items = (remoteOrder.orderItems || []).map((item) => ({
+      stockId: item?.stockId?._id || item?.stockId,
+      stockName: item.stockName || item?.stockId?.name || "",
+      price: item.price || 0,
+      quantity: item.quantity || 1,
+      orderItemId: item._id,
+    }));
+    setOrderItemsForRemove(items);
+    setIsRemoveOrderOpen(true);
+  };
+
+  const handleCloseRemoveOrder = () => {
+    setIsRemoveOrderOpen(false);
+    setOrderItemsForRemove([]);
+  };
+
+  const handleDecrementInModal = (index) => {
+    const updatedItems = [...orderItemsForRemove];
+    if (updatedItems[index].quantity > 1) {
+      updatedItems[index].quantity -= 1;
+    } else {
+      // Remove item if quantity reaches 0
+      updatedItems.splice(index, 1);
+    }
+    setOrderItemsForRemove(updatedItems);
+  };
+
+  const handleSaveRemoveOrder = async () => {
+    if (!orderId) {
+      toast.error("No active order");
+      return;
+    }
+
+    setIsUpdatingOrder(true);
+    try {
+      // Build array of items to remove with orderItemId and quantity
+      const itemsToRemove = [];
+
+      // Create a map of original items by orderItemId
+      const originalItemsMap = new Map();
+      (remoteOrder.orderItems || []).forEach((item) => {
+        originalItemsMap.set(item._id, {
+          orderItemId: item._id,
+          originalQuantity: item.quantity || 1,
+        });
+      });
+
+      // Calculate items to remove
+      orderItemsForRemove.forEach((item) => {
+        const originalItem = originalItemsMap.get(item.orderItemId);
+        if (originalItem) {
+          const quantityToRemove =
+            originalItem.originalQuantity - item.quantity;
+          if (quantityToRemove > 0) {
+            // For each quantity to remove, add an entry with orderItemId
+            // If we need to remove multiple quantities of the same item,
+            // we add multiple entries (as per API requirement)
+            for (let i = 0; i < quantityToRemove; i++) {
+              itemsToRemove.push({
+                orderItemId: item.orderItemId,
+                quantity: 1,
+              });
+            }
+          }
+        }
+      });
+
+      if (itemsToRemove.length === 0) {
+        toast.info("No items to remove");
+        handleCloseRemoveOrder();
+        return;
+      }
+
+      const res = await removeOrderItems(orderId, itemsToRemove);
+
+      if (res?.code === 200 && res?.status === "success") {
+        toast.success(res?.message || "Order items removed successfully");
+        handleCloseRemoveOrder();
+
+        // Refresh the order data
+        if (res?.data) {
+          setRemoteOrder({
+            ...res?.data,
+            createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
+          });
+          // Sync items from server response
+          if (res?.data?.orderItems) {
+            const grouped = new Map();
+            res.data.orderItems.forEach((it) => {
+              const key = it?.stockId?._id || it?.stockId;
+              const name = it.stockName || it?.stockId?.name || "";
+              const price = it.price || 0;
+              const qty = it.quantity || 1;
+              if (!key) return;
+              if (!grouped.has(key)) {
+                grouped.set(key, {
+                  name,
+                  price,
+                  quantity: qty,
+                  stockId: key,
+                  _id: key,
+                });
+              } else {
+                const existing = grouped.get(key);
+                existing.quantity += qty;
+                existing.price = price || existing.price;
+              }
+            });
+            const mappedItems = Array.from(grouped.values());
+            dispatch(
+              setItemsForTable({ table: selectedTable, items: mappedItems })
+            );
+          }
+        }
+
+        // Refetch orders to sync
+        const refreshRes = await getRestaurantOrders();
+        if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
+          const forTable = refreshRes.data.filter((o) => {
+            const tableNum = o.tableNumber || o.tableService?.tableNumber;
+            return (
+              Number(tableNum) === Number(selectedTable) &&
+              o?.isDeleted === false
+            );
+          });
+          const activeOrders = forTable.filter(
+            (o) =>
+              o.status === "pending" ||
+              o.status === "in_progress" ||
+              o.status === "ongoing"
+          );
+          const pick = (list) =>
+            list
+              .slice()
+              .sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+              )[0] || null;
+          const chosen = pick(activeOrders);
+          if (chosen) {
+            setRemoteOrder(chosen);
+            setOrderId(chosen._id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+    } finally {
+      setIsUpdatingOrder(false);
+    }
   };
 
   const handleTaxChange = (e) => {
@@ -472,40 +633,40 @@ function Receipt({ onClose }) {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!orderId) return;
-    const payload = {
-      status: "completed",
-      subTotal: calculateSubtotal(),
-      tax: taxRate,
-      discount: calculateDiscount(),
-      total: calculateTotal(),
-    };
-    try {
-      const res = await checkoutOrder({ id: orderId, data: payload });
-      if (res?.status === "success" || res?.code === 200) {
-        toast.success("Checkout completed successfully");
-        setRemoteOrder(res?.data || null);
-        setOrderId(null);
-        if (selectedTable) {
-          dispatch(removeTable(selectedTable));
-        }
-        if (tableServiceId) {
-          try {
-            await updateTableStatus({
-              tableServiceId,
-              status: "inactive",
-            });
-          } catch (error) {
-            console.error("Failed to reset table status:", error);
-          }
-        }
-        if (onClose) onClose();
-      }
-    } catch (_) {
-      // error handled in API layer
-    }
-  };
+  // const handleCheckout = async () => {
+  //   if (!orderId) return;
+  //   const payload = {
+  //     status: "completed",
+  //     subTotal: calculateSubtotal(),
+  //     tax: taxRate,
+  //     discount: calculateDiscount(),
+  //     total: calculateTotal(),
+  //   };
+  //   try {
+  //     const res = await checkoutOrder({ id: orderId, data: payload });
+  //     if (res?.status === "success" || res?.code === 200) {
+  //       toast.success("Checkout completed successfully");
+  //       setRemoteOrder(res?.data || null);
+  //       setOrderId(null);
+  //       if (selectedTable) {
+  //         dispatch(removeTable(selectedTable));
+  //       }
+  //       if (tableServiceId) {
+  //         try {
+  //           await updateTableStatus({
+  //             tableServiceId,
+  //             status: "inactive",
+  //           });
+  //         } catch (error) {
+  //           console.error("Failed to reset table status:", error);
+  //         }
+  //       }
+  //       if (onClose) onClose();
+  //     }
+  //   } catch (_) {
+  //     // error handled in API layer
+  //   }
+  // };
 
   return (
     <div className="text-black h-screen px-3 pt-0">
@@ -674,12 +835,22 @@ function Receipt({ onClose }) {
               </div> */}
               {hasLocalItems && (
                 <div className="flex flex-col gap-3">
-                  <button
-                    onClick={sendKitchen}
-                    className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                  >
-                    Send to Kitchen
-                  </button>
+                  <div className="flex flex-row gap-3">
+                    <button
+                      onClick={sendKitchen}
+                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      Send to Kitchen
+                    </button>
+                    {orderId && (
+                      <button
+                        onClick={handleOpenRemoveOrder}
+                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                      >
+                        Remove Items
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={() => setIsSplitOpen(true)}
                     className="flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
@@ -716,6 +887,99 @@ function Receipt({ onClose }) {
           items={receipts[selectedTable]?.items || []}
           currency="MMK"
         />
+      )}
+
+      {/* Remove Order Items Modal */}
+      {isRemoveOrderOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Remove Items from Order</h3>
+              <button
+                onClick={handleCloseRemoveOrder}
+                className="text-gray-500 hover:text-gray-700"
+                disabled={isUpdatingOrder}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {orderItemsForRemove.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No items in order
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orderItemsForRemove.map((item, index) => (
+                    // console.log(item),
+                    <div
+                      key={index}
+                      className="flex justify-between items-center bg-gray-50 py-3 px-4 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{item.stockName}</p>
+                        <p className="text-sm text-gray-500">
+                          {item.price.toLocaleString()} MMK
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDecrementInModal(index)}
+                            className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                            disabled={isUpdatingOrder}
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="font-medium min-w-[24px] text-center">
+                            {item.quantity}
+                          </span>
+                        </div>
+                        <p className="font-medium min-w-[100px] text-right">
+                          {(item.price * item.quantity).toLocaleString()} MMK
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseRemoveOrder}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  disabled={isUpdatingOrder}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRemoveOrder}
+                  disabled={isUpdatingOrder || orderItemsForRemove.length === 0}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    isUpdatingOrder || orderItemsForRemove.length === 0
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
+                >
+                  {isUpdatingOrder ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Updating...
+                    </span>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
