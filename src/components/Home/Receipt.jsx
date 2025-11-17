@@ -196,7 +196,7 @@ function Receipt({ onClose }) {
     if (updatedItems[index].quantity > 0) {
       updatedItems[index].quantity -= 1;
     }
-    // Keep item in list even if quantity is 0, so we can track it for removal
+    // Keep item in list even if quantity is 0, so it remains visible
     setOrderItemsForRemove(updatedItems);
   };
 
@@ -214,7 +214,6 @@ function Receipt({ onClose }) {
       // Calculate items to remove
       orderItemsForRemove.forEach((item) => {
         const quantityToRemove = item.originalQuantity - item.quantity;
-        // Handle both partial and full removals (including quantity = 0)
         if (quantityToRemove > 0) {
           // Distribute removal across orderItemIds
           let remainingToRemove = quantityToRemove;
@@ -244,85 +243,85 @@ function Receipt({ onClose }) {
         }
       });
 
-      if (itemsToRemove.length === 0) {
-        toast.info("No items to remove");
-        handleCloseRemoveOrder();
-        return;
-      }
+      // if (itemsToRemove.length === 0) {
+      //   toast.info("No items to remove");
+      //   handleCloseRemoveOrder();
+      //   return;
+      // }
 
       console.log("itemsToRemove", itemsToRemove);
 
-      // const res = await removeOrderItems(orderId, itemsToRemove);
+      const res = await removeOrderItems(orderId, itemsToRemove);
 
-      // if (res?.code === 200 && res?.status === "success") {
-      //   toast.success(res?.message || "Order items removed successfully");
-      //   handleCloseRemoveOrder();
+      if (res?.code === 200 && res?.status === "success") {
+        toast.success(res?.message || "Order items removed successfully");
+        handleCloseRemoveOrder();
 
-      //   // Refresh the order data
-      //   if (res?.data) {
-      //     setRemoteOrder({
-      //       ...res?.data,
-      //       createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
-      //     });
-      //     // Sync items from server response
-      //     if (res?.data?.orderItems) {
-      //       const grouped = new Map();
-      //       res.data.orderItems.forEach((it) => {
-      //         const key = it?.stockId?._id || it?.stockId;
-      //         const name = it.stockName || it?.stockId?.name || "";
-      //         const price = it.price || 0;
-      //         const qty = it.quantity || 1;
-      //         if (!key) return;
-      //         if (!grouped.has(key)) {
-      //           grouped.set(key, {
-      //             name,
-      //             price,
-      //             quantity: qty,
-      //             stockId: key,
-      //             _id: key,
-      //           });
-      //         } else {
-      //           const existing = grouped.get(key);
-      //           existing.quantity += qty;
-      //           existing.price = price || existing.price;
-      //         }
-      //       });
-      //       const mappedItems = Array.from(grouped.values());
-      //       dispatch(
-      //         setItemsForTable({ table: selectedTable, items: mappedItems })
-      //       );
-      //     }
-      //   }
+        // Refresh the order data
+        if (res?.data) {
+          setRemoteOrder({
+            ...res?.data,
+            createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
+          });
+          // Sync items from server response
+          if (res?.data?.orderItems) {
+            const grouped = new Map();
+            res.data.orderItems.forEach((it) => {
+              const key = it?.stockId?._id || it?.stockId;
+              const name = it.stockName || it?.stockId?.name || "";
+              const price = it.price || 0;
+              const qty = it.quantity || 1;
+              if (!key) return;
+              if (!grouped.has(key)) {
+                grouped.set(key, {
+                  name,
+                  price,
+                  quantity: qty,
+                  stockId: key,
+                  _id: key,
+                });
+              } else {
+                const existing = grouped.get(key);
+                existing.quantity += qty;
+                existing.price = price || existing.price;
+              }
+            });
+            const mappedItems = Array.from(grouped.values());
+            dispatch(
+              setItemsForTable({ table: selectedTable, items: mappedItems })
+            );
+          }
+        }
 
-      //   // Refetch orders to sync
-      //   const refreshRes = await getRestaurantOrders();
-      //   if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
-      //     const forTable = refreshRes.data.filter((o) => {
-      //       const tableNum = o.tableNumber || o.tableService?.tableNumber;
-      //       return (
-      //         Number(tableNum) === Number(selectedTable) &&
-      //         o?.isDeleted === false
-      //       );
-      //     });
-      //     const activeOrders = forTable.filter(
-      //       (o) =>
-      //         o.status === "pending" ||
-      //         o.status === "in_progress" ||
-      //         o.status === "ongoing"
-      //     );
-      //     const pick = (list) =>
-      //       list
-      //         .slice()
-      //         .sort(
-      //           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      //         )[0] || null;
-      //     const chosen = pick(activeOrders);
-      //     if (chosen) {
-      //       setRemoteOrder(chosen);
-      //       setOrderId(chosen._id);
-      //     }
-      //   }
-      // }
+        // Refetch orders to sync
+        const refreshRes = await getRestaurantOrders();
+        if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
+          const forTable = refreshRes.data.filter((o) => {
+            const tableNum = o.tableNumber || o.tableService?.tableNumber;
+            return (
+              Number(tableNum) === Number(selectedTable) &&
+              o?.isDeleted === false
+            );
+          });
+          const activeOrders = forTable.filter(
+            (o) =>
+              o.status === "pending" ||
+              o.status === "in_progress" ||
+              o.status === "ongoing"
+          );
+          const pick = (list) =>
+            list
+              .slice()
+              .sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+              )[0] || null;
+          const chosen = pick(activeOrders);
+          if (chosen) {
+            setRemoteOrder(chosen);
+            setOrderId(chosen._id);
+          }
+        }
+      }
     } catch (error) {
       console.error("Error updating order:", error);
     } finally {
@@ -974,57 +973,46 @@ function Receipt({ onClose }) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {orderItemsForRemove.map((item, index) => {
-                    const isFullyRemoved = item.quantity === 0;
-                    return (
-                      <div
-                        key={`${item.stockId}-${index}`}
-                        className={`flex justify-between items-center py-3 px-4 rounded-lg ${
-                          isFullyRemoved
-                            ? "bg-red-50 border border-red-200"
-                            : "bg-gray-50"
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">{item.stockName}</p>
-                          <p className="text-sm text-gray-500">
-                            {item.price.toLocaleString()} MMK
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleDecrementInModal(index)}
-                              className="p-1 rounded-md hover:bg-gray-200 text-primary"
-                              disabled={item.quantity <= 0 || isUpdatingOrder}
-                            >
-                              <Minus size={16} />
-                            </button>
-                            <span
-                              className={`font-medium min-w-[24px] text-center ${
-                                isFullyRemoved ? "text-red-600" : ""
-                              }`}
-                            >
-                              {item.quantity} / {item.originalQuantity}
-                            </span>
-                            <button
-                              onClick={() => handleIncrementInModal(index)}
-                              className="p-1 rounded-md hover:bg-gray-200 text-primary"
-                              disabled={
-                                isUpdatingOrder ||
-                                item.quantity >= item.originalQuantity
-                              }
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </div>
-                          <p className="font-medium min-w-[100px] text-right">
-                            {(item.price * item.quantity).toLocaleString()} MMK
-                          </p>
-                        </div>
+                  {orderItemsForRemove.map((item, index) => (
+                    <div
+                      key={`${item.stockId}-${index}`}
+                      className="flex justify-between items-center py-3 px-4 rounded-lg bg-gray-50"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{item.stockName}</p>
+                        <p className="text-sm text-gray-500">
+                          {item.price.toLocaleString()} MMK
+                        </p>
                       </div>
-                    );
-                  })}
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDecrementInModal(index)}
+                            className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                            disabled={item.quantity <= 0 || isUpdatingOrder}
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="font-medium min-w-[24px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleIncrementInModal(index)}
+                            className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                            disabled={
+                              isUpdatingOrder ||
+                              item.quantity >= item.originalQuantity
+                            }
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        <p className="font-medium min-w-[100px] text-right">
+                          {(item.price * item.quantity).toLocaleString()} MMK
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
