@@ -162,6 +162,30 @@ function Receipt({ onClose }) {
   const hasLocalItems =
     !!selectedTable && !!receipts[selectedTable]?.items?.length;
 
+  // Calculate how much quantity of an item has been sent to kitchen
+  const getSentQuantity = (item) => {
+    if (!remoteOrder?.orderItems || !orderId) return 0;
+    const stockId = item._id || item.stockId;
+    if (!stockId) return 0;
+
+    // Sum up all quantities for this stockId in remote order
+    let sentQty = 0;
+    remoteOrder.orderItems.forEach((remoteItem) => {
+      const remoteStockId = remoteItem?.stockId?._id || remoteItem?.stockId;
+      if (remoteStockId === stockId) {
+        sentQty += remoteItem.quantity || 1;
+      }
+    });
+    return sentQty;
+  };
+
+  // Calculate local (unsent) quantity for an item
+  const getLocalQuantity = (item) => {
+    const currentQty = item.quantity || 1;
+    const sentQty = getSentQuantity(item);
+    return Math.max(0, currentQty - sentQty);
+  };
+
   const calculateSubtotal = () => {
     if (!selectedTable || !hasLocalItems) return 0;
     return receipts[selectedTable].items.reduce((total, item) => {
@@ -541,21 +565,31 @@ function Receipt({ onClose }) {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDecrement(item.name)}
-                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="font-medium min-w-[24px] text-center">
-                        {item.quantity || 1}
-                      </span>
-                      <button
-                        onClick={() => handleIncrement(item.name)}
-                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                      >
-                        <Plus size={16} />
-                      </button>
+                      {(() => {
+                        const localQty = getLocalQuantity(item);
+                        const hasLocalQuantity = localQty > 0;
+                        return (
+                          <>
+                            {hasLocalQuantity && (
+                              <button
+                                onClick={() => handleDecrement(item.name)}
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                              >
+                                <Minus size={16} />
+                              </button>
+                            )}
+                            <span className="font-medium min-w-[24px] text-center">
+                              {item.quantity || 1}
+                            </span>
+                            <button
+                              onClick={() => handleIncrement(item.name)}
+                              className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
                     <p className="font-medium min-w-[100px] text-right">
                       {(item.price * (item.quantity || 1)).toLocaleString()} MMK
