@@ -26,16 +26,34 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
       const res = await getRestaurantOrderById(orderId);
       if (res?.code === 200 && res?.status === "success") {
         setOrder(res.data);
-        // Keep individual order items (not grouped) to track orderItemId
-        const orderItems = (res.data?.orderItems || []).map((it) => ({
-          orderItemId: it._id,
-          stockId: it?.stockId?._id || it?.stockId,
-          stockName: it.stockName || it?.stockId?.name || "",
-          price: it.price || 0,
-          quantity: it.quantity || 1,
-          originalQuantity: it.quantity || 1, // Track original quantity
-        }));
-        setItems(orderItems);
+        // Group items by stockId and combine quantities
+        const grouped = new Map();
+        (res.data?.orderItems || []).forEach((it) => {
+          const stockId = it?.stockId?._id || it?.stockId;
+          const stockName = it.stockName || it?.stockId?.name || "";
+          const price = it.price || 0;
+          const qty = it.quantity || 1;
+          const orderItemId = it._id;
+
+          if (!stockId) return;
+
+          if (!grouped.has(stockId)) {
+            grouped.set(stockId, {
+              stockId: stockId,
+              stockName: stockName,
+              price: price,
+              quantity: qty,
+              originalQuantity: qty,
+              orderItemIds: [{ orderItemId, quantity: qty }], // Track individual order items
+            });
+          } else {
+            const existing = grouped.get(stockId);
+            existing.quantity += qty;
+            existing.originalQuantity += qty;
+            existing.orderItemIds.push({ orderItemId, quantity: qty });
+          }
+        });
+        setItems(Array.from(grouped.values()));
       } else {
         toast.error("Failed to fetch order");
       }
@@ -82,14 +100,24 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
       items.forEach((item) => {
         const quantityToRemove = item.originalQuantity - item.quantity;
         if (quantityToRemove > 0) {
-          // For each quantity to remove, add an entry with orderItemId
-          // If we need to remove multiple quantities of the same item,
-          // we add multiple entries (as per API requirement)
-          for (let i = 0; i < quantityToRemove; i++) {
-            itemsToRemove.push({
-              orderItemId: item.orderItemId,
-              quantity: 1,
-            });
+          // Distribute removal across orderItemIds
+          let remainingToRemove = quantityToRemove;
+          let orderItemIndex = 0;
+
+          while (remainingToRemove > 0 && orderItemIndex < item.orderItemIds.length) {
+            const orderItem = item.orderItemIds[orderItemIndex];
+            const removeFromThisItem = Math.min(remainingToRemove, orderItem.quantity);
+            
+            // Add entries for each quantity to remove from this orderItem
+            for (let i = 0; i < removeFromThisItem; i++) {
+              itemsToRemove.push({
+                orderItemId: orderItem.orderItemId,
+                quantity: 1,
+              });
+            }
+            
+            remainingToRemove -= removeFromThisItem;
+            orderItemIndex++;
           }
         }
       });
@@ -150,7 +178,7 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
             <div className="space-y-3">
               {items.map((item, index) => (
                 <div
-                  key={`${item.orderItemId}-${index}`}
+                  key={`${item.stockId}-${index}`}
                   className="flex justify-between items-center bg-gray-50 py-3 px-4 rounded-lg"
                 >
                   <div className="flex-1">

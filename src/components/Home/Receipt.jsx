@@ -29,6 +29,7 @@ function Receipt({ onClose }) {
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
   const receipts = useSelector((state) => state.receipts.receipts);
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
+  const [serviceFee, setServiceFee] = useState(2); // Default 2% service fee
   const [discountAmount, setDiscountAmount] = useState(0); // Default 0 MMK discount
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -154,15 +155,34 @@ function Receipt({ onClose }) {
       toast.warning("No active order to remove items from");
       return;
     }
-    // Initialize order items for removal modal
-    const items = (remoteOrder.orderItems || []).map((item) => ({
-      stockId: item?.stockId?._id || item?.stockId,
-      stockName: item.stockName || item?.stockId?.name || "",
-      price: item.price || 0,
-      quantity: item.quantity || 1,
-      orderItemId: item._id,
-    }));
-    setOrderItemsForRemove(items);
+    // Group items by stockId and combine quantities
+    const grouped = new Map();
+    (remoteOrder.orderItems || []).forEach((item) => {
+      const stockId = item?.stockId?._id || item?.stockId;
+      const stockName = item.stockName || item?.stockId?.name || "";
+      const price = item.price || 0;
+      const qty = item.quantity || 1;
+      const orderItemId = item._id;
+
+      if (!stockId) return;
+
+      if (!grouped.has(stockId)) {
+        grouped.set(stockId, {
+          stockId: stockId,
+          stockName: stockName,
+          price: price,
+          quantity: qty,
+          originalQuantity: qty,
+          orderItemIds: [{ orderItemId, quantity: qty }], // Track individual order items
+        });
+      } else {
+        const existing = grouped.get(stockId);
+        existing.quantity += qty;
+        existing.originalQuantity += qty;
+        existing.orderItemIds.push({ orderItemId, quantity: qty });
+      }
+    });
+    setOrderItemsForRemove(Array.from(grouped.values()));
     setIsRemoveOrderOpen(true);
   };
 
@@ -173,12 +193,10 @@ function Receipt({ onClose }) {
 
   const handleDecrementInModal = (index) => {
     const updatedItems = [...orderItemsForRemove];
-    if (updatedItems[index].quantity > 1) {
+    if (updatedItems[index].quantity > 0) {
       updatedItems[index].quantity -= 1;
-    } else {
-      // Remove item if quantity reaches 0
-      updatedItems.splice(index, 1);
     }
+    // Keep item in list even if quantity is 0, so we can track it for removal
     setOrderItemsForRemove(updatedItems);
   };
 
@@ -193,31 +211,35 @@ function Receipt({ onClose }) {
       // Build array of items to remove with orderItemId and quantity
       const itemsToRemove = [];
 
-      // Create a map of original items by orderItemId
-      const originalItemsMap = new Map();
-      (remoteOrder.orderItems || []).forEach((item) => {
-        originalItemsMap.set(item._id, {
-          orderItemId: item._id,
-          originalQuantity: item.quantity || 1,
-        });
-      });
-
       // Calculate items to remove
       orderItemsForRemove.forEach((item) => {
-        const originalItem = originalItemsMap.get(item.orderItemId);
-        if (originalItem) {
-          const quantityToRemove =
-            originalItem.originalQuantity - item.quantity;
-          if (quantityToRemove > 0) {
-            // For each quantity to remove, add an entry with orderItemId
-            // If we need to remove multiple quantities of the same item,
-            // we add multiple entries (as per API requirement)
-            for (let i = 0; i < quantityToRemove; i++) {
+        const quantityToRemove = item.originalQuantity - item.quantity;
+        // Handle both partial and full removals (including quantity = 0)
+        if (quantityToRemove > 0) {
+          // Distribute removal across orderItemIds
+          let remainingToRemove = quantityToRemove;
+          let orderItemIndex = 0;
+
+          while (
+            remainingToRemove > 0 &&
+            orderItemIndex < item.orderItemIds.length
+          ) {
+            const orderItem = item.orderItemIds[orderItemIndex];
+            const removeFromThisItem = Math.min(
+              remainingToRemove,
+              orderItem.quantity
+            );
+
+            // Add entries for each quantity to remove from this orderItem
+            for (let i = 0; i < removeFromThisItem; i++) {
               itemsToRemove.push({
-                orderItemId: item.orderItemId,
+                orderItemId: orderItem.orderItemId,
                 quantity: 1,
               });
             }
+
+            remainingToRemove -= removeFromThisItem;
+            orderItemIndex++;
           }
         }
       });
@@ -228,77 +250,79 @@ function Receipt({ onClose }) {
         return;
       }
 
-      const res = await removeOrderItems(orderId, itemsToRemove);
+      console.log("itemsToRemove", itemsToRemove);
 
-      if (res?.code === 200 && res?.status === "success") {
-        toast.success(res?.message || "Order items removed successfully");
-        handleCloseRemoveOrder();
+      // const res = await removeOrderItems(orderId, itemsToRemove);
 
-        // Refresh the order data
-        if (res?.data) {
-          setRemoteOrder({
-            ...res?.data,
-            createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
-          });
-          // Sync items from server response
-          if (res?.data?.orderItems) {
-            const grouped = new Map();
-            res.data.orderItems.forEach((it) => {
-              const key = it?.stockId?._id || it?.stockId;
-              const name = it.stockName || it?.stockId?.name || "";
-              const price = it.price || 0;
-              const qty = it.quantity || 1;
-              if (!key) return;
-              if (!grouped.has(key)) {
-                grouped.set(key, {
-                  name,
-                  price,
-                  quantity: qty,
-                  stockId: key,
-                  _id: key,
-                });
-              } else {
-                const existing = grouped.get(key);
-                existing.quantity += qty;
-                existing.price = price || existing.price;
-              }
-            });
-            const mappedItems = Array.from(grouped.values());
-            dispatch(
-              setItemsForTable({ table: selectedTable, items: mappedItems })
-            );
-          }
-        }
+      // if (res?.code === 200 && res?.status === "success") {
+      //   toast.success(res?.message || "Order items removed successfully");
+      //   handleCloseRemoveOrder();
 
-        // Refetch orders to sync
-        const refreshRes = await getRestaurantOrders();
-        if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
-          const forTable = refreshRes.data.filter((o) => {
-            const tableNum = o.tableNumber || o.tableService?.tableNumber;
-            return (
-              Number(tableNum) === Number(selectedTable) &&
-              o?.isDeleted === false
-            );
-          });
-          const activeOrders = forTable.filter(
-            (o) =>
-              o.status === "pending" ||
-              o.status === "in_progress" ||
-              o.status === "ongoing"
-          );
-          const pick = (list) =>
-            list
-              .slice()
-              .sort(
-                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-              )[0] || null;
-          const chosen = pick(activeOrders);
-          if (chosen) {
-            setRemoteOrder(chosen);
-            setOrderId(chosen._id);
-          }
-        }
-      }
+      //   // Refresh the order data
+      //   if (res?.data) {
+      //     setRemoteOrder({
+      //       ...res?.data,
+      //       createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
+      //     });
+      //     // Sync items from server response
+      //     if (res?.data?.orderItems) {
+      //       const grouped = new Map();
+      //       res.data.orderItems.forEach((it) => {
+      //         const key = it?.stockId?._id || it?.stockId;
+      //         const name = it.stockName || it?.stockId?.name || "";
+      //         const price = it.price || 0;
+      //         const qty = it.quantity || 1;
+      //         if (!key) return;
+      //         if (!grouped.has(key)) {
+      //           grouped.set(key, {
+      //             name,
+      //             price,
+      //             quantity: qty,
+      //             stockId: key,
+      //             _id: key,
+      //           });
+      //         } else {
+      //           const existing = grouped.get(key);
+      //           existing.quantity += qty;
+      //           existing.price = price || existing.price;
+      //         }
+      //       });
+      //       const mappedItems = Array.from(grouped.values());
+      //       dispatch(
+      //         setItemsForTable({ table: selectedTable, items: mappedItems })
+      //       );
+      //     }
+      //   }
+
+      //   // Refetch orders to sync
+      //   const refreshRes = await getRestaurantOrders();
+      //   if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
+      //     const forTable = refreshRes.data.filter((o) => {
+      //       const tableNum = o.tableNumber || o.tableService?.tableNumber;
+      //       return (
+      //         Number(tableNum) === Number(selectedTable) &&
+      //         o?.isDeleted === false
+      //       );
+      //     });
+      //     const activeOrders = forTable.filter(
+      //       (o) =>
+      //         o.status === "pending" ||
+      //         o.status === "in_progress" ||
+      //         o.status === "ongoing"
+      //     );
+      //     const pick = (list) =>
+      //       list
+      //         .slice()
+      //         .sort(
+      //           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      //         )[0] || null;
+      //     const chosen = pick(activeOrders);
+      //     if (chosen) {
+      //       setRemoteOrder(chosen);
+      //       setOrderId(chosen._id);
+      //     }
+      //   }
+      // }
     } catch (error) {
       console.error("Error updating order:", error);
     } finally {
@@ -310,6 +334,13 @@ function Receipt({ onClose }) {
     const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
     if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
       setTaxRate(value === "" ? 0 : Number(value));
+    }
+  };
+
+  const handleServiceFeeChange = (e) => {
+    const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
+    if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
+      setServiceFee(value === "" ? 0 : Number(value));
     }
   };
 
@@ -358,6 +389,10 @@ function Receipt({ onClose }) {
     return subtotal * (taxRate / 100);
   };
 
+  const calculateServiceFee = (subtotal) => {
+    return subtotal * (serviceFee / 100);
+  };
+
   const calculateDiscount = () => {
     // Return the fixed discount amount in MMK
     return discountAmount || 0;
@@ -367,7 +402,8 @@ function Receipt({ onClose }) {
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
     const tax = calculateTax(subtotal);
-    return subtotal - discount + tax;
+    const serviceFeeAmount = calculateServiceFee(subtotal);
+    return subtotal - discount + tax + serviceFeeAmount;
   };
 
   const handlePayment = () => {
@@ -399,7 +435,8 @@ function Receipt({ onClose }) {
     const payload = {
       status: "completed",
       subTotal: calculateSubtotal(),
-      tax: taxRate,
+      tax: (taxRate / 100) * calculateSubtotal(),
+      serviceFee: (serviceFee / 100) * calculateSubtotal(),
       discount: calculateDiscount(),
       total: calculateTotal(),
     };
@@ -429,6 +466,7 @@ function Receipt({ onClose }) {
             [],
           subTotal: res?.data?.subTotal || calculateSubtotal(),
           tax: res?.data?.tax || taxRate,
+          serviceFee: res?.data?.serviceFee || serviceFee,
           discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",
@@ -798,6 +836,29 @@ function Receipt({ onClose }) {
                 </div>
 
                 <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-600">Service Fee</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={serviceFee === 0 ? "" : serviceFee}
+                        onChange={handleServiceFeeChange}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-600">
+                    {calculateServiceFee(calculateSubtotal()).toLocaleString()}{" "}
+                    MMK
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
                   <p className="text-gray-600">Discount</p>
                   <div className="flex items-center gap-2">
                     <input
@@ -913,37 +974,57 @@ function Receipt({ onClose }) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {orderItemsForRemove.map((item, index) => (
-                    // console.log(item),
-                    <div
-                      key={index}
-                      className="flex justify-between items-center bg-gray-50 py-3 px-4 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">{item.stockName}</p>
-                        <p className="text-sm text-gray-500">
-                          {item.price.toLocaleString()} MMK
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleDecrementInModal(index)}
-                            className="p-1 rounded-md hover:bg-gray-200 text-primary"
-                            disabled={isUpdatingOrder}
-                          >
-                            <Minus size={16} />
-                          </button>
-                          <span className="font-medium min-w-[24px] text-center">
-                            {item.quantity}
-                          </span>
+                  {orderItemsForRemove.map((item, index) => {
+                    const isFullyRemoved = item.quantity === 0;
+                    return (
+                      <div
+                        key={`${item.stockId}-${index}`}
+                        className={`flex justify-between items-center py-3 px-4 rounded-lg ${
+                          isFullyRemoved
+                            ? "bg-red-50 border border-red-200"
+                            : "bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium">{item.stockName}</p>
+                          <p className="text-sm text-gray-500">
+                            {item.price.toLocaleString()} MMK
+                          </p>
                         </div>
-                        <p className="font-medium min-w-[100px] text-right">
-                          {(item.price * item.quantity).toLocaleString()} MMK
-                        </p>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDecrementInModal(index)}
+                              className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                              disabled={item.quantity <= 0 || isUpdatingOrder}
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span
+                              className={`font-medium min-w-[24px] text-center ${
+                                isFullyRemoved ? "text-red-600" : ""
+                              }`}
+                            >
+                              {item.quantity} / {item.originalQuantity}
+                            </span>
+                            <button
+                              onClick={() => handleIncrementInModal(index)}
+                              className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                              disabled={
+                                isUpdatingOrder ||
+                                item.quantity >= item.originalQuantity
+                              }
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                          <p className="font-medium min-w-[100px] text-right">
+                            {(item.price * item.quantity).toLocaleString()} MMK
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
