@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { XCircle, Plus, Minus, X } from "lucide-react";
+import { Plus, Minus, X } from "lucide-react";
 import {
   removeItemFromReceipt,
   incrementQuantity,
@@ -200,6 +200,14 @@ function Receipt({ onClose }) {
     setOrderItemsForRemove(updatedItems);
   };
 
+  const handleIncrementInModal = (index) => {
+    const updatedItems = [...orderItemsForRemove];
+    if (updatedItems[index].quantity < updatedItems[index].originalQuantity) {
+      updatedItems[index].quantity += 1;
+    }
+    setOrderItemsForRemove(updatedItems);
+  };
+
   const handleSaveRemoveOrder = async () => {
     if (!orderId) {
       toast.error("No active order");
@@ -209,7 +217,8 @@ function Receipt({ onClose }) {
     setIsUpdatingOrder(true);
     try {
       // Build array of items to remove with orderItemId and quantity
-      const itemsToRemove = [];
+      // Group by orderItemId and sum quantities
+      const itemsToRemoveMap = new Map();
 
       // Calculate items to remove
       orderItemsForRemove.forEach((item) => {
@@ -229,12 +238,15 @@ function Receipt({ onClose }) {
               orderItem.quantity
             );
 
-            // Add entries for each quantity to remove from this orderItem
-            for (let i = 0; i < removeFromThisItem; i++) {
-              itemsToRemove.push({
-                orderItemId: orderItem.orderItemId,
-                quantity: 1,
-              });
+            // Sum quantities for the same orderItemId
+            const orderItemId = orderItem.orderItemId;
+            if (itemsToRemoveMap.has(orderItemId)) {
+              itemsToRemoveMap.set(
+                orderItemId,
+                itemsToRemoveMap.get(orderItemId) + removeFromThisItem
+              );
+            } else {
+              itemsToRemoveMap.set(orderItemId, removeFromThisItem);
             }
 
             remainingToRemove -= removeFromThisItem;
@@ -242,6 +254,14 @@ function Receipt({ onClose }) {
           }
         }
       });
+
+      // Convert map to array format
+      const itemsToRemove = Array.from(itemsToRemoveMap.entries()).map(
+        ([orderItemId, quantity]) => ({
+          orderItemId,
+          quantity,
+        })
+      );
 
       // if (itemsToRemove.length === 0) {
       //   toast.info("No items to remove");

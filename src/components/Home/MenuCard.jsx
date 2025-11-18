@@ -42,7 +42,10 @@ const MenuCard = ({ menu }) => {
   };
 
   return (
-    <div className="w-auto lg:w-[200px] overflow-hidden border border-gray-200 rounded-lg shadow-md">
+    <div
+      className="w-auto lg:w-[200px] overflow-hidden border border-gray-200 rounded-lg shadow-md"
+      onClick={() => handleIncrement()}
+    >
       <div className="hidden lg:block">
         <img
           className="w-full h-48 sm:h-32 object-cover"
@@ -61,21 +64,21 @@ const MenuCard = ({ menu }) => {
           </p>
         </div>
         <div className="flex gap-1 items-center">
-          <button
+          {/* <button
             className="bg-secondary text-primary px-2 py-3 active:scale-105 active:bg-primary active:text-white rounded-lg"
             onClick={handleDecrement}
           >
             <CircleMinus size={17} />
-          </button>
-          <span className="font-semibold min-w-[20px] text-center">
+          </button> */}
+          {/* <span className="font-semibold min-w-[20px] text-center">
             {quantity}
-          </span>
-          <button
+          </span> */}
+          {/* <button
             className="bg-secondary text-primary px-2 py-3 active:scale-105 active:bg-primary active:text-white rounded-lg"
             onClick={handleIncrement}
           >
             <CirclePlus size={17} />
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
