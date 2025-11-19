@@ -213,9 +213,7 @@ function OrderDetail() {
               <h3 className="font-semibold text-lg">Payment Method</h3>
             </div>
             <p className="text-xl font-semibold text-gray-800 capitalize">
-              {order.paymentMethod === "none"
-                ? "Cash"
-                : order.paymentMethod}
+              {order.paymentMethod === "none" ? "Cash" : order.paymentMethod}
             </p>
           </div>
 
@@ -332,6 +330,20 @@ function OrderDetail() {
                   {((order.subTotal * order.tax) / 100).toLocaleString()} MMK
                 </span>
               </div>
+              {order.serviceFee != null && order.serviceFee > 0 && (
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-600">Service Fee:</span>
+                  <span className="font-semibold text-gray-800">
+                    {typeof order.serviceFee === "number"
+                      ? order.serviceFee.toLocaleString()
+                      : (
+                          (order.subTotal * (order.serviceFee || 0)) /
+                          100
+                        ).toLocaleString()}{" "}
+                    MMK
+                  </span>
+                </div>
+              )}
               {order.discount > 0 && (
                 <div className="flex justify-between text-lg text-green-600">
                   <span>Discount:</span>

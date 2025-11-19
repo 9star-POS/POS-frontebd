@@ -42,7 +42,10 @@ const KtvMenuCard = ({ menu }) => {
   };
 
   return (
-    <div className="w-auto lg:w-[200px] overflow-hidden border border-gray-200 rounded-lg shadow-md">
+    <div
+      className="w-auto lg:w-[200px] overflow-hidden border border-gray-200 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all duration-300"
+      onClick={handleIncrement}
+    >
       <div className="hidden lg:block">
         <img
           className="w-full h-48 sm:h-32 object-cover"
@@ -60,7 +63,7 @@ const KtvMenuCard = ({ menu }) => {
             {menu.price} MMK
           </p>
         </div>
-        <div className="flex gap-1 items-center">
+        {/* <div className="flex gap-1 items-center">
           <button
             className="bg-secondary text-primary px-2 py-3 active:scale-105 active:bg-primary active:text-white rounded-lg"
             onClick={handleDecrement}
@@ -76,7 +79,7 @@ const KtvMenuCard = ({ menu }) => {
           >
             <CirclePlus size={17} />
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

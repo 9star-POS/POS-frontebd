@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Plus, Minus, Trash2 } from "lucide-react";
+import { Plus, Minus, Trash2, X } from "lucide-react";
 import {
   removeItemFromRoomReceipt,
   incrementRoomItemQuantity,
@@ -30,6 +30,7 @@ import getRoomService from "../../api/KTV/getRoomService";
 import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 import updateKtvOrder from "../../api/KTV/updateKtvOrder";
 import updateRoomStatus from "../../api/KTV/updateRoomStatus";
+import removeKtvOrderItems from "../../api/KTV/removeKtvOrderItems";
 import TimestampFormatter from "../Orders/TimestampFormatter";
 import SplitOrderModal from "./SplitOrderModal";
 import printReceipt from "../../utils/printReceipt";
@@ -47,6 +48,7 @@ function Receipt({ onClose }) {
   const selectedRoomId = selectedRoomDetails?.roomId;
   const selectedRoomStatus = selectedRoomDetails?.status;
   const [taxRate, setTaxRate] = useState(5); // Default 5% tax
+  const [serviceFee, setServiceFee] = useState(2); // Default 2% service fee
   const [discountAmount, setDiscountAmount] = useState(0); // Default 0 MMK discount
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -56,6 +58,10 @@ function Receipt({ onClose }) {
   const [localCreationTime, setLocalCreationTime] = useState(null);
 
   const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [isRemoveOrderOpen, setIsRemoveOrderOpen] = useState(false);
+  const [orderItemsForRemove, setOrderItemsForRemove] = useState([]);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
+  const [isLoadingRemoveModal, setIsLoadingRemoveModal] = useState(false);
   useEffect(() => {
     const fetchOrdersForTable = async () => {
       if (!selectedRoom) {
@@ -199,10 +205,251 @@ function Receipt({ onClose }) {
     dispatch(decrementRoomItemQuantity({ room: selectedRoom, itemName }));
   };
 
+  const handleOpenRemoveOrder = async () => {
+    if (!orderId) {
+      toast.warning("No active order to remove items from");
+      return;
+    }
+
+    // Refetch order data to ensure we have the latest orderItemIds
+    setIsLoadingRemoveModal(true);
+    try {
+      const res = await getKtvOrders();
+      if (res?.code === 200 && Array.isArray(res.data)) {
+        const forTable = res.data.filter(
+          (o) =>
+            String(o.roomService.roomNumber) === String(selectedRoom) &&
+            o?.isDeleted === false &&
+            (o.status === "pending" ||
+              o.status === "ongoing" ||
+              o.status === "in_progress")
+        );
+        const pickLatest = (list) =>
+          list
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
+          null;
+        const chosen = pickLatest(forTable);
+
+        if (!chosen) {
+          toast.warning("No active order to remove items from");
+          setIsLoadingRemoveModal(false);
+          return;
+        }
+
+        // Update remote order with latest data
+        setRemoteOrder(chosen);
+        const latestOrderId = chosen._id;
+        setOrderId(latestOrderId);
+
+        // Group items by stockId and combine quantities
+        const grouped = new Map();
+        (chosen.orderItems || []).forEach((item) => {
+          const stockId = item?.stockId?._id || item?.stockId;
+          const stockName = item.stockName || item?.stockId?.name || "";
+          const price = item.price || 0;
+          const qty = item.quantity || 1;
+          const orderItemId = item._id;
+
+          if (!stockId) return;
+
+          if (!grouped.has(stockId)) {
+            grouped.set(stockId, {
+              stockId: stockId,
+              stockName: stockName,
+              price: price,
+              quantity: qty,
+              originalQuantity: qty,
+              orderItemIds: [{ orderItemId, quantity: qty }], // Track individual order items
+            });
+          } else {
+            const existing = grouped.get(stockId);
+            existing.quantity += qty;
+            existing.originalQuantity += qty;
+            existing.orderItemIds.push({ orderItemId, quantity: qty });
+          }
+        });
+        setOrderItemsForRemove(Array.from(grouped.values()));
+        setIsRemoveOrderOpen(true);
+      } else {
+        toast.warning("No active order to remove items from");
+      }
+    } catch (error) {
+      console.error("Error fetching order data:", error);
+      toast.error("Failed to fetch order data");
+    } finally {
+      setIsLoadingRemoveModal(false);
+    }
+  };
+
+  const handleCloseRemoveOrder = () => {
+    setIsRemoveOrderOpen(false);
+    setOrderItemsForRemove([]);
+  };
+
+  const handleDecrementInModal = (index) => {
+    const updatedItems = [...orderItemsForRemove];
+    if (updatedItems[index].quantity > 0) {
+      updatedItems[index].quantity -= 1;
+    }
+    // Keep item in list even if quantity is 0, so it remains visible
+    setOrderItemsForRemove(updatedItems);
+  };
+
+  const handleIncrementInModal = (index) => {
+    const updatedItems = [...orderItemsForRemove];
+    if (updatedItems[index].quantity < updatedItems[index].originalQuantity) {
+      updatedItems[index].quantity += 1;
+    }
+    setOrderItemsForRemove(updatedItems);
+  };
+
+  const handleSaveRemoveOrder = async () => {
+    if (!orderId) {
+      toast.error("No active order");
+      return;
+    }
+
+    setIsUpdatingOrder(true);
+    try {
+      // Build array of items to remove with orderItemId and quantity
+      // Group by orderItemId and sum quantities
+      const itemsToRemoveMap = new Map();
+
+      // Calculate items to remove
+      orderItemsForRemove.forEach((item) => {
+        const quantityToRemove = item.originalQuantity - item.quantity;
+        if (quantityToRemove > 0) {
+          // Distribute removal across orderItemIds
+          let remainingToRemove = quantityToRemove;
+          let orderItemIndex = 0;
+
+          while (
+            remainingToRemove > 0 &&
+            orderItemIndex < item.orderItemIds.length
+          ) {
+            const orderItem = item.orderItemIds[orderItemIndex];
+            const removeFromThisItem = Math.min(
+              remainingToRemove,
+              orderItem.quantity
+            );
+
+            // Sum quantities for the same orderItemId
+            const orderItemId = orderItem.orderItemId;
+            if (itemsToRemoveMap.has(orderItemId)) {
+              itemsToRemoveMap.set(
+                orderItemId,
+                itemsToRemoveMap.get(orderItemId) + removeFromThisItem
+              );
+            } else {
+              itemsToRemoveMap.set(orderItemId, removeFromThisItem);
+            }
+
+            remainingToRemove -= removeFromThisItem;
+            orderItemIndex++;
+          }
+        }
+      });
+
+      // Convert map to array format
+      const itemsToRemove = Array.from(itemsToRemoveMap.entries()).map(
+        ([orderItemId, quantity]) => ({
+          orderItemId,
+          quantity,
+        })
+      );
+
+      console.log("itemsToRemove", itemsToRemove);
+
+      const res = await removeKtvOrderItems(orderId, itemsToRemove);
+
+      if (res?.code === 200 && res?.status === "success") {
+        toast.success(res?.message || "Order items removed successfully");
+        handleCloseRemoveOrder();
+
+        // Refresh the order data
+        if (res?.data) {
+          setRemoteOrder({
+            ...res?.data,
+            createdAt: res?.data?.createdAt || remoteOrder?.createdAt,
+          });
+          // Sync items from server response
+          if (res?.data?.orderItems) {
+            const grouped = new Map();
+            res.data.orderItems.forEach((it) => {
+              const key = it?.stockId?._id || it?.stockId;
+              const name = it.stockName || it?.stockId?.name || "";
+              const price = it.price || 0;
+              const qty = it.quantity || 1;
+              if (!key) return;
+              if (!grouped.has(key)) {
+                grouped.set(key, {
+                  name,
+                  price,
+                  quantity: qty,
+                  stockId: key,
+                  _id: key,
+                });
+              } else {
+                const existing = grouped.get(key);
+                existing.quantity += qty;
+                existing.price = price || existing.price;
+              }
+            });
+            const mappedItems = Array.from(grouped.values());
+            dispatch(
+              setItemsForRoom({ room: selectedRoom, items: mappedItems })
+            );
+          }
+        }
+
+        // Refetch orders to sync
+        const refreshRes = await getKtvOrders();
+        if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
+          const forTable = refreshRes.data.filter(
+            (o) =>
+              String(o.roomService.roomNumber) === String(selectedRoom) &&
+              o?.isDeleted === false &&
+              (o.status === "pending" ||
+                o.status === "ongoing" ||
+                o.status === "in_progress")
+          );
+          const pickLatest = (list) =>
+            list
+              .slice()
+              .sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+              )[0] || null;
+          const chosen = pickLatest(forTable);
+          if (chosen) {
+            setRemoteOrder(chosen);
+            setOrderId(chosen._id);
+            if (chosen._id && selectedRoom) {
+              dispatch(
+                setOrderIdForRoom({ room: selectedRoom, orderId: chosen._id })
+              );
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+    } finally {
+      setIsUpdatingOrder(false);
+    }
+  };
+
   const handleTaxChange = (e) => {
     const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
     if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
       setTaxRate(value === "" ? 0 : Number(value));
+    }
+  };
+
+  const handleServiceFeeChange = (e) => {
+    const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
+    if (value === "" || (Number(value) >= 0 && Number(value) <= 100)) {
+      setServiceFee(value === "" ? 0 : Number(value));
     }
   };
 
@@ -224,6 +471,30 @@ function Receipt({ onClose }) {
 
   const hasLocalData =
     hasLocalItems || hasLocalVocalists || hasLocalRoomService;
+
+  // Calculate how much quantity of an item has been sent to kitchen
+  const getSentQuantity = (item) => {
+    if (!remoteOrder?.orderItems || !orderId) return 0;
+    const stockId = item._id || item.stockId;
+    if (!stockId) return 0;
+
+    // Sum up all quantities for this stockId in remote order
+    let sentQty = 0;
+    remoteOrder.orderItems.forEach((remoteItem) => {
+      const remoteStockId = remoteItem?.stockId?._id || remoteItem?.stockId;
+      if (remoteStockId === stockId) {
+        sentQty += remoteItem.quantity || 1;
+      }
+    });
+    return sentQty;
+  };
+
+  // Calculate local (unsent) quantity for an item
+  const getLocalQuantity = (item) => {
+    const currentQty = item.quantity || 1;
+    const sentQty = getSentQuantity(item);
+    return Math.max(0, currentQty - sentQty);
+  };
 
   const calculateSubtotal = () => {
     if (remoteOrder?.subTotal != null) return Number(remoteOrder.subTotal) || 0;
@@ -273,6 +544,17 @@ function Receipt({ onClose }) {
     return baseAmount * (taxRate / 100);
   };
 
+  const calculateServiceFee = () => {
+    if (remoteOrder?.serviceFee != null)
+      return Number(remoteOrder.serviceFee) || 0;
+    // Service fee applies to subtotal + room charges + vocalist charges (same base as tax)
+    const subtotal = calculateSubtotal();
+    const roomCharges = calculateRoomCharges();
+    const vocalistCharges = calculateVocalistCharges();
+    const baseAmount = subtotal + roomCharges + vocalistCharges;
+    return baseAmount * (serviceFee / 100);
+  };
+
   const calculateDiscount = () => {
     // Return the fixed discount amount in MMK
     return discountAmount || 0;
@@ -282,10 +564,18 @@ function Receipt({ onClose }) {
     if (remoteOrder?.total != null) return Number(remoteOrder.total) || 0;
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
+    const serviceFeeAmount = calculateServiceFee();
     const discount = calculateDiscount();
     const roomCharges = calculateRoomCharges();
     const vocalistCharges = calculateVocalistCharges();
-    return subtotal + tax - discount + roomCharges + vocalistCharges;
+    return (
+      subtotal +
+      tax +
+      serviceFeeAmount -
+      discount +
+      roomCharges +
+      vocalistCharges
+    );
   };
 
   const handlePayment = () => {
@@ -340,6 +630,7 @@ function Receipt({ onClose }) {
       vocalistCharges: calculateVocalistCharges(),
       subTotal: calculateSubtotal(),
       tax: calculateTax(),
+      serviceFee: calculateServiceFee(),
       discount: calculateDiscount(),
       total: calculateTotal(),
       status: "completed",
@@ -375,6 +666,7 @@ function Receipt({ onClose }) {
           vocalistCharges:
             res?.data?.vocalistCharges || calculateVocalistCharges(),
           tax: res?.data?.tax || calculateTax(),
+          serviceFee: res?.data?.serviceFee || calculateServiceFee(),
           discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",
@@ -738,21 +1030,31 @@ function Receipt({ onClose }) {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDecrement(item.name)}
-                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="font-medium min-w-[24px] text-center">
-                        {item.quantity || 1}
-                      </span>
-                      <button
-                        onClick={() => handleIncrement(item.name)}
-                        className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                      >
-                        <Plus size={16} />
-                      </button>
+                      {(() => {
+                        const localQty = getLocalQuantity(item);
+                        const hasLocalQuantity = localQty > 0;
+                        return (
+                          <>
+                            {hasLocalQuantity && (
+                              <button
+                                onClick={() => handleDecrement(item.name)}
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                              >
+                                <Minus size={16} />
+                              </button>
+                            )}
+                            <span className="font-medium min-w-[24px] text-center">
+                              {item.quantity || 1}
+                            </span>
+                            <button
+                              onClick={() => handleIncrement(item.name)}
+                              className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
                     <p className="font-medium min-w-[100px] text-right">
                       {(item.price * (item.quantity || 1)).toLocaleString()} MMK
@@ -970,6 +1272,28 @@ function Receipt({ onClose }) {
                 </div>
 
                 <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <p className="text-gray-600">Service Fee</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={serviceFee === 0 ? "" : serviceFee}
+                        onChange={handleServiceFeeChange}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <p className="font-medium text-gray-600">
+                    {calculateServiceFee().toLocaleString()} MMK
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
                   <p className="text-gray-600">Discount</p>
                   <div className="flex items-center gap-2">
                     <input
@@ -1007,12 +1331,34 @@ function Receipt({ onClose }) {
               </div> */}
               {(hasLocalItems || roomServiceId || orderId) && (
                 <div className="flex flex-col gap-3 ">
-                  <button
-                    onClick={sendKitchen}
-                    className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                  >
-                    Send to Kitchen
-                  </button>
+                  <div className="flex flex-row gap-3">
+                    <button
+                      onClick={sendKitchen}
+                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      Send for Preparation
+                    </button>
+                    {orderId && (
+                      <button
+                        onClick={handleOpenRemoveOrder}
+                        disabled={isLoadingRemoveModal}
+                        className={`flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary transition-colors ${
+                          isLoadingRemoveModal
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        {isLoadingRemoveModal ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            Loading...
+                          </span>
+                        ) : (
+                          "Remove Items"
+                        )}
+                      </button>
+                    )}
+                  </div>
                   {hasLocalItems && (
                     <button
                       onClick={() => setIsSplitOpen(true)}
@@ -1051,6 +1397,108 @@ function Receipt({ onClose }) {
           items={receipts[selectedRoom]?.items || []}
           currency="MMK"
         />
+      )}
+
+      {/* Remove Order Items Modal */}
+      {isRemoveOrderOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Remove Items from Order</h3>
+              <button
+                onClick={handleCloseRemoveOrder}
+                className="text-gray-500 hover:text-gray-700"
+                disabled={isUpdatingOrder}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {orderItemsForRemove.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No items in order
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orderItemsForRemove.map((item, index) => (
+                    <div
+                      key={`${item.stockId}-${index}`}
+                      className="flex justify-between items-center py-3 px-4 rounded-lg bg-gray-50"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{item.stockName}</p>
+                        <p className="text-sm text-gray-500">
+                          {item.price.toLocaleString()} MMK
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDecrementInModal(index)}
+                            className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                            disabled={item.quantity <= 0 || isUpdatingOrder}
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="font-medium min-w-[24px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleIncrementInModal(index)}
+                            className="p-1 rounded-md hover:bg-gray-200 text-primary"
+                            disabled={
+                              isUpdatingOrder ||
+                              item.quantity >= item.originalQuantity
+                            }
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        <p className="font-medium min-w-[100px] text-right">
+                          {(item.price * item.quantity).toLocaleString()} MMK
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseRemoveOrder}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  disabled={isUpdatingOrder}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRemoveOrder}
+                  disabled={isUpdatingOrder || orderItemsForRemove.length === 0}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    isUpdatingOrder || orderItemsForRemove.length === 0
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
+                >
+                  {isUpdatingOrder ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Updating...
+                    </span>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

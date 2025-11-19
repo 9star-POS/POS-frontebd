@@ -920,7 +920,7 @@ function Receipt({ onClose }) {
                       onClick={sendKitchen}
                       className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                     >
-                      Send to Kitchen
+                      Send for Preparation
                     </button>
                     {orderId && (
                       <button
