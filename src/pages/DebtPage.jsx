@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { format } from "date-fns";
+import { Calendar as DatePickerCalendar } from "react-date-range";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import getDebts from "../api/debt/getDebts";
 import createDebt from "../api/debt/createDebt";
 import deleteDebt from "../api/debt/deleteDebt";
@@ -7,6 +10,7 @@ import updateDebtStatus from "../api/debt/updateDebtStatus";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import DeleteModel from "../components/DeleteModel";
+import Calendar from "../components/Calender";
 import {
   CreditCard,
   DollarSign,
@@ -16,6 +20,7 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 
 const DebtPage = () => {
@@ -23,20 +28,51 @@ const DebtPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const datePickerRef = useRef(null);
   const [newDebt, setNewDebt] = useState({
     amount: "",
     customerName: "",
     tabelOrRoom: "",
+    manualDate: format(new Date(), "yyyy-MM-dd"),
+    manualDateDisplay: format(new Date(), "dd/MM/yyyy"),
+    manualTime: format(new Date(), "HH:mm"),
   });
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [debtToDelete, setDebtToDelete] = useState(null);
   const [updatingDebtId, setUpdatingDebtId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "paid", "unpaid"
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
-  const fetchDebts = async () => {
+  // Initialize filters from sessionStorage or default to today
+  const [filters, setFilters] = useState(() => {
+    const savedFilters = sessionStorage.getItem("debtTrackerDateRange");
+
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        if (parsed.startDate && parsed.endDate) {
+          return {
+            startDate: parsed.startDate,
+            endDate: parsed.endDate,
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing saved date range:", e);
+      }
+    }
+
+    return {
+      startDate: today,
+      endDate: today,
+    };
+  });
+
+  const fetchDebts = async (overrideFilters) => {
     setLoading(true);
     try {
-      const response = await getDebts();
+      const appliedFilters = overrideFilters ?? filters;
+      const response = await getDebts(appliedFilters);
       if (response?.code === 200 && response?.status === "success") {
         const debtsData = response.data || [];
         // Filter out deleted debts
@@ -54,7 +90,8 @@ const DebtPage = () => {
   };
 
   useEffect(() => {
-    fetchDebts();
+    fetchDebts(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const calculateTotalDebt = () => {
@@ -111,12 +148,124 @@ const DebtPage = () => {
     setIsModalOpen(true);
   };
 
+  // Convert dd/mm/yyyy to yyyy-MM-dd for API
+  const parseDateFromDisplay = (displayDate) => {
+    if (!displayDate) return "";
+    try {
+      const [day, month, year] = displayDate.split("/");
+      if (
+        day &&
+        month &&
+        year &&
+        day.length === 2 &&
+        month.length === 2 &&
+        year.length === 4
+      ) {
+        return `${year}-${month}-${day}`;
+      }
+      return "";
+    } catch (error) {
+      return "";
+    }
+  };
+
+  // Format date input as user types (dd/mm/yyyy)
+  const handleDateInputChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+
+    // Format as dd/mm/yyyy
+    if (value.length > 0) {
+      if (value.length <= 2) {
+        value = value;
+      } else if (value.length <= 4) {
+        value = value.slice(0, 2) + "/" + value.slice(2);
+      } else {
+        value =
+          value.slice(0, 2) + "/" + value.slice(2, 4) + "/" + value.slice(4, 8);
+      }
+    }
+
+    // Update display value
+    const displayValue = value;
+
+    // Convert to yyyy-MM-dd format for internal storage
+    const internalValue = parseDateFromDisplay(displayValue);
+
+    setNewDebt((prev) => ({
+      ...prev,
+      manualDate: internalValue || prev.manualDate,
+      manualDateDisplay: displayValue,
+    }));
+  };
+
+  // Handle date selection from calendar picker
+  const handleDateSelect = (date) => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    const displayDate = format(date, "dd/MM/yyyy");
+
+    setNewDebt((prev) => ({
+      ...prev,
+      manualDate: formattedDate,
+      manualDateDisplay: displayDate,
+    }));
+
+    setShowDatePicker(false);
+  };
+
+  // Validate date format (dd/mm/yyyy)
+  const isValidDate = (dateString) => {
+    if (!dateString || dateString.length !== 10) return false;
+    const [day, month, year] = dateString.split("/");
+    if (!day || !month || !year) return false;
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+
+    if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) return false;
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (dayNum < 1 || dayNum > 31) return false;
+
+    // Check if date is valid
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+    return (
+      date.getFullYear() === yearNum &&
+      date.getMonth() === monthNum - 1 &&
+      date.getDate() === dayNum
+    );
+  };
+
+  // Close date picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        datePickerRef.current &&
+        !datePickerRef.current.contains(event.target)
+      ) {
+        setShowDatePicker(false);
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDatePicker]);
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const todayDisplay = format(new Date(), "dd/MM/yyyy");
+    const currentTime = format(new Date(), "HH:mm");
     setNewDebt({
       amount: "",
       customerName: "",
       tabelOrRoom: "",
+      manualDate: today,
+      manualDateDisplay: todayDisplay,
+      manualTime: currentTime,
     });
   };
 
@@ -126,18 +275,65 @@ const DebtPage = () => {
       return;
     }
 
+    if (!newDebt.manualDateDisplay || !isValidDate(newDebt.manualDateDisplay)) {
+      return;
+    }
+
     setIsCreating(true);
     try {
+      // Convert manualDate and manualTime to ISO 8601 format with timezone
+      let manualDateUTC = "";
+      if (newDebt.manualDate) {
+        // Combine date and time (default to 00:00 if time not provided)
+        const timePart = newDebt.manualTime || "00:00";
+
+        // Create a Date object from the date and time inputs (local time)
+        const [hours, minutes] = timePart.split(":");
+        const [year, month, day] = newDebt.manualDate.split("-");
+
+        // Create date in local timezone
+        const dateTime = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes),
+          0,
+          0
+        );
+
+        // Get timezone offset in minutes and convert to hours and minutes
+        const timezoneOffset = dateTime.getTimezoneOffset();
+        const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
+          .toString()
+          .padStart(2, "0");
+        const offsetMinutes = (Math.abs(timezoneOffset) % 60)
+          .toString()
+          .padStart(2, "0");
+        const offsetSign = timezoneOffset <= 0 ? "+" : "-";
+
+        // Format the date with timezone offset
+        const yearStr = dateTime.getFullYear();
+        const monthStr = (dateTime.getMonth() + 1).toString().padStart(2, "0");
+        const dayStr = dateTime.getDate().toString().padStart(2, "0");
+        const hourStr = dateTime.getHours().toString().padStart(2, "0");
+        const minuteStr = dateTime.getMinutes().toString().padStart(2, "0");
+        const secondStr = dateTime.getSeconds().toString().padStart(2, "0");
+
+        manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offsetSign}${offsetHours}:${offsetMinutes}`;
+      }
+
       const response = await createDebt({
         amount: parseFloat(newDebt.amount),
         customerName: newDebt.customerName.trim(),
         tabelOrRoom: newDebt.tabelOrRoom.trim(),
+        manualDate: manualDateUTC,
       });
 
       if (response?.code === 201 && response?.status === "success") {
         handleCloseModal();
         // Refresh the debts list
-        fetchDebts();
+        fetchDebts(filters);
       }
     } catch (error) {
       console.error("Error creating debt:", error);
@@ -160,11 +356,33 @@ const DebtPage = () => {
         setIsDeleteOpen(false);
         setDebtToDelete(null);
         // Refresh the debts list
-        fetchDebts();
+        fetchDebts(filters);
       }
     } catch (error) {
       console.error("Error deleting debt:", error);
     }
+  };
+
+  const handleDateRangeChange = (dates) => {
+    const newFilters = {
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+    };
+    setFilters(newFilters);
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem("debtTrackerDateRange", JSON.stringify(newFilters));
+    fetchDebts(newFilters);
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters = { startDate: today, endDate: today };
+    setFilters(resetFilters);
+    // Save to sessionStorage (clears when browser closes)
+    sessionStorage.setItem(
+      "debtTrackerDateRange",
+      JSON.stringify(resetFilters)
+    );
+    fetchDebts(resetFilters);
   };
 
   const handleStatusChange = async (debt) => {
@@ -177,7 +395,7 @@ const DebtPage = () => {
       const response = await updateDebtStatus(debt._id, newStatus);
       if (response?.code === 200 && response?.status === "success") {
         // Refresh the debts list
-        fetchDebts();
+        fetchDebts(filters);
       }
     } catch (error) {
       console.error("Error updating debt status:", error);
@@ -191,7 +409,22 @@ const DebtPage = () => {
       <div className="min-h-screen">
         <div className="md:flex justify-between mb-5">
           <h1 className="sub-header font-bold">Debt Tracker</h1>
-          <div className="flex gap-3">
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Calendar
+              sendDate={handleDateRangeChange}
+              selectedStartDate={filters.startDate}
+              selectedEndDate={filters.endDate}
+              defaultStartDate={today}
+              defaultEndDate={today}
+            />
+            {(filters.startDate !== today || filters.endDate !== today) && (
+              <button
+                onClick={handleResetFilters}
+                className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold"
+              >
+                Reset
+              </button>
+            )}
             <button
               onClick={handleOpenModal}
               className="bg-primary text-white px-4 py-2 rounded-md transition-all hover:bg-primary/90 font-semibold flex items-center gap-2"
@@ -200,7 +433,7 @@ const DebtPage = () => {
               Add Debt
             </button>
             <button
-              onClick={fetchDebts}
+              onClick={() => fetchDebts(filters)}
               className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold"
               disabled={loading}
             >
@@ -492,6 +725,65 @@ const DebtPage = () => {
                       setNewDebt({ ...newDebt, tabelOrRoom: e.target.value })
                     }
                     placeholder="Enter table or room number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                    disabled={isCreating}
+                  />
+                </div>
+
+                <div className="relative" ref={datePickerRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      (dd/mm/yyyy)
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={newDebt.manualDateDisplay || ""}
+                      onChange={handleDateInputChange}
+                      placeholder="dd/mm/yyyy"
+                      maxLength={10}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                      disabled={isCreating}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDatePicker(!showDatePicker)}
+                      disabled={isCreating}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-primary transition-colors"
+                      title="Open calendar"
+                    >
+                      <CalendarIcon size={20} />
+                    </button>
+                  </div>
+                  {showDatePicker && (
+                    <div className="absolute z-50 top-[-300px] mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+                      <DatePickerCalendar
+                        date={
+                          newDebt.manualDate
+                            ? new Date(newDebt.manualDate)
+                            : new Date()
+                        }
+                        onChange={handleDateSelect}
+                        color="#2b2f33"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time{" "}
+                    <span className="text-xs text-gray-500 ml-2">(HH:mm)</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={newDebt.manualTime || ""}
+                    onChange={(e) =>
+                      setNewDebt({ ...newDebt, manualTime: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
                     disabled={isCreating}
                   />
