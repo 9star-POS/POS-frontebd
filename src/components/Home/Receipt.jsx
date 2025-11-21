@@ -52,7 +52,7 @@ function Receipt({ onClose }) {
       setIsLoadingRemote(true);
       const res = await getRestaurantOrders();
       console.log(res);
-      if (res?.code === 200 && Array.isArray(res.data)) {
+      if (res?.success && Array.isArray(res.data)) {
         const forTable = res.data.filter((o) => {
           const tableNum = o.tableNumber || o.tableService?.tableNumber;
           return (
@@ -131,7 +131,7 @@ function Receipt({ onClose }) {
       // Only fetch if we have a table, no active order, and no tableServiceId yet
       if (!selectedTable || orderId || tableServiceId) return;
       const res = await getTableService(selectedTable);
-      if (res?.code === 200 && res?.data?._id) {
+      if (res?.success && res?.data?._id) {
         setTableServiceId(res.data._id);
       }
     };
@@ -273,7 +273,7 @@ function Receipt({ onClose }) {
 
       const res = await removeOrderItems(orderId, itemsToRemove);
 
-      if (res?.code === 200 && res?.status === "success") {
+      if (res?.success) {
         toast.success(res?.message || "Order items removed successfully");
         handleCloseRemoveOrder();
 
@@ -315,7 +315,7 @@ function Receipt({ onClose }) {
 
         // Refetch orders to sync
         const refreshRes = await getRestaurantOrders();
-        if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
+        if (refreshRes?.success && Array.isArray(refreshRes.data)) {
           const forTable = refreshRes.data.filter((o) => {
             const tableNum = o.tableNumber || o.tableService?.tableNumber;
             return (
@@ -461,7 +461,7 @@ function Receipt({ onClose }) {
     };
     try {
       const res = await checkoutOrder({ id: orderId, data: payload });
-      if (res?.status === "success" || res?.code === 200) {
+      if (res?.success) {
         toast.success("Checkout completed successfully");
         setIsCalculatorOpen(false);
 
@@ -564,7 +564,7 @@ function Receipt({ onClose }) {
         data: updatePayload,
         id: orderId,
       });
-      if (res?.status === "success" || res?.code === 200) {
+      if (res?.success) {
         toast.success("Order updated in kitchen successfully");
         // Update remote order with full response if available
         if (res?.data) {
@@ -632,7 +632,7 @@ function Receipt({ onClose }) {
         })),
       };
       const res = await sendToKitchen(payload);
-      if (res?.status === "success" || res?.code === 201) {
+      if (res?.success) {
         toast.success("Order sent to kitchen successfully");
         const newOrderId = res?.data?._id;
         setOrderId(newOrderId);

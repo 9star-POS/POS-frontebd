@@ -28,8 +28,8 @@ const RoomPage = () => {
   const fetchRooms = async () => {
     setLoading(true);
     const res = await getAllRooms();
-    if (res?.code === 200 && Array.isArray(res.data)) {
-      // console.log("rooms", res.data);
+    if (res?.success && Array.isArray(res.data)) {
+      console.log("rooms", res.data);
       // const activeRooms = res.data.filter(
       //   (r) => r.status === "active" && !r.isDeleted
       // );
@@ -71,7 +71,7 @@ const RoomPage = () => {
     };
 
     const res = await createRoom(payload);
-    if (res?.code === 201 && res?.data) {
+    if (res?.success && res?.data) {
       toast.success("Room created successfully");
       setNewRoom({ roomNumber: "", hourlyRate: "" });
       setIsCreateModalOpen(false);

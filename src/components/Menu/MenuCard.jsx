@@ -13,7 +13,7 @@ const MenuCard = ({ menu, refreshMenu }) => {
 
   const deleteItems = async (id) => {
     const res = await Deleteitems(id);
-    if (res.status === "success") {
+    if (res?.success) {
       refreshMenu();
     }
   };

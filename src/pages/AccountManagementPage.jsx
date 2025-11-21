@@ -44,7 +44,7 @@ const AccountManagementPage = () => {
       }
 
       const res = await getAccounts();
-      if (res?.code === 200 && res?.status === "success") {
+      if (res?.success) {
         setAccounts(res?.data?.accounts ?? []);
       } else {
         setError(res?.message || "Failed to fetch accounts");
@@ -146,7 +146,7 @@ const AccountManagementPage = () => {
         role: detailFormData.role,
       });
 
-      if (res?.success || res?.code === 200) {
+      if (res?.success) {
         toast.success(res?.message || "Account updated successfully");
         setIsDetailOpen(false);
         await fetchAccounts();
@@ -170,7 +170,7 @@ const AccountManagementPage = () => {
     try {
       setDeletingAccountId(pendingDeleteAccount._id);
       const res = await softDeleteAccount(pendingDeleteAccount._id);
-      if (res?.status === "success" || res?.code === 200) {
+      if (res?.success) {
         toast.success(res?.message || "Account deactivated successfully");
         await fetchAccounts();
         setIsDeleteModalOpen(false);
@@ -210,7 +210,7 @@ const AccountManagementPage = () => {
     try {
       setCreating(true);
       const res = await createAccount(payload);
-      if (res?.success || res?.code === 200) {
+      if (res?.success) {
         toast.success(res?.message || "Account created successfully");
         setIsCreateOpen(false);
         setFormData({

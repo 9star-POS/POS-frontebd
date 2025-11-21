@@ -25,7 +25,7 @@ function OrderDetail({
 
   const getOrder = async () => {
     const res = await getAOrders(id);
-    if (res.code === 200 && res.status !== "error") {
+    if (res?.success) {
       setOrder(res.data);
       // console.log("order", res.data?.createdAt);
       const date = new Date(res.data?.createdAt);
@@ -76,7 +76,7 @@ function OrderDetail({
     // console.log("updateOrder", updatedOrderData);
     const res = await editOrderData({ id, orderData: updatedOrderData });
     // console.log("updateOrder", res);
-    if (res.code === 200 && res.status !== "error") {
+    if (res?.success) {
       getOrder();
       setIsEditing(false);
       editClick();

@@ -18,7 +18,7 @@ function MenuPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       const res = await getItems();
-      if (res.status === "success") {
+      if (res.success === true) {
         const filteredMenus = res.data.filter((menu) => menu.type === menuType);
         const cats = [
           ...new Set(filteredMenus.map((menu) => menu.category)),

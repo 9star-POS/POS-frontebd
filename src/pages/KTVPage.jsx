@@ -27,7 +27,7 @@ function KTVPage() {
     setLoading(true);
     const res = await getItems();
 
-    if (res?.status === "success") {
+    if (res?.success) {
       const restaurantItems = res.data.filter((i) => i.type === "ktv");
       const categoryArray = [
         ...new Set(restaurantItems.map((item) => item.subCategory)),

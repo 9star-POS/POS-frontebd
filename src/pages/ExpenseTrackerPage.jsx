@@ -66,7 +66,7 @@ const ExpenseTrackerPage = () => {
       const appliedFilters = overrideFilters ?? filters;
       const response = await getExpenses(appliedFilters);
       console.log("Expenses Response:", response);
-      if (response.status === "success" || response.code === 200) {
+      if (response?.success) {
         const expensesData = response.data || [];
         // Filter out deleted expenses
         const activeExpenses = expensesData.filter(
@@ -335,11 +335,7 @@ const ExpenseTrackerPage = () => {
 
       const response = await addExpense(expenseData);
 
-      if (
-        response.status === "success" ||
-        response.code === 201 ||
-        response.code === 200
-      ) {
+      if (response?.success) {
         toast.success("Expense added successfully");
         setIsModalOpen(false);
         const today = format(new Date(), "yyyy-MM-dd");

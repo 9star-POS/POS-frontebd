@@ -71,7 +71,7 @@ const KitchenPage = () => {
         newStatus
       );
 
-      if (response.status === "success" || response.code === 200) {
+      if (response?.success) {
         // Update local state immediately for better UX
         const updatedAllOrders = allOrders.map((order) =>
           order.id === item.id ? { ...order, kitchenStatus: newStatus } : order
@@ -117,10 +117,7 @@ const KitchenPage = () => {
               notificationData
             );
 
-            if (
-              notificationResponse.status === "success" ||
-              notificationResponse.code === 201
-            ) {
+            if (notificationResponse?.success) {
               console.log(
                 "Notification sent successfully:",
                 notificationResponse
@@ -166,7 +163,7 @@ const KitchenPage = () => {
       setError(null);
 
       const response = await getKitchenOrders();
-      if (response.status === "success" && response.code === 200) {
+      if (response?.success) {
         const transformedData = transformKitchenData(response.data);
         setAllOrders(transformedData); // Store all orders
       } else {

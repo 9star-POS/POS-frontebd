@@ -115,8 +115,15 @@ export default function App() {
             }`}
           >
             {isSidebarVisible && (
-              <div className="fixed z-10 w-64 bg-opacity-50">
-                <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-md w-full p-5">
+              <div
+                className="fixed inset-0 z-20 flex items-start"
+                onClick={toggleSidebar}
+              >
+                <div className="absolute inset-0 bg-black/25" />
+                <div
+                  className="relative z-30 w-64 bg-white rounded-lg shadow-xl border border-gray-200 max-w-md p-5 m-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Sidebar closeSidebar={toggleSidebar} />
                 </div>
               </div>

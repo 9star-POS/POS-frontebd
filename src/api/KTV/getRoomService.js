@@ -3,17 +3,18 @@ import axios from "../axios";
 const getRoomService = async (roomNumber) => {
   try {
     const res = await axios.get(`api/v1/room-service`);
-    if (res?.data?.code === 200 && Array.isArray(res.data.data)) {
+    const payload = res?.data;
+    if (payload?.success && Array.isArray(payload.data)) {
       // Find the specific room
-      const room = res.data.data.find(
+      const room = payload.data.find(
         (r) => String(r.roomNumber) === String(roomNumber)
       );
       if (room) {
-        return { code: 200, status: "success", data: room };
+        return { success: true, data: room };
       }
-      return { code: 404, status: "error", message: "Room not found" };
+      return { success: false, message: "Room not found" };
     }
-    return res.data;
+    return payload;
   } catch (error) {
     return error?.response?.data || error;
   }

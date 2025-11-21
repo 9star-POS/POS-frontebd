@@ -26,7 +26,7 @@ function OrderDetail() {
     setLoading(true);
     try {
       const res = await getRestaurantOrderById(id);
-      if (res.code === 200 && res.status === "success") {
+      if (res?.success) {
         setOrder(res.data);
       } else {
         setError(res.message || "Failed to load order");

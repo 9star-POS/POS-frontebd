@@ -13,7 +13,7 @@ const MenuList = ({ category, getItem }) => {
 
   const getMenuList = async () => {
     const res = await getItems();
-    if (res.code === 200) {
+    if (res?.success) {
       setLoading(false);
       // console.log("item List", res.data[0].categoryName);
       setMenuList(res.data);

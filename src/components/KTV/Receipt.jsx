@@ -72,7 +72,7 @@ function Receipt({ onClose }) {
       setIsLoadingRemote(true);
       const res = await getKtvOrders();
       console.log(res);
-      if (res?.code === 200 && Array.isArray(res.data)) {
+      if (res?.success && Array.isArray(res.data)) {
         // Only show active orders (not completed or cancelled)
         const forTable = res.data.filter(
           (o) =>
@@ -175,7 +175,7 @@ function Receipt({ onClose }) {
       if (!selectedRoom || orderId || roomServiceId) return;
       const res = await getRoomService(selectedRoom);
       console.log("room service id", res);
-      if (res?.code === 200 && res?.data?._id) {
+      if (res?.success && res?.data?._id) {
         setRoomServiceId(res.data._id);
         // Initialize room service in state only if no order exists
         if (!orderId) {
@@ -215,7 +215,7 @@ function Receipt({ onClose }) {
     setIsLoadingRemoveModal(true);
     try {
       const res = await getKtvOrders();
-      if (res?.code === 200 && Array.isArray(res.data)) {
+      if (res?.success && Array.isArray(res.data)) {
         const forTable = res.data.filter(
           (o) =>
             String(o.roomService.roomNumber) === String(selectedRoom) &&
@@ -363,7 +363,7 @@ function Receipt({ onClose }) {
 
       const res = await removeKtvOrderItems(orderId, itemsToRemove);
 
-      if (res?.code === 200 && res?.status === "success") {
+      if (res?.success) {
         toast.success(res?.message || "Order items removed successfully");
         handleCloseRemoveOrder();
 
@@ -405,7 +405,7 @@ function Receipt({ onClose }) {
 
         // Refetch orders to sync
         const refreshRes = await getKtvOrders();
-        if (refreshRes?.code === 200 && Array.isArray(refreshRes.data)) {
+        if (refreshRes?.success && Array.isArray(refreshRes.data)) {
           const forTable = refreshRes.data.filter(
             (o) =>
               String(o.roomService.roomNumber) === String(selectedRoom) &&
@@ -640,7 +640,7 @@ function Receipt({ onClose }) {
     try {
       const res = await finalizeKtvOrder(orderId, payload);
       // console.log(res);
-      if (res?.status === "success" || res?.code === 200) {
+      if (res?.success) {
         toast.success("KTV order checkout completed successfully");
         setIsCalculatorOpen(false);
 
@@ -761,7 +761,7 @@ function Receipt({ onClose }) {
         data: updatePayload,
         id: orderId,
       });
-      if (res?.status === "success" || res?.code === 200) {
+      if (res?.success) {
         toast.success("KTV order updated successfully");
         // Keep baseline in sync to avoid resending the same items
         const syncedOrderItems = localItems.map((it) => ({
@@ -803,7 +803,7 @@ function Receipt({ onClose }) {
       };
 
       const res = await sendKtvOrder(payload);
-      if (res?.status === "success" || res?.code === 201) {
+      if (res?.success) {
         const hasItemsOrVocalists =
           localItems.length > 0 || localVocalists.length > 0;
         const successMessage = hasItemsOrVocalists
@@ -833,7 +833,7 @@ function Receipt({ onClose }) {
               "active"
             );
             console.log(statusResponse);
-            if (statusResponse?.code === 200) {
+            if (statusResponse?.success) {
               dispatch(
                 setRoomStatus({
                   room: selectedRoom,

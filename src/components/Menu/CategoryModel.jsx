@@ -18,7 +18,7 @@ const CategoryModal = ({ isOpen, onClose }) => {
       };
       const res = await pushCategories(data);
       console.log("push", res);
-      if (res.status === "success") {
+      if (res?.success) {
         onClose();
       }
     } else {
@@ -27,7 +27,7 @@ const CategoryModal = ({ isOpen, onClose }) => {
       };
       const res = await addCategories(data);
       console.log(res);
-      if (res.status === "success") {
+      if (res?.success) {
         onClose();
       }
     }
@@ -36,7 +36,7 @@ const CategoryModal = ({ isOpen, onClose }) => {
   const getCategoryId = async () => {
     const res = await getMenu();
     // console.log("id", res);
-    if (res.code === 200) {
+    if (res?.success) {
       setId(res.data.categories[0]._id);
     }
   };

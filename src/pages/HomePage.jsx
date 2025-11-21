@@ -29,7 +29,8 @@ function HomePage() {
     setLoading(true);
     const res = await getItems();
 
-    if (res?.status === "success") {
+    if (res?.success === true) {
+      console.log("item", res.data);
       const restaurantItems = res.data.filter((i) => i.type === "restaurant");
       const categoryArray = [
         ...new Set(restaurantItems.map((item) => item.subCategory)),
@@ -45,6 +46,8 @@ function HomePage() {
       setCategorys([]);
     }
   };
+
+  console.log("categorys", categorys);
 
   useEffect(() => {
     getAllCategory();

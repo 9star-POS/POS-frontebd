@@ -118,7 +118,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
       });
 
       const data = res?.data;
-      if (data?.code === 201) {
+      if (data?.success) {
         // Clear all form data and close modal on success
         setDishName("");
         setPrice("");

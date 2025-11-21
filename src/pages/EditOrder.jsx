@@ -30,7 +30,7 @@ function EditOrder({ id, closeOrderDetails, editedOrder }) {
   const getAllCategory = async () => {
     setLoading(true); // Set loading to true when fetching data
     const res = await getItems();
-    if (res.code === 200) {
+    if (res?.success) {
       const categoryArray = [
         ...new Set(res.data.map((item) => item.categoryName)),
       ];

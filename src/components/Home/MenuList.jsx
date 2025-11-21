@@ -13,7 +13,7 @@ const MenuList = ({ category }) => {
 
   const getMenuList = async () => {
     const res = await getItems();
-    if (res?.status === "success") {
+    if (res?.success === true) {
       const restaurantItems = res.data.filter((i) => i.type === "restaurant");
       setMenuList(restaurantItems);
       // Extract unique subcategories

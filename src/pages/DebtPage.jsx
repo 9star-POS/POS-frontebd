@@ -73,7 +73,7 @@ const DebtPage = () => {
     try {
       const appliedFilters = overrideFilters ?? filters;
       const response = await getDebts(appliedFilters);
-      if (response?.code === 200 && response?.status === "success") {
+      if (response?.success) {
         const debtsData = response.data || [];
         // Filter out deleted debts
         const activeDebts = debtsData.filter((debt) => !debt.isDeleted);
@@ -284,43 +284,26 @@ const DebtPage = () => {
       // Convert manualDate and manualTime to ISO 8601 format with timezone
       let manualDateUTC = "";
       if (newDebt.manualDate) {
-        // Combine date and time (default to 00:00 if time not provided)
         const timePart = newDebt.manualTime || "00:00";
+        const [hours, minutes] = timePart
+          .split(":")
+          .map((v) => parseInt(v, 10));
+        const [year, month, day] = newDebt.manualDate
+          .split("-")
+          .map((v) => parseInt(v, 10));
 
-        // Create a Date object from the date and time inputs (local time)
-        const [hours, minutes] = timePart.split(":");
-        const [year, month, day] = newDebt.manualDate.split("-");
-
-        // Create date in local timezone
-        const dateTime = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes),
-          0,
-          0
-        );
-
-        // Get timezone offset in minutes and convert to hours and minutes
-        const timezoneOffset = dateTime.getTimezoneOffset();
-        const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
-          .toString()
-          .padStart(2, "0");
-        const offsetMinutes = (Math.abs(timezoneOffset) % 60)
-          .toString()
-          .padStart(2, "0");
-        const offsetSign = timezoneOffset <= 0 ? "+" : "-";
-
-        // Format the date with timezone offset
-        const yearStr = dateTime.getFullYear();
-        const monthStr = (dateTime.getMonth() + 1).toString().padStart(2, "0");
-        const dayStr = dateTime.getDate().toString().padStart(2, "0");
-        const hourStr = dateTime.getHours().toString().padStart(2, "0");
-        const minuteStr = dateTime.getMinutes().toString().padStart(2, "0");
-        const secondStr = dateTime.getSeconds().toString().padStart(2, "0");
-
-        manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offsetSign}${offsetHours}:${offsetMinutes}`;
+        if (
+          !Number.isNaN(year) &&
+          !Number.isNaN(month) &&
+          !Number.isNaN(day) &&
+          !Number.isNaN(hours) &&
+          !Number.isNaN(minutes)
+        ) {
+          const utcDate = new Date(
+            Date.UTC(year, month - 1, day, hours, minutes, 0, 0)
+          );
+          manualDateUTC = utcDate.toISOString().replace("Z", "+00:00");
+        }
       }
 
       const response = await createDebt({
@@ -330,7 +313,7 @@ const DebtPage = () => {
         manualDate: manualDateUTC,
       });
 
-      if (response?.code === 201 && response?.status === "success") {
+      if (response?.success) {
         handleCloseModal();
         // Refresh the debts list
         fetchDebts(filters);
@@ -352,7 +335,7 @@ const DebtPage = () => {
 
     try {
       const response = await deleteDebt(debtToDelete._id);
-      if (response?.code === 200 && response?.status === "success") {
+      if (response?.success) {
         setIsDeleteOpen(false);
         setDebtToDelete(null);
         // Refresh the debts list
@@ -393,7 +376,7 @@ const DebtPage = () => {
 
     try {
       const response = await updateDebtStatus(debt._id, newStatus);
-      if (response?.code === 200 && response?.status === "success") {
+      if (response?.success) {
         // Refresh the debts list
         fetchDebts(filters);
       }

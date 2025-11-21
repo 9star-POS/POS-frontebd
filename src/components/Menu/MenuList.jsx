@@ -26,7 +26,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
   const getMenuList = async () => {
     const res = await getItems();
     setLoading(false);
-    if (res.status === "success") {
+    if (res?.success) {
       // console.log("item List", res.data);
       const menus = res.data;
       setMenuList(menus);

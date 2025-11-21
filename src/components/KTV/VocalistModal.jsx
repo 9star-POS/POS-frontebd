@@ -54,7 +54,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
 
     try {
       const res = await getKtvOrders();
-      if (res?.code === 200 && Array.isArray(res.data)) {
+      if (res?.success && Array.isArray(res.data)) {
         // Find active order for this room
         const forRoom = res.data.filter(
           (o) =>
@@ -88,7 +88,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
   const fetchVocalists = async () => {
     setLoading(true);
     const res = await getAllVocalists();
-    if (res?.code === 200 && Array.isArray(res.data)) {
+    if (res?.success && Array.isArray(res.data)) {
       const activeVocalists = res.data.filter(
         (v) => v.status === "active" && !v.isDeleted
       );
@@ -132,7 +132,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
     };
 
     const res = await createVocalist(payload);
-    if (res?.code === 201 && res?.data) {
+    if (res?.success && res?.data) {
       toast.success("Vocalist created successfully");
       setNewVocalist({ vocalistName: "", hourlyRate: "" });
       setIsCreateModalOpen(false);
@@ -165,7 +165,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
         vocalists: payload,
       });
 
-      if (res?.status === "success" || res?.code === 200 || res?.code === 201) {
+      if (res?.success) {
         toast.success(`${selectedVocalists.length} vocalist(s) added to order`);
 
         // Update Redux state with response data

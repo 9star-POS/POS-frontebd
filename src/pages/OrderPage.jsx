@@ -79,7 +79,7 @@ const OrdersPage = () => {
 
     const res = await deleteOrders(id);
     // console.log(res.code);
-    if (res.code === 200) {
+    if (res?.success) {
       setLoading(false);
       getOrders();
       closeOrderDetails();
@@ -132,7 +132,7 @@ const OrdersPage = () => {
       res = await getKtvOrders(params);
     }
 
-    if (res?.code === 200 && res?.status !== "error") {
+    if (res?.success) {
       setLoading(false);
       // Filter to show only completed orders
       const completedOrders = res.data.filter(

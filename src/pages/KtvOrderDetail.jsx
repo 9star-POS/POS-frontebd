@@ -23,7 +23,7 @@ function KtvOrderDetail() {
     setLoading(true);
     try {
       const res = await getKtvOrderById(id);
-      if (res.code === 200 && res.status === "success") {
+      if (res?.success) {
         setOrder(res.data);
       } else {
         setError(res.message || "Failed to load order");

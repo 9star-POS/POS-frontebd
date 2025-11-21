@@ -71,7 +71,7 @@ const BarPage = () => {
         newStatus
       );
 
-      if (response.status === "success" || response.code === 200) {
+      if (response?.success) {
         // Update local state immediately for better UX
         const updatedAllOrders = allOrders.map((order) =>
           order.id === item.id ? { ...order, kitchenStatus: newStatus } : order
@@ -117,10 +117,7 @@ const BarPage = () => {
               notificationData
             );
 
-            if (
-              notificationResponse.status === "success" ||
-              notificationResponse.code === 201
-            ) {
+            if (notificationResponse?.success) {
               console.log(
                 "Notification sent successfully:",
                 notificationResponse
@@ -166,7 +163,7 @@ const BarPage = () => {
       setError(null);
 
       const response = await getBarOrders();
-      if (response.status === "success" && response.code === 200) {
+      if (response?.success) {
         const transformedData = transformBarData(response.data);
         setAllOrders(transformedData); // Store all orders
       } else {

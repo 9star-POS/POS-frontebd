@@ -102,7 +102,7 @@ const SalesReportPage = () => {
         endDate: formattedEndDate,
       });
       console.log("Sales Report Response:", response);
-      if (response.status === "success") {
+      if (response?.success) {
         setReportData(response.data);
         toast.success("Report generated successfully");
       } else {
@@ -131,7 +131,7 @@ const SalesReportPage = () => {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
       });
-      if (response.status === "success") {
+      if (response?.success) {
         setAnalyticsData(response.data);
         toast.success("Analytics generated successfully");
       } else {

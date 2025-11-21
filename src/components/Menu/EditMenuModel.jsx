@@ -27,7 +27,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     if (isOpen) {
       const fetchSubcategories = async () => {
         const res = await getItems();
-        if (res.status === "success") {
+        if (res?.success) {
           const filteredMenus = res.data.filter(
             (menuItem) => menuItem.type === itemType
           );
@@ -136,7 +136,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
       });
 
       const data = res?.data;
-      if (data?.code === 200 || res?.status === 200) {
+      if (data?.success) {
         setImage(null);
         setError("");
         setLoading(false);

@@ -10,7 +10,7 @@ const KtvMenuList = ({ category }) => {
 
   const getMenuList = async () => {
     const res = await getItems();
-    if (res?.status === "success") {
+    if (res?.success === true) {
       const ktvItems = res.data.filter((i) => i.type === "ktv");
       setMenuList(ktvItems);
       setLoading(false);

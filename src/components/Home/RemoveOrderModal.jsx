@@ -24,7 +24,7 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
     setLoading(true);
     try {
       const res = await getRestaurantOrderById(orderId);
-      if (res?.code === 200 && res?.status === "success") {
+      if (res?.success) {
         setOrder(res.data);
         // Group items by stockId and combine quantities
         const grouped = new Map();
@@ -130,7 +130,7 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
 
       const res = await removeOrderItems(orderId, itemsToRemove);
 
-      if (res?.code === 200 && res?.status === "success") {
+      if (res?.success) {
         toast.success(res?.message || "Order items removed successfully");
         if (onOrderUpdated) {
           onOrderUpdated(res?.data);

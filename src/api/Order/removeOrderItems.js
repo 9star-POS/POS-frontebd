@@ -18,14 +18,14 @@ const removeOrderItems = async (orderId, orderItems) => {
         },
       }
     );
-    if (res?.data?.code === 200 && res?.data?.status === "success") {
+    if (res?.data?.success) {
       toast.success(res?.data?.message || "Order items removed successfully", {
         id: toastId,
         autoClose: 2000,
       });
       return res.data;
     } else {
-      toast.error("Failed to remove order items", {
+      toast.error(res?.data?.message || "Failed to remove order items", {
         id: toastId,
         autoClose: 2000,
       });
