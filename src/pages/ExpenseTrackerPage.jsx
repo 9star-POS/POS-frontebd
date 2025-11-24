@@ -282,7 +282,7 @@ const ExpenseTrackerPage = () => {
 
     setIsSubmitting(true);
     try {
-      // Convert manualDate and manualTime to ISO 8601 format in UTC (UTC+0)
+      // Convert manualDate and manualTime to ISO 8601 format with Myanmar timezone (UTC+6:30)
       let manualDateUTC = "";
       if (formData.manualDate) {
         // Combine date and time (default to 00:00 if time not provided)
@@ -292,40 +292,16 @@ const ExpenseTrackerPage = () => {
         const [hours, minutes] = timePart.split(":");
         const [year, month, day] = formData.manualDate.split("-");
 
-        // Create date string in Myanmar timezone (UTC+6:30)
-        const myanmarDateString = `${year}-${month.padStart(
-          2,
-          "0"
-        )}-${day.padStart(2, "0")}T${hours.padStart(2, "0")}:${minutes.padStart(
-          2,
-          "0"
-        )}:00+06:30`;
+        // Format as ISO 8601 with Myanmar timezone offset (+06:30)
+        const yearStr = year;
+        const monthStr = month.padStart(2, "0");
+        const dayStr = day.padStart(2, "0");
+        const hourStr = hours.padStart(2, "0");
+        const minuteStr = minutes.padStart(2, "0");
+        const secondStr = "00";
+        const millisecondStr = "000";
 
-        // Parse as Myanmar timezone and convert to UTC
-        const myanmarDate = new Date(myanmarDateString);
-
-        // Get UTC values
-        const utcYear = myanmarDate.getUTCFullYear();
-        const utcMonth = (myanmarDate.getUTCMonth() + 1)
-          .toString()
-          .padStart(2, "0");
-        const utcDay = myanmarDate.getUTCDate().toString().padStart(2, "0");
-        const utcHours = myanmarDate.getUTCHours().toString().padStart(2, "0");
-        const utcMinutes = myanmarDate
-          .getUTCMinutes()
-          .toString()
-          .padStart(2, "0");
-        const utcSeconds = myanmarDate
-          .getUTCSeconds()
-          .toString()
-          .padStart(2, "0");
-        const utcMilliseconds = myanmarDate
-          .getUTCMilliseconds()
-          .toString()
-          .padStart(3, "0");
-
-        // Format as ISO 8601 with UTC timezone offset (+00:00)
-        manualDateUTC = `${utcYear}-${utcMonth}-${utcDay}T${utcHours}:${utcMinutes}:${utcSeconds}.${utcMilliseconds}+00:00`;
+        manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}.${millisecondStr}+06:30`;
       }
 
       const expenseData = {
@@ -335,7 +311,7 @@ const ExpenseTrackerPage = () => {
         manualDate: manualDateUTC,
       };
 
-      console.log("Expense Data:", expenseData);
+      // console.log("Expense Data:", expenseData);
 
       const response = await addExpense(expenseData);
 

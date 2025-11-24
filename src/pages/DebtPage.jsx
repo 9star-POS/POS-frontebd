@@ -104,6 +104,15 @@ const DebtPage = () => {
       .reduce((total, debt) => total + (debt.amount || 0), 0);
   };
 
+  const calculatePaidDebt = () => {
+    return debts
+      .filter((debt) => debt.status === "paid")
+      .reduce((total, debt) => total + (debt.amount || 0), 0);
+  };
+
+  const unpaidCount = debts.filter((debt) => debt.status === "unpaid").length;
+  const paidCount = debts.filter((debt) => debt.status === "paid").length;
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
@@ -131,8 +140,6 @@ const DebtPage = () => {
       </span>
     );
   };
-
-  const unpaidCount = debts.filter((debt) => debt.status === "unpaid").length;
 
   // Filter debts based on status filter
   const getFilteredDebts = () => {
@@ -281,29 +288,23 @@ const DebtPage = () => {
 
     setIsCreating(true);
     try {
-      // Convert manualDate and manualTime to ISO 8601 format with timezone
+      // Convert manualDate and manualTime to ISO 8601 format with Myanmar timezone (UTC+6:30)
       let manualDateUTC = "";
       if (newDebt.manualDate) {
         const timePart = newDebt.manualTime || "00:00";
-        const [hours, minutes] = timePart
-          .split(":")
-          .map((v) => parseInt(v, 10));
-        const [year, month, day] = newDebt.manualDate
-          .split("-")
-          .map((v) => parseInt(v, 10));
+        const [hours, minutes] = timePart.split(":");
+        const [year, month, day] = newDebt.manualDate.split("-");
 
-        if (
-          !Number.isNaN(year) &&
-          !Number.isNaN(month) &&
-          !Number.isNaN(day) &&
-          !Number.isNaN(hours) &&
-          !Number.isNaN(minutes)
-        ) {
-          const utcDate = new Date(
-            Date.UTC(year, month - 1, day, hours, minutes, 0, 0)
-          );
-          manualDateUTC = utcDate.toISOString().replace("Z", "+00:00");
-        }
+        // Format as ISO 8601 with Myanmar timezone offset (+06:30)
+        const yearStr = year;
+        const monthStr = month.padStart(2, "0");
+        const dayStr = day.padStart(2, "0");
+        const hourStr = hours.padStart(2, "0");
+        const minuteStr = minutes.padStart(2, "0");
+        const secondStr = "00";
+        const millisecondStr = "000";
+
+        manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}.${millisecondStr}+06:30`;
       }
 
       const response = await createDebt({
@@ -312,6 +313,8 @@ const DebtPage = () => {
         tabelOrRoom: newDebt.tabelOrRoom.trim(),
         manualDate: manualDateUTC,
       });
+
+      console.log("Debt Data:", response);
 
       if (response?.success) {
         handleCloseModal();
@@ -462,42 +465,81 @@ const DebtPage = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Total Debt</h3>
-                <p className="text-[36px] font-futura text-primary">
-                  {formatCurrency(calculateTotalDebt())} MMK
-                </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          {/* Total Debt - Show when filter is "all" */}
+          {statusFilter === "all" && (
+            <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Total Debt</h3>
+                  <p className="text-[36px] font-futura text-primary">
+                    {formatCurrency(calculateTotalDebt())} MMK
+                  </p>
+                </div>
+                <DollarSign className="w-12 h-12 text-primary opacity-50" />
               </div>
-              <DollarSign className="w-12 h-12 text-primary opacity-50" />
             </div>
-          </div>
+          )}
 
-          <div className="border-l-4 border-red-500 bg-white rounded-lg shadow-md p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Unpaid Debt</h3>
-                <p className="text-[36px] font-futura text-red-500">
-                  {formatCurrency(calculateUnpaidDebt())} MMK
-                </p>
+          {/* Unpaid Debt - Show when filter is "all" or "unpaid" */}
+          {(statusFilter === "all" || statusFilter === "unpaid") && (
+            <div className="border-l-4 border-red-500 bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Unpaid Debt</h3>
+                  <p className="text-[36px] font-futura text-red-500">
+                    {formatCurrency(calculateUnpaidDebt())} MMK
+                  </p>
+                </div>
+                <CreditCard className="w-12 h-12 text-red-500 opacity-50" />
               </div>
-              <CreditCard className="w-12 h-12 text-red-500 opacity-50" />
             </div>
-          </div>
+          )}
 
-          <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Unpaid Records</h3>
-                <p className="text-[36px] font-futura text-primary">
-                  {unpaidCount}
-                </p>
+          {/* Unpaid Records - Show when filter is "all" or "unpaid" */}
+          {(statusFilter === "all" || statusFilter === "unpaid") && (
+            <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Unpaid Records</h3>
+                  <p className="text-[36px] font-futura text-primary">
+                    {unpaidCount}
+                  </p>
+                </div>
+                <FileText className="w-12 h-12 text-primary opacity-50" />
               </div>
-              <FileText className="w-12 h-12 text-primary opacity-50" />
             </div>
-          </div>
+          )}
+
+          {/* Paid Debt - Show when filter is "all" or "paid" */}
+          {(statusFilter === "all" || statusFilter === "paid") && (
+            <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Paid Debt</h3>
+                  <p className="text-[36px] font-futura text-green-500">
+                    {formatCurrency(calculatePaidDebt())} MMK
+                  </p>
+                </div>
+                <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
+              </div>
+            </div>
+          )}
+
+          {/* Paid Records - Show when filter is "all" or "paid" */}
+          {(statusFilter === "all" || statusFilter === "paid") && (
+            <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Paid Records</h3>
+                  <p className="text-[36px] font-futura text-green-500">
+                    {paidCount}
+                  </p>
+                </div>
+                <FileText className="w-12 h-12 text-green-500 opacity-50" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Debts Table */}
@@ -587,7 +629,7 @@ const DebtPage = () => {
                             {debt.orderType || "N/A"}
                           </div>
                         </td> */}
-                          <td className="hidden lg:block px-2 lg:px-6 py-4 whitespace-nowrap">
+                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
                               {debt.tabelOrRoom || "N/A"}
                             </div>
