@@ -761,7 +761,7 @@ const ExpenseTrackerPage = () => {
                 </label>
                 <div className="text-base text-gray-900 flex items-center gap-2">
                   <CalendarIcon size={18} className="text-gray-400" />
-                  {formatDate(selectedExpense.createdAt)}
+                  {formatDate(selectedExpense.manualDate)}
                 </div>
               </div>
 

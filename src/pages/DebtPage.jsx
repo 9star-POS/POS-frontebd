@@ -594,7 +594,7 @@ const DebtPage = () => {
                           </td>
                           <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-500">
-                              {formatDate(debt.createdAt)}
+                              {formatDate(debt.manualDate)}
                             </div>
                           </td>
                           <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
