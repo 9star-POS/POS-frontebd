@@ -4,7 +4,17 @@ import PropTypes from "prop-types";
 import axios from "../../api/axios";
 import defaultMenu from "./../../assets/defaultMenu.jpg";
 import getItems from "../../api/Menu/getItems";
-import { Image, Package, Edit3, X, Eye } from "lucide-react";
+import {
+  Image,
+  Package,
+  Edit3,
+  X,
+  Eye,
+  Plus,
+  Minus,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 
 const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
   // Modal states
@@ -14,9 +24,13 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
   const [image, setImage] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState("");
+  const [deletingImageId, setDeletingImageId] = useState(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null); // { id, spaceKey }
 
   // Quantity edit state
   const [quantity, setQuantity] = useState(menu.quantity?.toString() || "");
+  const [addQuantity, setAddQuantity] = useState("0"); // Quantity to add
   const [requireCooking, setRequireCooking] = useState(
     menu.requiresPreparation || false
   );
@@ -40,7 +54,8 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     if (isOpen) {
       setActiveModal(null);
       setImage(null);
-      setQuantity(menu.quantity?.toString() || "");
+      setQuantity(menu.quantity?.toString() || "0");
+      setAddQuantity("0");
       setRequireCooking(menu.requiresPreparation || false);
       setDishName(menu.name);
       setPrice(menu.price.toString());
@@ -50,6 +65,9 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
       setImageError("");
       setQuantityError("");
       setDataError("");
+      setIsDeleteConfirmOpen(false);
+      setImageToDelete(null);
+      setDeletingImageId(null);
     }
   }, [isOpen, menu]);
 
@@ -135,7 +153,50 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     if (errorType === "data" && dataError) setDataError("");
   };
 
-  // Handle Edit Image
+  // Open delete confirmation modal
+  const handleDeleteImageClick = (imageId, spaceKey) => {
+    setImageToDelete({ id: imageId, spaceKey });
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Close delete confirmation modal
+  const handleCloseDeleteConfirm = () => {
+    setIsDeleteConfirmOpen(false);
+    setImageToDelete(null);
+  };
+
+  // Handle Delete Image (after confirmation)
+  const handleDeleteImage = async () => {
+    if (!imageToDelete) return;
+
+    setImageError("");
+    setDeletingImageId(imageToDelete.id);
+    setIsDeleteConfirmOpen(false);
+
+    try {
+      const res = await axios.delete(`api/v1/stock-image/${imageToDelete.id}`, {
+        data: {
+          spaceKey: imageToDelete.spaceKey,
+        },
+      });
+
+      const data = res?.data;
+      if (data?.success) {
+        toast.success(data?.message || "Image deleted successfully");
+        if (refreshMenu) refreshMenu();
+      } else {
+        setImageError(data?.message || "Failed to delete image");
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      setImageError(error.response?.data?.message || "Failed to delete image");
+    } finally {
+      setDeletingImageId(null);
+      setImageToDelete(null);
+    }
+  };
+
+  // Handle Edit Image (Add New Image)
   const handleEditImage = async () => {
     if (!image) {
       setImageError("Please select an image to upload");
@@ -149,7 +210,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
       const formData = new FormData();
       formData.append("images", image);
 
-      const res = await axios.patch(`api/v1/stock/${menu._id}`, formData, {
+      const res = await axios.post(`api/v1/stock-image/${menu._id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -157,16 +218,17 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
 
       const data = res?.data;
       if (data?.success) {
+        toast.success(data?.message || "Image added successfully");
         setImage(null);
         setImageLoading(false);
         handleClose();
         if (refreshMenu) refreshMenu();
       } else {
-        setImageError(data?.message || "Failed to update image");
+        setImageError(data?.message || "Failed to add image");
       }
     } catch (error) {
-      console.error("Error updating image:", error);
-      setImageError(error.response?.data?.message || "Failed to update image");
+      console.error("Error adding image:", error);
+      setImageError(error.response?.data?.message || "Failed to add image");
     } finally {
       setImageLoading(false);
     }
@@ -178,22 +240,39 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     setQuantityLoading(true);
 
     try {
-      const formData = new FormData();
+      const quantityChange = Number(addQuantity || 0);
 
-      // Only append quantity if requireCooking is false and quantity has a value
-      if (!requireCooking && quantity && quantity.trim() !== "") {
-        formData.append("quantity", quantity);
+      if (quantityChange === 0) {
+        setQuantityError(
+          "Please enter a quantity change (positive to add, negative to decrease)"
+        );
+        setQuantityLoading(false);
+        return;
       }
-      formData.append("requiresPreparation", requireCooking);
 
-      const res = await axios.patch(`api/v1/stock/${menu._id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const currentQty = Number(menu.quantity || 0);
+      const newTotal = currentQty + quantityChange;
+
+      if (newTotal < 0) {
+        setQuantityError(
+          `Cannot decrease quantity below 0. Current: ${currentQty}, Attempted change: ${quantityChange}`
+        );
+        setQuantityLoading(false);
+        return;
+      }
+
+      const requestBody = {
+        quantityChange: quantityChange,
+      };
+
+      const res = await axios.patch(
+        `api/v1/stock/quantity/${menu._id}`,
+        requestBody
+      );
 
       const data = res?.data;
       if (data?.success) {
+        toast.success(data?.message || "Quantity updated successfully");
         setQuantityLoading(false);
         handleClose();
         if (refreshMenu) refreshMenu();
@@ -210,6 +289,24 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     }
   };
 
+  // Calculate new total quantity
+  const currentQuantity = Number(menu.quantity || 0);
+  const addQty = Number(addQuantity || 0);
+  const newTotalQuantity = currentQuantity + addQty;
+
+  // Increment/Decrement add quantity
+  const incrementAddQuantity = () => {
+    const current = Number(addQuantity || 0);
+    setAddQuantity((current + 1).toString());
+    setQuantityError("");
+  };
+
+  const decrementAddQuantity = () => {
+    const current = Number(addQuantity || 0);
+    setAddQuantity((current - 1).toString());
+    setQuantityError("");
+  };
+
   // Handle Edit Data
   const handleEditData = async () => {
     setDataError("");
@@ -222,31 +319,38 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         setDataLoading(false);
         return;
       }
-      if (!price.trim()) {
-        setDataError("Price is required");
+      if (!price.trim() || isNaN(Number(price)) || Number(price) <= 0) {
+        setDataError("Please enter a valid price");
         setDataLoading(false);
         return;
       }
 
-      const formData = new FormData();
-      formData.append("name", dishName);
-      formData.append("price", price);
+      // Build request body
+      const requestBody = {
+        name: dishName.trim(),
+        price: Number(price),
+        type: itemType,
+        requiresPreparation: requireCooking,
+      };
 
+      // Only include quantity if requiresPreparation is false
+      if (!requireCooking && quantity && quantity.trim() !== "") {
+        const qty = Number(quantity);
+        if (!isNaN(qty) && qty >= 0) {
+          requestBody.quantity = qty;
+        }
+      }
+
+      // Include category and subcategory if provided
       const chosenCategory = newCategory && newCategory.trim();
       if (chosenCategory) {
-        formData.append("category", chosenCategory);
+        requestBody.category = chosenCategory;
       }
       if (subcategory && subcategory.trim()) {
-        formData.append("subCategory", subcategory.trim());
+        requestBody.subCategory = subcategory.trim();
       }
 
-      formData.append("type", itemType);
-
-      const res = await axios.patch(`api/v1/stock/${menu._id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await axios.patch(`api/v1/stock/${menu._id}`, requestBody);
 
       const data = res?.data;
       if (data?.success) {
@@ -379,12 +483,58 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         {/* Edit Image Modal */}
         {activeModal === "image" && (
           <div className="space-y-4">
-            <div className="relative w-full h-48 md:h-64 border-2 border-gray-200 rounded-lg mb-2 flex items-center justify-center overflow-hidden bg-gray-50">
-              {image ? (
-                <>
+            {/* Existing Images */}
+            {menu.stockImagesUrl && menu.stockImagesUrl.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Current Images
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {menu.stockImagesUrl.map((img, index) => (
+                    <div
+                      key={img._id || index}
+                      className="relative group border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50"
+                    >
+                      <img
+                        src={img.url}
+                        alt={`Dish ${index + 1}`}
+                        className="w-full h-32 object-cover"
+                      />
+                      <button
+                        onClick={() =>
+                          handleDeleteImageClick(menu._id, img.spaceKey)
+                        }
+                        disabled={
+                          deletingImageId === menu._id ||
+                          deletingImageId === img._id
+                        }
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+                        aria-label="Delete Image"
+                        title="Delete Image"
+                      >
+                        {deletingImageId === menu._id ||
+                        deletingImageId === img._id ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* New Image Preview */}
+            {image && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  New Image Preview
+                </h3>
+                <div className="relative w-full h-48 md:h-64 border-2 border-gray-200 rounded-lg mb-2 flex items-center justify-center overflow-hidden bg-gray-50">
                   <img
                     src={URL.createObjectURL(image)}
-                    alt="Dish"
+                    alt="New Dish"
                     className="w-full h-full object-cover"
                   />
                   <button
@@ -394,25 +544,9 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                   >
                     <X size={16} />
                   </button>
-                </>
-              ) : (
-                <>
-                  {menu.stockImagesUrl && menu.stockImagesUrl[0]?.url ? (
-                    <img
-                      src={menu.stockImagesUrl[0].url}
-                      alt="Dish"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={defaultMenu}
-                      alt="Dish"
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
             <input
               type="file"
               id="file-upload"
@@ -420,16 +554,26 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
               accept="image/*"
               className="hidden"
             />
-            <div className="flex items-center justify-between border-2 border-dashed border-gray-300 rounded-lg px-4 py-3 bg-gray-50 hover:border-primary transition-colors">
-              <p className="font-medium text-gray-700 text-sm">
-                Upload Dish Image
-              </p>
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer text-white bg-primary text-sm rounded-lg px-4 py-2 text-center hover:bg-primary/90 transition-colors font-medium"
-              >
-                Choose File
-              </label>
+            {/* Upload Section */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                {menu.stockImagesUrl && menu.stockImagesUrl.length > 0
+                  ? "Add New Image"
+                  : "Upload Image"}
+              </h3>
+              <div className="flex items-center justify-between border-2 border-dashed border-gray-300 rounded-lg px-4 py-3 bg-gray-50 hover:border-primary transition-colors">
+                <p className="font-medium text-gray-700 text-sm">
+                  {image
+                    ? "Image selected. Click 'Add Image' to save."
+                    : "Choose an image to upload"}
+                </p>
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer text-white bg-primary text-sm rounded-lg px-4 py-2 text-center hover:bg-primary/90 transition-colors font-medium"
+                >
+                  Choose File
+                </label>
+              </div>
             </div>
             {imageError && (
               <div className="p-3 bg-red-50 border border-red-300 rounded-lg">
@@ -449,7 +593,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                 disabled={imageLoading || !image}
                 className="bg-primary text-white rounded-lg px-4 py-2 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
               >
-                {imageLoading ? "Updating..." : "Update Image"}
+                {imageLoading ? "Uploading..." : "Add Image"}
               </button>
             </div>
           </div>
@@ -457,55 +601,125 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
 
         {/* Edit Quantity Modal */}
         {activeModal === "quantity" && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="flex items-center mb-3">
-                <input
-                  type="checkbox"
-                  id="requireCooking"
-                  checked={requireCooking}
-                  onChange={(e) => setRequireCooking(e.target.checked)}
-                  className="mr-3 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="requireCooking"
-                  className="text-sm font-semibold text-gray-700"
-                >
-                  Requires Preparation
-                </label>
+          <div className="space-y-6">
+            {/* Current Stock Quantity */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Current Stock Quantity
+              </h3>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-100">
+                    <Minus size={20} className="text-gray-400" />
+                  </div>
+                  <div className="flex-1 text-center py-3 px-4">
+                    <span className="text-lg font-semibold text-gray-900">
+                      {currentQuantity}
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 flex items-center justify-center bg-gray-100">
+                    <Plus size={20} className="text-gray-400" />
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 ml-7">
-                Check this if the item needs to be prepared/cooked
+            </div>
+
+            {/* Quantity Calculation Display */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Quantity Calculation
+              </h3>
+              <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                <span className="text-xl font-bold text-gray-900">
+                  {currentQuantity}
+                </span>
+                <span
+                  className={`text-xl font-bold ${
+                    Number(addQuantity || 0) >= 0
+                      ? "text-gray-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {Number(addQuantity || 0) >= 0 ? "+" : ""}
+                </span>
+                <div className="flex items-center border-2 border-primary rounded-lg overflow-hidden bg-white">
+                  <button
+                    type="button"
+                    onClick={decrementAddQuantity}
+                    disabled={quantityLoading}
+                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Decrease quantity"
+                  >
+                    <Minus size={18} className="text-gray-700" />
+                  </button>
+                  <input
+                    type="number"
+                    value={addQuantity}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || value === "-" || !isNaN(value)) {
+                        setAddQuantity(value);
+                        clearErrorOnChange("quantity");
+                      }
+                    }}
+                    placeholder="0"
+                    className="w-24 px-2 py-2 text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={quantityLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={incrementAddQuantity}
+                    disabled={quantityLoading}
+                    className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    title="Increase quantity"
+                  >
+                    <Plus size={18} className="text-gray-700" />
+                  </button>
+                </div>
+                <span className="text-xl font-bold text-gray-600">=</span>
+                <span
+                  className={`text-xl font-bold ${
+                    newTotalQuantity >= 0 ? "text-primary" : "text-red-600"
+                  }`}
+                >
+                  {newTotalQuantity}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Enter positive number to add, negative number to decrease
               </p>
             </div>
-            {!requireCooking && (
+
+            {/* Stock Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Quantity{" "}
-                  <span className="text-gray-500 font-normal text-xs">
-                    (Optional)
-                  </span>
+                  Stock Name
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={quantity}
-                  onChange={(e) => {
-                    setQuantity(e.target.value);
-                    clearErrorOnChange("quantity");
-                  }}
-                  placeholder="Enter quantity"
-                  className="border-2 border-gray-300 rounded-lg p-2.5 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                />
+                <div className="border-2 border-gray-300 rounded-lg p-2.5 bg-gray-50">
+                  <span className="text-sm text-gray-700">
+                    {menu.name || "N/A"}
+                  </span>
+                </div>
               </div>
-            )}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Stock Code
+                </label>
+                <div className="border-2 border-gray-300 rounded-lg p-2.5 bg-gray-50">
+                  <span className="text-sm text-gray-700">
+                    {menu._id?.slice(-6) || "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {quantityError && (
               <div className="p-3 bg-red-50 border border-red-300 rounded-lg">
                 <p className="text-red-600 text-sm">{quantityError}</p>
               </div>
             )}
+
             <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={handleBackToMain}
@@ -516,10 +730,12 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
               </button>
               <button
                 onClick={handleEditQuantity}
-                disabled={quantityLoading}
+                disabled={
+                  quantityLoading || addQty === 0 || newTotalQuantity < 0
+                }
                 className="bg-primary text-white rounded-lg px-4 py-2 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
               >
-                {quantityLoading ? "Updating..." : "Update Quantity"}
+                {quantityLoading ? "Updating..." : "Confirm Quantity"}
               </button>
             </div>
           </div>
@@ -647,7 +863,8 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                   </label>
                   <div className="relative">
                     <input
-                      type="text"
+                      type="number"
+                      min="0"
                       value={price}
                       onChange={(e) => {
                         setPrice(e.target.value);
@@ -661,6 +878,55 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                     </span>
                   </div>
                 </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id="requireCookingData"
+                      checked={requireCooking}
+                      onChange={(e) => {
+                        setRequireCooking(e.target.checked);
+                        if (e.target.checked) {
+                          setQuantity("");
+                        }
+                        clearErrorOnChange("data");
+                      }}
+                      className="mr-3 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <label
+                      htmlFor="requireCookingData"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Requires Preparation
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7">
+                    Check this if the item needs to be prepared/cooked
+                  </p>
+                </div>
+                {/* {!requireCooking && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Quantity{" "}
+                      <span className="text-gray-500 font-normal text-xs">
+                        (Optional)
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={quantity}
+                      onChange={(e) => {
+                        setQuantity(e.target.value);
+                        clearErrorOnChange("data");
+                      }}
+                      placeholder="Enter quantity"
+                      className="border-2 border-gray-300 rounded-lg p-2.5 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                    />
+                  </div>
+                )} */}
               </div>
             </div>
             {dataError && (
@@ -814,6 +1080,45 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[60] p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800">Delete Image</h3>
+              <button
+                onClick={handleCloseDeleteConfirm}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete this image? This action cannot
+                be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCloseDeleteConfirm}
+                disabled={deletingImageId !== null}
+                className="border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteImage}
+                disabled={deletingImageId !== null}
+                className="bg-red-500 text-white rounded-lg px-4 py-2 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              >
+                {deletingImageId !== null ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
