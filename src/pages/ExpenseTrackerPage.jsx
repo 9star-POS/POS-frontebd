@@ -356,7 +356,7 @@ const ExpenseTrackerPage = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-5 h-[calc(100vh-90px)]">
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Expense Tracker</h1>
         <div className="flex gap-2 flex-wrap justify-end">

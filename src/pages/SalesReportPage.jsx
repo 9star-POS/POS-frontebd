@@ -20,12 +20,12 @@ const SalesReportPage = () => {
     key: "totalQuantity",
     direction: "descending",
   });
-  
+
   // Initialize dates from sessionStorage or default to today
   // sessionStorage automatically clears when browser closes, so it resets to today
   const [startDate, setStartDate] = useState(() => {
     const savedFilters = sessionStorage.getItem("salesReportDateRange");
-    
+
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters);
@@ -36,13 +36,13 @@ const SalesReportPage = () => {
         console.error("Error parsing saved date range:", e);
       }
     }
-    
+
     return new Date();
   });
-  
+
   const [endDate, setEndDate] = useState(() => {
     const savedFilters = sessionStorage.getItem("salesReportDateRange");
-    
+
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters);
@@ -53,7 +53,7 @@ const SalesReportPage = () => {
         console.error("Error parsing saved date range:", e);
       }
     }
-    
+
     return new Date();
   });
 
@@ -315,7 +315,7 @@ const SalesReportPage = () => {
   };
 
   return (
-    <div className="p-4 h-[calc(100vh-110px)]">
+    <div className="p-5 h-[calc(100vh-90px)]">
       <div className="flex justify-between items-center mb-5">
         <h1 className="sub-header font-bold">Reports</h1>
         <div className="flex items-center gap-4 flex-wrap justify-end">
@@ -480,7 +480,7 @@ const SalesReportPage = () => {
               <AnalyticsSummaryCard data={filteredSummary} />
 
               <div className="bg-white rounded-lg shadow-md pb-10 overflow-hidden">
-                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-47  0px)]">
+                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-470px)]">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>

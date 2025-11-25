@@ -36,7 +36,7 @@ function MenuPage() {
 
   return (
     <>
-      <div className="p-5">
+      <div className="p-5 h-[calc(100vh-90px)]">
         <div className="mb-5 flex justify-between items-center">
           <p className="sub-header">Menu Management</p>
           <div className="py-2 md:py-0">

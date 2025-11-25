@@ -391,7 +391,7 @@ const DebtPage = () => {
   };
 
   return (
-    <div className="p-5">
+    <div className="p-5 h-[calc(100vh-90px)]">
       <div className="min-h-screen">
         <div className="md:flex justify-between mb-5">
           <h1 className="sub-header font-bold">Debt Tracker</h1>
@@ -569,7 +569,7 @@ const DebtPage = () => {
                 />
               </div>
             ) : (
-              <div className="shadow-lg h-[calc(100vh-400px)] overflow-y-auto border border-gray-200">
+              <div className="shadow-lg h-[calc(100vh-470px)] overflow-y-auto border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-primary sticky top-0">
                     <tr className="font-bold text-md md:text-lg">

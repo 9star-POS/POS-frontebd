@@ -214,7 +214,7 @@ const KitchenPage = () => {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 h-[calc(100vh-90px)]">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-md p-2 mb-6">
         <div className="flex justify-between items-center mb-4">
@@ -321,7 +321,7 @@ const KitchenPage = () => {
 
       {/* Order Items List */}
       {getFilteredOrders().length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
+        <div className="text-center pt-20">
           <ChefHat size={64} className="text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-600 mb-2">
             No Kitchen Orders
@@ -331,7 +331,7 @@ const KitchenPage = () => {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-500px)]">
+        <div className="overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-500px)]">
           {/* Order Items */}
           <div className="divide-y divide-gray-200">
             {getFilteredOrders().map((item, index) => (

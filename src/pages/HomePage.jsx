@@ -76,7 +76,7 @@ function HomePage() {
     return (
       <div className="">
         {/* <TablePage tables={tables} /> */}
-        <div className="flex flex-col h-[calc(100vh-110px)]  md:flex-row">
+        <div className="flex flex-col h-[calc(100vh-90px)]  md:flex-row">
           <div className="w-screen md:w-1/2 lg:w-2/3 overflow-y-auto min-h-screen px-5 pt-2 overflow-x-hidden">
             <div className="flex gap-5 items-center mb-5 ">
               <MoveLeft

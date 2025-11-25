@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { RefreshCw, Search, Users, Plus, X, Trash2 } from "lucide-react";
+import { RefreshCw, Search, Users, Plus, X, Trash2, Key } from "lucide-react";
 import { toast } from "sonner";
 import getAccounts from "../api/admin/getAccounts";
 import createAccount from "../api/admin/createAccount";
 import updateAccount from "../api/admin/updateAccount";
 import softDeleteAccount from "../api/admin/softDeleteAccount";
+import updatePassword from "../api/admin/updatePassword";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 
@@ -24,6 +25,13 @@ const AccountManagementPage = () => {
   const [deletingAccountId, setDeletingAccountId] = useState(null);
   const [pendingDeleteAccount, setPendingDeleteAccount] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordAccount, setPasswordAccount] = useState(null);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [passwordFormData, setPasswordFormData] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [detailFormData, setDetailFormData] = useState({
     name: "",
     role: "waiter",
@@ -165,6 +173,57 @@ const AccountManagementPage = () => {
     setIsDeleteModalOpen(true);
   };
 
+  const handlePasswordClick = (account) => {
+    setPasswordAccount(account);
+    setPasswordFormData({
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setIsPasswordModalOpen(true);
+  };
+
+  const handleUpdatePassword = async (event) => {
+    event.preventDefault();
+    if (!passwordAccount?._id) return;
+
+    if (
+      !passwordFormData.newPassword ||
+      passwordFormData.newPassword.length < 6
+    ) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      const res = await updatePassword(passwordAccount._id, {
+        newPassword: passwordFormData.newPassword,
+        confirmPassword: passwordFormData.confirmPassword,
+      });
+
+      if (res?.success) {
+        toast.success(res?.message || "Password updated successfully");
+        setIsPasswordModalOpen(false);
+        setPasswordFormData({
+          newPassword: "",
+          confirmPassword: "",
+        });
+        setPasswordAccount(null);
+      } else {
+        toast.error(res?.message || "Failed to update password");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to update password");
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
   const confirmSoftDelete = async () => {
     if (!pendingDeleteAccount?._id) return;
     try {
@@ -232,14 +291,14 @@ const AccountManagementPage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[70vh]">
+      <div className="flex justify-center items-center h-[calc(100vh-90px)]">
         <Loading />
       </div>
     );
   }
 
   return (
-    <div className="p-5">
+    <div className="p-5 h-[calc(100vh-90px)]">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="sub-header font-bold">Account Management</h1>
@@ -302,7 +361,7 @@ const AccountManagementPage = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-5">
+      <div className="">
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-3 text-gray-400" size={18} />
@@ -340,7 +399,7 @@ const AccountManagementPage = () => {
             />
           </div>
         ) : (
-          <div className="h-[calc(100vh-450px)] overflow-y-auto">
+          <div className="h-[calc(100vh-470px)] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200 ">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
@@ -424,6 +483,14 @@ const AccountManagementPage = () => {
                               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                             />
                           </svg>
+                        </button>
+                        <button
+                          className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors"
+                          onClick={() => handlePasswordClick(account)}
+                          aria-label="Update password"
+                          title="Update Password"
+                        >
+                          <Key className="w-5 h-5 text-blue-500" />
                         </button>
                         <button
                           className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
@@ -747,6 +814,111 @@ const AccountManagementPage = () => {
                 {deletingAccountId ? "Deactivating..." : "Confirm"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Password Modal */}
+      {isPasswordModalOpen && passwordAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                setIsPasswordModalOpen(false);
+                setPasswordFormData({
+                  newPassword: "",
+                  confirmPassword: "",
+                });
+                setPasswordAccount(null);
+              }}
+              disabled={updatingPassword}
+            >
+              <X size={20} />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                <Key className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Update Password</h2>
+                <p className="text-sm text-gray-500">
+                  Change password for {passwordAccount.name}
+                </p>
+              </div>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleUpdatePassword}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordFormData.newPassword}
+                  onChange={(e) =>
+                    setPasswordFormData((prev) => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Enter new password"
+                  disabled={updatingPassword}
+                  required
+                  minLength={6}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Password must be at least 6 characters
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordFormData.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordFormData((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Confirm new password"
+                  disabled={updatingPassword}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
+                  onClick={() => {
+                    setIsPasswordModalOpen(false);
+                    setPasswordFormData({
+                      newPassword: "",
+                      confirmPassword: "",
+                    });
+                    setPasswordAccount(null);
+                  }}
+                  disabled={updatingPassword}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={updatingPassword}
+                >
+                  {updatingPassword ? "Updating..." : "Update Password"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

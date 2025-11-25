@@ -85,7 +85,7 @@ const NotificationPage = () => {
   };
 
   return (
-    <div className="p-2 md:p-4">
+    <div className="p-5 h-[calc(100vh-90px)]">
       {/* Header - Mobile Responsive */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-5 gap-3">
         <div className="flex items-center gap-2 md:gap-3">

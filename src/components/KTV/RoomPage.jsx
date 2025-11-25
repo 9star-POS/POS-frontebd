@@ -134,7 +134,7 @@ const RoomPage = () => {
   }
 
   return (
-    <div className="flex h-screen pt-10 bg-white">
+    <div className="flex pt-5 h-[calc(100vh-90px)] bg-white">
       <div className="w-full px-5">
         <div className="flex justify-between items-center mb-2">
           <h2 className="sub-header">Rooms</h2>

@@ -27,7 +27,6 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
     const res = await getItems();
     setLoading(false);
     if (res?.success) {
-      // console.log("item List", res.data);
       const menus = res.data;
       setMenuList(menus);
 
@@ -38,15 +37,12 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
         ...new Set(filteredMenus.map((menu) => menu.subCategory)),
       ];
       setCategoryList(categoryList);
-      console.log("categoryList", categoryList);
     } else {
       setMenuList([]);
 
       setCategoryList(["All"]);
     }
   };
-
-  // console.log("selectedCategory", selectedCategory);
 
   useEffect(() => {
     getMenuList();

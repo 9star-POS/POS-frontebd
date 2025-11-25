@@ -71,7 +71,7 @@ export default function App() {
 
   return (
     <AnimatePresence>
-      <div className="bg-gray-100">
+      <div className="bg-gray-100 h-screen">
         <div className="flex flex-col">
           {/* Button to open/close the sidebar */}
           {islogin && (
