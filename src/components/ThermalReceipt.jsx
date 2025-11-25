@@ -103,6 +103,46 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
     return "0";
   };
 
+  const getServiceFee = () => {
+    if (order?.serviceFee != null) {
+      const serviceFeeValue = Number(order.serviceFee) || 0;
+      const base = getSubtotal() + getRoomCharges() + getVocalistCharges();
+
+      // If service fee is a percentage (0-100 range), calculate it
+      if (serviceFeeValue >= 0 && serviceFeeValue <= 100) {
+        return base * (serviceFeeValue / 100);
+      }
+      // If service fee is a decimal percentage (0-1 range), calculate it
+      if (serviceFeeValue > 0 && serviceFeeValue < 1) {
+        return base * serviceFeeValue;
+      }
+      // Otherwise, treat as already calculated amount
+      return serviceFeeValue;
+    }
+    return 0;
+  };
+
+  const getServiceFeeRate = () => {
+    if (order?.serviceFee != null) {
+      const serviceFeeValue = Number(order.serviceFee) || 0;
+      const base = getSubtotal() + getRoomCharges() + getVocalistCharges();
+
+      // If service fee is a percentage (0-100 range), return it
+      if (serviceFeeValue >= 0 && serviceFeeValue <= 100) {
+        return serviceFeeValue.toFixed(0);
+      }
+      // If service fee is a decimal percentage (0-1 range), convert to percentage
+      if (serviceFeeValue > 0 && serviceFeeValue < 1) {
+        return (serviceFeeValue * 100).toFixed(0);
+      }
+      // If service fee is already calculated amount, calculate the percentage
+      if (base > 0 && serviceFeeValue > 0) {
+        return ((serviceFeeValue / base) * 100).toFixed(0);
+      }
+    }
+    return "0";
+  };
+
   const getDiscount = () => {
     if (order?.discount != null) {
       const discountValue = Number(order.discount) || 0;
@@ -128,7 +168,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
       getSubtotal() +
       getRoomCharges() +
       getVocalistCharges() +
-      getTax() -
+      getTax() +
+      getServiceFee() -
       getDiscount()
     );
   };
@@ -387,8 +428,22 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
               fontSize: "11px",
             }}
           >
-            <span>Tax ({getTaxRate()}%):</span>
+            <span>Gov Tax ({getTaxRate()}%):</span>
             <span>{getTax().toLocaleString()} MMK</span>
+          </div>
+        )}
+
+        {getServiceFee() > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "5px",
+              fontSize: "11px",
+            }}
+          >
+            <span>Service Fee ({getServiceFeeRate()}%):</span>
+            <span>{getServiceFee().toLocaleString()} MMK</span>
           </div>
         )}
 

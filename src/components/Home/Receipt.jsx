@@ -484,8 +484,8 @@ function Receipt({ onClose }) {
             })) ||
             [],
           subTotal: res?.data?.subTotal || calculateSubtotal(),
-          tax: res?.data?.tax || taxRate,
-          serviceFee: res?.data?.serviceFee || serviceFee,
+          tax: res?.data?.tax || calculateTax(calculateSubtotal()),
+          serviceFee: res?.data?.serviceFee || calculateServiceFee(calculateSubtotal()),
           discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",

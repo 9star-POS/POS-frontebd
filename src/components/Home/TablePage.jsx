@@ -3,12 +3,11 @@ import { selectTable, setOrderType } from "./../../redux/receiptSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import getAllTables from "../../api/Table/getAllTables";
-import deleteTableService from "../../api/Table/deleteTableService";
 import { toast } from "sonner";
 import Loading from "../Loading";
 import CreateTableModal from "./CreateTableModal";
-import DeleteModel from "../DeleteModel";
-import { Trash2 } from "lucide-react";
+import EditTableModal from "./EditTableModal";
+import { Edit2 } from "lucide-react";
 
 const TablePage = () => {
   const Navigate = useNavigate();
@@ -18,9 +17,8 @@ const TablePage = () => {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [deletingTableId, setDeletingTableId] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [tableToDelete, setTableToDelete] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [tableToEdit, setTableToEdit] = useState(null);
   //   const orderType = useSelector(
   //     (state) => state.receipts.receipts[selectedTable]?.orderType || "Dine In"
   //   );
@@ -60,27 +58,11 @@ const TablePage = () => {
     Navigate(`/${tableNumber}`);
   };
 
-  const handleDeleteTable = (e, table) => {
+  const handleEditTable = (e, table) => {
     e.stopPropagation();
     if (!table?._id) return;
-    setTableToDelete(table);
-    setIsDeleteModalOpen(true);
-  };
-
-  const confirmDeleteTable = async () => {
-    if (!tableToDelete?._id) return;
-    setDeletingTableId(tableToDelete._id);
-    try {
-      const res = await deleteTableService(tableToDelete._id);
-      if (res?.success) {
-        toast.success(res?.message || "Table deleted successfully");
-        fetchTables();
-      }
-    } finally {
-      setDeletingTableId(null);
-      setIsDeleteModalOpen(false);
-      setTableToDelete(null);
-    }
+    setTableToEdit(table);
+    setIsEditModalOpen(true);
   };
 
   if (loading) {
@@ -165,18 +147,12 @@ const TablePage = () => {
                     <div className="absolute -top-2 -right-1">
                       <button
                         type="button"
-                        className="p-1 rounded-md bg-white/80 hover:bg-red-50 border border-red-200 text-red-500"
-                        onClick={(e) => handleDeleteTable(e, table)}
-                        disabled={
-                          deletingTableId === table._id || isDeleteModalOpen
-                        }
-                        title="Delete table"
+                        className="p-1 rounded-md bg-white/80 hover:bg-blue-50 border border-blue-200 text-blue-500"
+                        onClick={(e) => handleEditTable(e, table)}
+                        disabled={isEditModalOpen}
+                        title="Edit table"
                       >
-                        {deletingTableId === table._id ? (
-                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <Trash2 size={14} />
-                        )}
+                        <Edit2 size={14} />
                       </button>
                     </div>
                   </button>
@@ -208,18 +184,16 @@ const TablePage = () => {
           fetchTables();
         }}
       />
-      <DeleteModel
-        isOpen={isDeleteModalOpen}
+      <EditTableModal
+        isOpen={isEditModalOpen}
         onClose={() => {
-          setIsDeleteModalOpen(false);
-          setTableToDelete(null);
+          setIsEditModalOpen(false);
+          setTableToEdit(null);
         }}
-        submit={confirmDeleteTable}
-        text={
-          tableToDelete
-            ? `Delete table ${tableToDelete.tableNumber}? This action cannot be undone.`
-            : "Delete this table?"
-        }
+        table={tableToEdit}
+        onSuccess={() => {
+          fetchTables();
+        }}
       />
     </div>
   );

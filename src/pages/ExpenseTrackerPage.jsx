@@ -100,7 +100,7 @@ const ExpenseTrackerPage = () => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
-      return format(new Date(dateString), "MMM dd, yyyy");
+      return format(new Date(dateString), "MMM dd, yyyy HH:mm");
     } catch (error) {
       return dateString;
     }
@@ -513,7 +513,7 @@ const ExpenseTrackerPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500">
-                        {formatDate(expense.createdAt)}
+                        {formatDate(expense.manualDate || expense.createdAt)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
