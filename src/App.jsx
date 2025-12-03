@@ -10,12 +10,10 @@ import PageNotFound from "./components/PageNotFound";
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import Dashboard from "./pages/Dashboard";
-import { Receipt as ReceiptIcon } from "lucide-react";
 import { IoMdMenu } from "react-icons/io";
 import Sidebar from "./components/Sidebar";
 import SalesReportPage from "./pages/SalesReportPage";
 import ExpenseTrackerPage from "./pages/ExpenseTrackerPage";
-import NotificationPage from "./pages/NotificationPage";
 import AccountManagementPage from "./pages/AccountManagementPage";
 import DebtPage from "./pages/DebtPage";
 
@@ -182,14 +180,6 @@ export default function App() {
                       element={
                         <PrivateRoute>
                           <ExpenseTrackerPage />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/notifications"
-                      element={
-                        <PrivateRoute>
-                          <NotificationPage />
                         </PrivateRoute>
                       }
                     />

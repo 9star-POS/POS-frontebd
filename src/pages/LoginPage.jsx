@@ -26,7 +26,13 @@ const LoginPage = () => {
       };
       localStorage.setItem("bz-user", JSON.stringify(user));
       localStorage.setItem("biz-bozz-token", res.data.token);
-      window.location.href = "/";
+      
+      // Redirect based on user role
+      if (user.role === "ktv-waiter") {
+        window.location.href = "/ktv";
+      } else {
+        window.location.href = "/";
+      }
     }
   };
 

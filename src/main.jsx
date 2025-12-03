@@ -7,17 +7,14 @@ import { Provider } from "react-redux";
 import store from "./redux/store.js";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./hook/auth/AuthContext.jsx";
-import { NotificationProvider } from "./contexts/NotificationContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <Suspense>
     <AuthProvider>
       <Router>
         <Provider store={store}>
-          <NotificationProvider>
-            <Toaster position="top-center" richColors />
-            <App />
-          </NotificationProvider>
+          <Toaster position="top-center" richColors />
+          <App />
         </Provider>
       </Router>
     </AuthProvider>

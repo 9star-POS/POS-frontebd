@@ -34,11 +34,11 @@ const AccountManagementPage = () => {
   });
   const [detailFormData, setDetailFormData] = useState({
     name: "",
-    role: "waiter",
+    role: "restaurant-waiter",
   });
   const [formData, setFormData] = useState({
     name: "",
-    role: "waiter",
+    role: "restaurant-waiter",
     password: "",
     confirmPassword: "",
   });
@@ -74,7 +74,14 @@ const AccountManagementPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const ROLE_OPTIONS = ["admin", "superAdmin", "kitchen", "waiter"];
+  const ROLE_OPTIONS = [
+    "owner",
+    "cashier",
+    "kitchen",
+    "bar-counter",
+    "ktv-waiter",
+    "restaurant-waiter",
+  ];
 
   const roleOptions = useMemo(() => {
     const uniqueRoles = new Set(accounts.map((acc) => acc.role));
@@ -112,19 +119,21 @@ const AccountManagementPage = () => {
 
   const renderRoleBadge = (role) => {
     const palette = {
-      admin: "bg-purple-100 text-purple-700",
-      superAdmin: "bg-amber-100 text-amber-700",
+      owner: "bg-purple-100 text-purple-700",
+      cashier: "bg-blue-100 text-blue-700",
       kitchen: "bg-cyan-100 text-cyan-700",
-      waiter: "bg-green-100 text-green-700",
-      manager: "bg-blue-100 text-blue-700",
+      "bar-counter": "bg-orange-100 text-orange-700",
+      "ktv-waiter": "bg-pink-100 text-pink-700",
+      "restaurant-waiter": "bg-green-100 text-green-700",
       default: "bg-gray-100 text-gray-600",
     };
     const style = palette[role] || palette.default;
+    const displayRole = role?.replace(/-/g, " ") || role;
     return (
       <span
         className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${style}`}
       >
-        {role}
+        {displayRole}
       </span>
     );
   };
@@ -133,7 +142,7 @@ const AccountManagementPage = () => {
     setSelectedAccount(account);
     setDetailFormData({
       name: account.name || "",
-      role: account.role || "waiter",
+      role: account.role || "restaurant-waiter",
     });
     setIsDetailOpen(true);
   };
@@ -274,7 +283,7 @@ const AccountManagementPage = () => {
         setIsCreateOpen(false);
         setFormData({
           name: "",
-          role: "waiter",
+          role: "restaurant-waiter",
           password: "",
           confirmPassword: "",
         });
@@ -574,7 +583,7 @@ const AccountManagementPage = () => {
                 >
                   {ROLE_OPTIONS.map((role) => (
                     <option key={role} value={role}>
-                      {role}
+                      {role.replace(/-/g, " ")}
                     </option>
                   ))}
                 </select>
@@ -727,7 +736,7 @@ const AccountManagementPage = () => {
                 >
                   {ROLE_OPTIONS.map((role) => (
                     <option key={role} value={role}>
-                      {role}
+                      {role.replace(/-/g, " ")}
                     </option>
                   ))}
                 </select>
