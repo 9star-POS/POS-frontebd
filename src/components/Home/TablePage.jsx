@@ -23,16 +23,6 @@ const TablePage = () => {
   const [tableToEdit, setTableToEdit] = useState(null);
   const [viewMode, setViewMode] = useState("active"); // "active" or "archived"
   const [restoringTableId, setRestoringTableId] = useState(null);
-  //   const orderType = useSelector(
-  //     (state) => state.receipts.receipts[selectedTable]?.orderType || "Dine In"
-  //   );
-
-  //   const handleOrderTypeChange = (type) => {
-  //     if (selectedTable) {
-  //       dispatch(setOrderType({ table: selectedTable, orderType: type }));
-  //     }
-  //   };
-  //   console.log(receipts);
 
   const fetchTables = useCallback(async () => {
     setLoading(true);
@@ -132,7 +122,7 @@ const TablePage = () => {
         <div className="flex justify-between items-center mb-2">
           <h2 className="sub-header">Tables</h2>
           <div className="flex gap-2 items-center">
-            <div className="flex border border-gray-300 rounded-md overflow-hidden">
+            {/* <div className="flex border border-gray-300 rounded-md overflow-hidden">
               <button
                 type="button"
                 onClick={() => handleViewModeChange("active")}
@@ -157,7 +147,7 @@ const TablePage = () => {
                 <Archive size={18} />
                 Archived
               </button>
-            </div>
+            </div> */}
             <button
               type="button"
               className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50"
@@ -168,15 +158,14 @@ const TablePage = () => {
             >
               {loading ? "Loading..." : "Refresh"}
             </button>
-            {viewMode === "active" && (
-              <button
-                type="button"
-                className="rounded-md border border-primary bg-primary px-4 py-2 text-white transition hover:bg-white hover:text-primary"
-                onClick={() => setIsCreateModalOpen(true)}
-              >
-                Create Table
-              </button>
-            )}
+
+            <button
+              type="button"
+              className="rounded-md border border-primary bg-primary px-4 py-2 text-white transition hover:bg-white hover:text-primary"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              Create Table
+            </button>
           </div>
         </div>
 
