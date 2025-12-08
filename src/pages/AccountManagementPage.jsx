@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { RefreshCw, Search, Users, Plus, X, Trash2, Key } from "lucide-react";
+import {
+  RefreshCw,
+  Search,
+  Users,
+  Plus,
+  X,
+  Trash2,
+  Key,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "sonner";
 import getAccounts from "../api/admin/getAccounts";
 import createAccount from "../api/admin/createAccount";
@@ -32,6 +42,10 @@ const AccountManagementPage = () => {
     newPassword: "",
     confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [detailFormData, setDetailFormData] = useState({
     name: "",
     role: "restaurant-waiter",
@@ -223,6 +237,8 @@ const AccountManagementPage = () => {
           confirmPassword: "",
         });
         setPasswordAccount(null);
+        setShowNewPassword(false);
+        setShowConfirmNewPassword(false);
       } else {
         toast.error(res?.message || "Failed to update password");
       }
@@ -287,6 +303,8 @@ const AccountManagementPage = () => {
           password: "",
           confirmPassword: "",
         });
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         await fetchAccounts();
       } else {
         toast.error(res?.message || "Failed to create account");
@@ -542,7 +560,11 @@ const AccountManagementPage = () => {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-              onClick={() => setIsCreateOpen(false)}
+              onClick={() => {
+                setIsCreateOpen(false);
+                setShowPassword(false);
+                setShowConfirmPassword(false);
+              }}
               disabled={creating}
             >
               <X size={20} />
@@ -592,40 +614,100 @@ const AccountManagementPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password
+                    Password <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        password: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    placeholder="Enter password"
-                    disabled={creating}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
+                      }
+                      className={`w-full border rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 ${
+                        formData.password && formData.password.length < 6
+                          ? "border-red-500 focus:ring-red-500/40"
+                          : "border-gray-300 focus:ring-primary/40"
+                      }`}
+                      placeholder="Enter password"
+                      disabled={creating}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      disabled={creating}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {formData.password && formData.password.length < 6 && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <span className="font-semibold">⚠</span> Password must be
+                      at least 6 characters long
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password
+                    Confirm Password <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        confirmPassword: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    placeholder="Confirm password"
-                    disabled={creating}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      className={`w-full border rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 ${
+                        formData.confirmPassword &&
+                        formData.password !== formData.confirmPassword
+                          ? "border-red-500 focus:ring-red-500/40"
+                          : formData.confirmPassword &&
+                            formData.confirmPassword.length < 6
+                          ? "border-red-500 focus:ring-red-500/40"
+                          : "border-gray-300 focus:ring-primary/40"
+                      }`}
+                      placeholder="Confirm password"
+                      disabled={creating}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      disabled={creating}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+                  {formData.confirmPassword &&
+                    formData.confirmPassword.length < 6 && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <span className="font-semibold">⚠</span> Password must
+                        be at least 6 characters long
+                      </p>
+                    )}
+                  {formData.confirmPassword &&
+                    formData.password &&
+                    formData.password.length >= 6 &&
+                    formData.password !== formData.confirmPassword && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <span className="font-semibold">⚠</span> Passwords do
+                        not match
+                      </p>
+                    )}
                 </div>
               </div>
 
@@ -633,7 +715,11 @@ const AccountManagementPage = () => {
                 <button
                   type="button"
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
-                  onClick={() => setIsCreateOpen(false)}
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    setShowPassword(false);
+                    setShowConfirmPassword(false);
+                  }}
                   disabled={creating}
                 >
                   Cancel
@@ -840,6 +926,8 @@ const AccountManagementPage = () => {
                   confirmPassword: "",
                 });
                 setPasswordAccount(null);
+                setShowNewPassword(false);
+                setShowConfirmNewPassword(false);
               }}
               disabled={updatingPassword}
             >
@@ -862,21 +950,31 @@ const AccountManagementPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   New Password
                 </label>
-                <input
-                  type="password"
-                  value={passwordFormData.newPassword}
-                  onChange={(e) =>
-                    setPasswordFormData((prev) => ({
-                      ...prev,
-                      newPassword: e.target.value,
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  placeholder="Enter new password"
-                  disabled={updatingPassword}
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={passwordFormData.newPassword}
+                    onChange={(e) =>
+                      setPasswordFormData((prev) => ({
+                        ...prev,
+                        newPassword: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Enter new password"
+                    disabled={updatingPassword}
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={updatingPassword}
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Password must be at least 6 characters
                 </p>
@@ -886,21 +984,37 @@ const AccountManagementPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Confirm Password
                 </label>
-                <input
-                  type="password"
-                  value={passwordFormData.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordFormData((prev) => ({
-                      ...prev,
-                      confirmPassword: e.target.value,
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  placeholder="Confirm new password"
-                  disabled={updatingPassword}
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmNewPassword ? "text" : "password"}
+                    value={passwordFormData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordFormData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Confirm new password"
+                    disabled={updatingPassword}
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmNewPassword(!showConfirmNewPassword)
+                    }
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={updatingPassword}
+                  >
+                    {showConfirmNewPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
@@ -914,6 +1028,8 @@ const AccountManagementPage = () => {
                       confirmPassword: "",
                     });
                     setPasswordAccount(null);
+                    setShowNewPassword(false);
+                    setShowConfirmNewPassword(false);
                   }}
                   disabled={updatingPassword}
                 >

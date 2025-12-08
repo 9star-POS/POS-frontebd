@@ -56,11 +56,15 @@ const Sidebar = ({ closeSidebar }) => {
   // Filter nav items based on role
   let navItems;
   if (isKtvWaiter) {
-    // KTV waiter - only show KTV
-    navItems = allNavItems.filter((item) => item.to === "/ktv");
+    // KTV waiter - show KTV and Notifications
+    navItems = allNavItems.filter(
+      (item) => item.to === "/ktv" || item.to === "/notifications"
+    );
   } else if (isRestaurantWaiter) {
-    // Restaurant waiter - only show Restaurant
-    navItems = allNavItems.filter((item) => item.to === "/");
+    // Restaurant waiter - show Restaurant and Notifications
+    navItems = allNavItems.filter(
+      (item) => item.to === "/" || item.to === "/notifications"
+    );
   } else if (isCashier) {
     // Cashier - show all except Accounts
     navItems = allNavItems.filter((item) => item.to !== "/accounts");
