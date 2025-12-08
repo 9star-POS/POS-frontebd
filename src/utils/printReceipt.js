@@ -9,8 +9,12 @@ import ThermalReceipt from "../components/ThermalReceipt";
  */
 export const printReceipt = (order, isKtv = false) => {
   // Remove any existing print container and styles
-  const existingContainer = document.getElementById("thermal-receipt-print-container");
-  const existingStyles = document.getElementById("thermal-receipt-print-styles");
+  const existingContainer = document.getElementById(
+    "thermal-receipt-print-container"
+  );
+  const existingStyles = document.getElementById(
+    "thermal-receipt-print-styles"
+  );
   if (existingContainer) {
     existingContainer.remove();
   }
@@ -24,7 +28,7 @@ export const printReceipt = (order, isKtv = false) => {
   styleElement.textContent = `
     @media print {
       @page {
-        size: 80mm auto;
+        size: A5;
         margin: 0;
       }
       html, body {
@@ -52,15 +56,15 @@ export const printReceipt = (order, isKtv = false) => {
       }
       .thermal-receipt {
         position: relative !important;
-        width: 80mm !important;
-        max-width: 80mm !important;
+        width: 148mm !important;
+        max-width: 148mm !important;
         margin: 0 !important;
-        padding: 10mm 5mm !important;
+        padding: 15mm 10mm !important;
         background: white !important;
         box-shadow: none !important;
         border: none !important;
         color: black !important;
-        font-size: 12px !important;
+        font-size: 14px !important;
       }
     }
   `;
@@ -92,11 +96,11 @@ export const printReceipt = (order, isKtv = false) => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       // Double check that the container has content
-      const receiptElement = printContainer.querySelector('.thermal-receipt');
+      const receiptElement = printContainer.querySelector(".thermal-receipt");
       if (receiptElement) {
         setTimeout(() => {
           window.print();
-          
+
           // Clean up after printing
           setTimeout(() => {
             root.unmount();
@@ -128,4 +132,3 @@ export const printReceipt = (order, isKtv = false) => {
 };
 
 export default printReceipt;
-

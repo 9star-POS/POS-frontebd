@@ -192,13 +192,13 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
     <div
       className="thermal-receipt"
       style={{
-        width: "80mm",
-        maxWidth: "80mm",
+        width: "148mm",
+        maxWidth: "148mm",
         margin: "0 auto",
-        padding: "10mm 5mm",
+        padding: "15mm 10mm",
         fontFamily: "monospace",
-        fontSize: "12px",
-        lineHeight: "1.4",
+        fontSize: "14px",
+        lineHeight: "1.5",
         backgroundColor: "white",
         color: "black",
       }}
@@ -207,9 +207,9 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
       <div style={{ textAlign: "center", marginBottom: "15px" }}>
         <h2
           style={{
-            fontSize: "18px",
+            fontSize: "22px",
             fontWeight: "bold",
-            marginBottom: "5px",
+            marginBottom: "8px",
             textTransform: "uppercase",
           }}
         >
@@ -223,21 +223,21 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             margin: "10px 0",
           }}
         >
-          <p style={{ margin: "2px 0", fontSize: "11px" }}>
+          <p style={{ margin: "3px 0", fontSize: "13px" }}>
             {isKtv ? `Room: ${getTableOrRoom()}` : `Table: ${getTableOrRoom()}`}
           </p>
           {order?.createdAt && (
             <>
-              <p style={{ margin: "2px 0", fontSize: "11px" }}>
+              <p style={{ margin: "3px 0", fontSize: "13px" }}>
                 Date: {formatDate(order.createdAt)}
               </p>
-              <p style={{ margin: "2px 0", fontSize: "11px" }}>
+              <p style={{ margin: "3px 0", fontSize: "13px" }}>
                 Time: {formatTime(order.createdAt)}
               </p>
             </>
           )}
           {order?._id && (
-            <p style={{ margin: "2px 0", fontSize: "10px", opacity: 0.7 }}>
+            <p style={{ margin: "3px 0", fontSize: "12px", opacity: 0.7 }}>
               Order ID: {order._id.slice(-8)}
             </p>
           )}
@@ -257,7 +257,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: "11px",
+              fontSize: "13px",
               fontWeight: "bold",
             }}
           >
@@ -284,14 +284,14 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
                   marginBottom: "2px",
                 }}
               >
-                <span style={{ flex: "2", fontSize: "11px" }}>
+                <span style={{ flex: "2", fontSize: "13px" }}>
                   {item.stockName || item.name || "Item"}
                 </span>
                 <span
                   style={{
                     flex: "1",
                     textAlign: "center",
-                    fontSize: "11px",
+                    fontSize: "13px",
                   }}
                 >
                   {item.quantity || 1}
@@ -300,7 +300,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
                   style={{
                     flex: "1",
                     textAlign: "right",
-                    fontSize: "11px",
+                    fontSize: "13px",
                   }}
                 >
                   {(item.price || 0).toLocaleString()}
@@ -310,7 +310,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: "10px",
+                  fontSize: "12px",
                   color: "#666",
                 }}
               >
@@ -348,7 +348,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: "11px",
+              fontSize: "13px",
             }}
           >
             <span>Room Service</span>
@@ -372,7 +372,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: "11px",
+              fontSize: "13px",
             }}
           >
             <span>Vocalist Charges</span>
@@ -396,8 +396,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginBottom: "5px",
-            fontSize: "11px",
+            marginBottom: "6px",
+            fontSize: "13px",
           }}
         >
           <span>Subtotal:</span>
@@ -409,8 +409,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "5px",
-              fontSize: "11px",
+              marginBottom: "6px",
+              fontSize: "13px",
               color: "#666",
             }}
           >
@@ -424,8 +424,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "5px",
-              fontSize: "11px",
+              marginBottom: "6px",
+              fontSize: "13px",
             }}
           >
             <span>Gov Tax ({getTaxRate()}%):</span>
@@ -438,8 +438,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "5px",
-              fontSize: "11px",
+              marginBottom: "6px",
+              fontSize: "13px",
             }}
           >
             <span>Service Fee ({getServiceFeeRate()}%):</span>
@@ -451,10 +451,10 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginTop: "10px",
-            paddingTop: "10px",
+            marginTop: "12px",
+            paddingTop: "12px",
             borderTop: "2px solid #000",
-            fontSize: "14px",
+            fontSize: "16px",
             fontWeight: "bold",
           }}
         >
@@ -470,7 +470,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             marginBottom: "15px",
             paddingBottom: "10px",
             borderBottom: "1px dashed #000",
-            fontSize: "11px",
+            fontSize: "13px",
           }}
         >
           <div
@@ -494,12 +494,12 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
           marginTop: "20px",
           paddingTop: "15px",
           borderTop: "1px dashed #000",
-          fontSize: "10px",
+          fontSize: "12px",
           color: "#666",
         }}
       >
-        <p style={{ margin: "5px 0" }}>Thank you for your visit!</p>
-        <p style={{ margin: "5px 0" }}>
+        <p style={{ margin: "6px 0" }}>Thank you for your visit!</p>
+        <p style={{ margin: "6px 0" }}>
           {order?.updatedAt &&
             `Printed: ${formatDate(order.updatedAt)} ${formatTime(
               order.updatedAt
@@ -511,7 +511,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
       <style>{`
         @media print {
           @page {
-            size: 80mm auto;
+            size: A5;
             margin: 0;
           }
           html, body {
@@ -539,15 +539,15 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
           }
           .thermal-receipt {
             position: relative !important;
-            width: 80mm !important;
-            max-width: 80mm !important;
+            width: 148mm !important;
+            max-width: 148mm !important;
             margin: 0 !important;
-            padding: 10mm 5mm !important;
+            padding: 15mm 10mm !important;
             background: white !important;
             box-shadow: none !important;
             border: none !important;
             color: black !important;
-            font-size: 12px !important;
+            font-size: 14px !important;
           }
         }
         @media screen {

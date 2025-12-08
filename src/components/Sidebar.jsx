@@ -10,6 +10,7 @@ import {
   Wallet,
   Users,
   Wine,
+  Bell,
   CreditCard,
 } from "lucide-react";
 
@@ -41,12 +42,12 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/ktv", icon: Music, label: "KTV" },
     { to: "/menu", icon: Menu, label: "Menu" },
     { to: "/orders", icon: Receipt, label: "Orders" },
-    // { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
-    // { to: "/bar", icon: Wine, label: "Bar" },
+    { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
+    { to: "/bar", icon: Wine, label: "Bar" },
     { to: "/sales-report", icon: BarChart, label: "Sales Report" },
     { to: "/expense-tracker", icon: Wallet, label: "Expense Tracker" },
     { to: "/debt-tracker", icon: CreditCard, label: "Debt Tracker" },
-    // { to: "/notifications", icon: Bell, label: "Notifications" },
+    { to: "/notifications", icon: Bell, label: "Notifications" },
     { to: "/accounts", icon: Users, label: "Accounts" },
   ];
 
