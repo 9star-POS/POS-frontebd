@@ -18,6 +18,7 @@ import ExpenseTrackerPage from "./pages/ExpenseTrackerPage";
 import NotificationPage from "./pages/NotificationPage";
 import AccountManagementPage from "./pages/AccountManagementPage";
 import DebtPage from "./pages/DebtPage";
+import VocalistPage from "./pages/VocalistPage";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 import "./App.css";
@@ -208,6 +209,14 @@ export default function App() {
                         element={
                           <PrivateRoute>
                             <DebtPage />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/vocalists"
+                        element={
+                          <PrivateRoute>
+                            <VocalistPage />
                           </PrivateRoute>
                         }
                       />

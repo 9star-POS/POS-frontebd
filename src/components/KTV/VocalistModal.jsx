@@ -228,13 +228,13 @@ const VocalistModal = ({ isOpen, onClose }) => {
           <div className="flex justify-between items-center p-5 border-b">
             <h2 className="text-xl font-bold">Add Vocalist</h2>
             <div className="flex items-center gap-2">
-              <button
+              {/* <button
                 onClick={() => setIsCreateModalOpen(true)}
                 className="bg-primary text-white p-2 rounded-lg hover:bg-primary/90 transition-colors"
                 title="Create New Vocalist"
               >
                 <Plus size={20} />
-              </button>
+              </button> */}
               <button
                 onClick={onClose}
                 className="text-gray-500 hover:text-gray-700"

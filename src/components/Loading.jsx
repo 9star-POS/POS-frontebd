@@ -3,7 +3,7 @@ import ReactLoading from "react-loading";
 
 function Loading({ type, color }) {
   return (
-    <div className="flex w-full md:h-screen justify-center items-center">
+    <div className="flex w-full justify-center items-center">
       <ReactLoading
         type="balls"
         color="#2b2f33"

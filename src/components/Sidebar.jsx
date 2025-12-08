@@ -12,6 +12,7 @@ import {
   Wine,
   Bell,
   CreditCard,
+  Mic,
 } from "lucide-react";
 
 const Sidebar = ({ closeSidebar }) => {
@@ -44,6 +45,7 @@ const Sidebar = ({ closeSidebar }) => {
     { to: "/orders", icon: Receipt, label: "Orders" },
     { to: "/kitchen", icon: ChefHat, label: "Kitchen" },
     { to: "/bar", icon: Wine, label: "Bar" },
+    { to: "/vocalists", icon: Mic, label: "Vocalists" },
     { to: "/sales-report", icon: BarChart, label: "Sales Report" },
     { to: "/expense-tracker", icon: Wallet, label: "Expense Tracker" },
     { to: "/debt-tracker", icon: CreditCard, label: "Debt Tracker" },
