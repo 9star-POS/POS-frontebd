@@ -367,7 +367,7 @@ const AccountManagementPage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-primary">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-500">Total Accounts</p>
@@ -386,7 +386,7 @@ const AccountManagementPage = () => {
             <p className="text-3xl font-bold text-gray-900">{count}</p>
           </div>
         ))}
-      </div>
+      </div> */}
 
       <div className="">
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">

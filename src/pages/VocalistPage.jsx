@@ -1,5 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
-import { RefreshCw, Search, Mic, User, Phone, Mail, Plus, X } from "lucide-react";
+import {
+  RefreshCw,
+  Search,
+  Mic,
+  User,
+  Phone,
+  Mail,
+  Plus,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import getAllVocalists from "../api/KTV/getAllVocalists";
 import createVocalist from "../api/KTV/createVocalist";
@@ -30,8 +39,8 @@ const VocalistPage = () => {
       const res = await getAllVocalists();
       if (res?.success) {
         // Handle both array and object with data property
-        const vocalistData = Array.isArray(res.data) 
-          ? res.data 
+        const vocalistData = Array.isArray(res.data)
+          ? res.data
           : res.data?.vocalists || res.data || [];
         setVocalists(vocalistData);
       } else {
@@ -56,13 +65,13 @@ const VocalistPage = () => {
 
   const filteredVocalists = useMemo(() => {
     if (!searchTerm.trim()) return vocalists;
-    
+
     const searchLower = searchTerm.toLowerCase();
     return vocalists.filter((vocalist) => {
       const name = vocalist?.name || vocalist?.vocalistName || "";
       const phone = vocalist?.phone || vocalist?.phoneNumber || "";
       const email = vocalist?.email || "";
-      
+
       return (
         name.toLowerCase().includes(searchLower) ||
         phone.includes(searchTerm) ||
@@ -74,13 +83,14 @@ const VocalistPage = () => {
   const summaryStats = useMemo(() => {
     return {
       total: vocalists.length,
-      active: vocalists.filter((v) => !v.softDeleted && v.status !== "inactive").length,
+      active: vocalists.filter((v) => !v.softDeleted && v.status !== "inactive")
+        .length,
     };
   }, [vocalists]);
 
   const handleCreateVocalist = async (event) => {
     event.preventDefault();
-    
+
     if (!formData.vocalistName.trim()) {
       toast.error("Please enter vocalist name");
       return;
@@ -230,23 +240,26 @@ const VocalistPage = () => {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Contact
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Status
-                  </th>
+                  </th> */}
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Additional Info
+                    Hourly Rate
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredVocalists.map((vocalist, index) => {
-                  const name = vocalist?.name || vocalist?.vocalistName || "Unknown";
+                  const name =
+                    vocalist?.name || vocalist?.vocalistName || "Unknown";
                   const phone = vocalist?.phone || vocalist?.phoneNumber || "";
                   const email = vocalist?.email || "";
-                  const status = vocalist?.status || (vocalist?.softDeleted ? "inactive" : "active");
+                  const status =
+                    vocalist?.status ||
+                    (vocalist?.softDeleted ? "inactive" : "active");
                   const id = vocalist?._id || vocalist?.id || index;
 
                   return (
@@ -257,16 +270,18 @@ const VocalistPage = () => {
                             <Mic className="w-5 h-5 text-primary" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900">{name}</p>
-                            {vocalist?._id && (
+                            <p className="font-semibold text-gray-900">
+                              {name}
+                            </p>
+                            {/* {vocalist?._id && (
                               <p className="text-xs text-gray-500">
                                 ID: {vocalist._id.slice(-6)}
                               </p>
-                            )}
+                            )} */}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      {/* <td className="px-4 py-3">
                         <div className="space-y-1">
                           {phone && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -297,7 +312,7 @@ const VocalistPage = () => {
                             ? "Active"
                             : "Inactive"}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {vocalist?.specialty && (
                           <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
@@ -306,12 +321,18 @@ const VocalistPage = () => {
                         )}
                         {(vocalist?.hourlyRate || vocalist?.rate) && (
                           <div className="mt-1 text-xs font-semibold">
-                            Rate: {(vocalist?.hourlyRate || vocalist?.rate).toLocaleString()} MMK/hr
+                            Rate:{" "}
+                            {(
+                              vocalist?.hourlyRate || vocalist?.rate
+                            ).toLocaleString()}{" "}
+                            MMK/hr
                           </div>
                         )}
-                        {!vocalist?.specialty && !vocalist?.hourlyRate && !vocalist?.rate && (
-                          <span className="text-gray-400">—</span>
-                        )}
+                        {!vocalist?.specialty &&
+                          !vocalist?.hourlyRate &&
+                          !vocalist?.rate && (
+                            <span className="text-gray-400">—</span>
+                          )}
                       </td>
                     </tr>
                   );
@@ -354,7 +375,10 @@ const VocalistPage = () => {
                   type="text"
                   value={formData.vocalistName}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, vocalistName: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      vocalistName: e.target.value,
+                    }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
                   placeholder="Enter vocalist name"
@@ -371,7 +395,10 @@ const VocalistPage = () => {
                   type="number"
                   value={formData.hourlyRate}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, hourlyRate: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      hourlyRate: e.target.value,
+                    }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
                   placeholder="Enter hourly rate"
@@ -414,4 +441,3 @@ const VocalistPage = () => {
 };
 
 export default VocalistPage;
-

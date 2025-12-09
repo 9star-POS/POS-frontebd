@@ -193,7 +193,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
               disabled={loading}
               className="bg-primary border border-primary text-white w-32 rounded-md px-4 py-2 hover:bg-white hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Adding..." : "Add Dish"}
+              {loading ? "Adding..." : "Add"}
             </button>
           </div>
         </div>

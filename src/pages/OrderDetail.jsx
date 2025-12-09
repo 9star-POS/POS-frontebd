@@ -28,6 +28,7 @@ function OrderDetail() {
       const res = await getRestaurantOrderById(id);
       if (res?.success) {
         setOrder(res.data);
+        console.log("order", order);
       } else {
         setError(res.message || "Failed to load order");
       }
@@ -325,9 +326,11 @@ function OrderDetail() {
                 </span>
               </div>
               <div className="flex justify-between text-lg">
-                <span className="text-gray-600">Tax ({order.tax}%):</span>
+                <span className="text-gray-600">
+                  Tax ({(order.tax / order.subTotal) * 100}%):
+                </span>
                 <span className="font-semibold text-gray-800">
-                  {((order.subTotal * order.tax) / 100).toLocaleString()} MMK
+                  {order.tax.toLocaleString()} MMK
                 </span>
               </div>
               {order.serviceFee != null && order.serviceFee > 0 && (

@@ -213,7 +213,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             textTransform: "uppercase",
           }}
         >
-          {isKtv ? "KTV Receipt" : "Restaurant Receipt"}
+          Nine Star
         </h2>
         <div
           style={{
@@ -335,8 +335,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
         )}
       </div>
 
-      {/* Room Service (KTV only) */}
-      {isKtv && getRoomCharges() > 0 && (
+      {/* Room Service - Hidden for KTV orders */}
+      {!isKtv && getRoomCharges() > 0 && (
         <div
           style={{
             marginBottom: "10px",
@@ -359,8 +359,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
         </div>
       )}
 
-      {/* Vocalist Charges (KTV only) */}
-      {isKtv && getVocalistCharges() > 0 && (
+      {/* Vocalist Charges - Hidden for KTV orders */}
+      {!isKtv && getVocalistCharges() > 0 && (
         <div
           style={{
             marginBottom: "10px",
@@ -464,7 +464,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
       </div>
 
       {/* Payment Method */}
-      {order?.paymentMethod && order.paymentMethod !== "none" && (
+      {/* {order?.paymentMethod && order.paymentMethod !== "none" && (
         <div
           style={{
             marginBottom: "15px",
@@ -485,7 +485,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             </span>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Footer */}
       <div

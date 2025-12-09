@@ -118,6 +118,7 @@ const KitchenPage = () => {
             const notificationResponse = await createNotification(
               notificationData
             );
+            console.log("notificationResponse", notificationResponse);
 
             if (notificationResponse?.success) {
               console.log(
