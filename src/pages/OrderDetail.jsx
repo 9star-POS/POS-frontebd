@@ -189,7 +189,7 @@ function OrderDetail() {
         </div>
 
         {/* Order Information Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gray-50">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <Receipt className="text-primary" size={24} />
@@ -208,7 +208,7 @@ function OrderDetail() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow-sm">
+          {/* <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <CreditCard className="text-primary" size={24} />
               <h3 className="font-semibold text-lg">Payment Method</h3>
@@ -216,7 +216,7 @@ function OrderDetail() {
             <p className="text-xl font-semibold text-gray-800 capitalize">
               {order.paymentMethod === "none" ? "Cash" : order.paymentMethod}
             </p>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">

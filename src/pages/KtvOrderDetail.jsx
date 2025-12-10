@@ -164,7 +164,7 @@ function KtvOrderDetail() {
         </div>
 
         {/* Room & Payment Information Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gray-50">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <DoorOpen className="text-primary" size={24} />
@@ -178,7 +178,7 @@ function KtvOrderDetail() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow-sm">
+          {/* <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <CreditCard className="text-primary" size={24} />
               <h3 className="font-semibold text-lg">Payment Method</h3>
@@ -188,7 +188,7 @@ function KtvOrderDetail() {
                 ? "Not Paid"
                 : order.paymentMethod}
             </p>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
@@ -426,9 +426,10 @@ function KtvOrderDetail() {
                 <div className="flex justify-between text-lg">
                   <span className="text-gray-600">Service Fee:</span>
                   <span className="font-semibold text-gray-800">
-                    {typeof order.serviceFee === 'number' 
-                      ? order.serviceFee.toLocaleString() 
-                      : order.serviceFee} MMK
+                    {typeof order.serviceFee === "number"
+                      ? order.serviceFee.toLocaleString()
+                      : order.serviceFee}{" "}
+                    MMK
                   </span>
                 </div>
               )}
