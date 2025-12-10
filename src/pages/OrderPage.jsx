@@ -8,6 +8,7 @@ import OrderTable from "../components/Orders/OrderTable";
 // import { TbReport } from "react-icons/tb";
 import Calendar from "../components/Calender";
 import deleteOrders from "../api/Order/deleteOrder";
+import softDeleteRestaurantOrder from "../api/Order/softDeleteRestaurantOrder";
 import EditOrder from "./EditOrder";
 // import getReport from "../api/report/getReport";
 import NoItems from "../components/NoItems";
@@ -85,6 +86,16 @@ const OrdersPage = () => {
       closeOrderDetails();
       setIsDeleteOpen(false);
     }
+  };
+
+  const handleSoftDeleteRestaurantOrder = async (orderId) => {
+    const res = await softDeleteRestaurantOrder(orderId);
+    if (res?.success) {
+      // Refresh orders list
+      await getOrders();
+      return res;
+    }
+    throw new Error(res?.message || "Failed to delete order");
   };
 
   const handleEditOrder = () => {
@@ -263,6 +274,7 @@ const OrdersPage = () => {
                 sendData={handleDataFromChild}
                 setOrderIds={getOerderIds}
                 deleteOrder={handleDeleteOrder}
+                onSoftDelete={handleSoftDeleteRestaurantOrder}
               />
             )}
           </div>

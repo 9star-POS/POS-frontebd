@@ -214,6 +214,7 @@ const KitchenPage = () => {
     // Listen for "new-restaurant-order" event
     socket.on("new-restaurant-order", (data) => {
       console.log("New restaurant order received:", data);
+      fetchOrders();
       // try {
       //   // Transform the incoming order data to match our structure
       //   if (data && Array.isArray(data.items)) {
@@ -322,6 +323,7 @@ const KitchenPage = () => {
 
     socket.on("new-ktv-order", (data) => {
       console.log("New KTV order received:", data);
+      fetchOrders();
       // try {
       //   // Transform the incoming order data to match our structure
       //   if (data && Array.isArray(data.items)) {

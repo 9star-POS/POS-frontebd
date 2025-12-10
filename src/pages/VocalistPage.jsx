@@ -8,12 +8,17 @@ import {
   Mail,
   Plus,
   X,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
 import getAllVocalists from "../api/KTV/getAllVocalists";
 import createVocalist from "../api/KTV/createVocalist";
+import updateVocalist from "../api/KTV/updateVocalist";
+import deleteVocalist from "../api/KTV/deleteVocalist";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
+import DeleteModel from "../components/DeleteModel";
 
 const VocalistPage = () => {
   const [vocalists, setVocalists] = useState([]);
@@ -23,7 +28,17 @@ const VocalistPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [selectedVocalist, setSelectedVocalist] = useState(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingVocalistId, setDeletingVocalistId] = useState(null);
+  const [pendingDeleteVocalist, setPendingDeleteVocalist] = useState(null);
   const [formData, setFormData] = useState({
+    vocalistName: "",
+    hourlyRate: "",
+  });
+  const [editFormData, setEditFormData] = useState({
     vocalistName: "",
     hourlyRate: "",
   });
@@ -123,6 +138,96 @@ const VocalistPage = () => {
       toast.error(err?.message || "Failed to create vocalist");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleEditClick = (vocalist) => {
+    setSelectedVocalist(vocalist);
+    setEditFormData({
+      vocalistName: vocalist?.vocalistName || vocalist?.name || "",
+      hourlyRate: vocalist?.hourlyRate || vocalist?.rate || "",
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateVocalist = async (event) => {
+    event.preventDefault();
+
+    if (!selectedVocalist) return;
+
+    const vocalistId = selectedVocalist._id || selectedVocalist.id;
+    if (!vocalistId) {
+      toast.error("Invalid vocalist ID");
+      return;
+    }
+
+    if (!editFormData.vocalistName.trim()) {
+      toast.error("Please enter vocalist name");
+      return;
+    }
+    if (!editFormData.hourlyRate || Number(editFormData.hourlyRate) <= 0) {
+      toast.error("Please enter a valid hourly rate");
+      return;
+    }
+
+    try {
+      setEditing(true);
+      const payload = {
+        vocalistName: editFormData.vocalistName.trim(),
+        hourlyRate: Number(editFormData.hourlyRate),
+      };
+
+      const res = await updateVocalist(vocalistId, payload);
+      if (res?.success) {
+        toast.success(res?.message || "Vocalist updated successfully");
+        setIsEditOpen(false);
+        setSelectedVocalist(null);
+        setEditFormData({
+          vocalistName: "",
+          hourlyRate: "",
+        });
+        await fetchVocalists();
+      } else {
+        toast.error(res?.message || "Failed to update vocalist");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to update vocalist");
+    } finally {
+      setEditing(false);
+    }
+  };
+
+  const handleDeleteClick = (vocalist) => {
+    setPendingDeleteVocalist(vocalist);
+    setIsDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteVocalist) return;
+
+    const vocalistId = pendingDeleteVocalist._id || pendingDeleteVocalist.id;
+    if (!vocalistId) {
+      toast.error("Invalid vocalist ID");
+      setIsDeleteOpen(false);
+      setPendingDeleteVocalist(null);
+      return;
+    }
+
+    try {
+      setDeletingVocalistId(vocalistId);
+      const res = await deleteVocalist(vocalistId);
+      if (res?.success) {
+        toast.success(res?.message || "Vocalist deleted successfully");
+        await fetchVocalists();
+        setIsDeleteOpen(false);
+        setPendingDeleteVocalist(null);
+      } else {
+        toast.error(res?.message || "Failed to delete vocalist");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to delete vocalist");
+    } finally {
+      setDeletingVocalistId(null);
     }
   };
 
@@ -249,6 +354,9 @@ const VocalistPage = () => {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Hourly Rate
                   </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -321,11 +429,10 @@ const VocalistPage = () => {
                         )}
                         {(vocalist?.hourlyRate || vocalist?.rate) && (
                           <div className="mt-1 text-md font-semibold">
-                          
                             {(
                               vocalist?.hourlyRate || vocalist?.rate
-                            ).toLocaleString()} MMK
-                          
+                            ).toLocaleString()}{" "}
+                            MMK
                           </div>
                         )}
                         {!vocalist?.specialty &&
@@ -333,6 +440,34 @@ const VocalistPage = () => {
                           !vocalist?.rate && (
                             <span className="text-gray-400">—</span>
                           )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEditClick(vocalist)}
+                            disabled={editing && selectedVocalist?._id === id}
+                            className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-blue-500 hover:text-blue-700"
+                            title="Edit Vocalist"
+                          >
+                            {editing && selectedVocalist?._id === id ? (
+                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Edit size={18} />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(vocalist)}
+                            disabled={deletingVocalistId === id}
+                            className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-red-500 hover:text-red-700"
+                            title="Delete Vocalist"
+                          >
+                            {deletingVocalistId === id ? (
+                              <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Trash2 size={18} />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -436,6 +571,129 @@ const VocalistPage = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Vocalist Modal */}
+      {isEditOpen && selectedVocalist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                setIsEditOpen(false);
+                setSelectedVocalist(null);
+                setEditFormData({
+                  vocalistName: "",
+                  hourlyRate: "",
+                });
+              }}
+              disabled={editing}
+            >
+              <X size={20} />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Mic className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Edit Vocalist</h2>
+                <p className="text-sm text-gray-500">
+                  Update vocalist information
+                </p>
+              </div>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleUpdateVocalist}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Vocalist Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.vocalistName}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      vocalistName: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Enter vocalist name"
+                  disabled={editing}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hourly Rate (MMK) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={editFormData.hourlyRate}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      hourlyRate: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Enter hourly rate"
+                  disabled={editing}
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
+                  onClick={() => {
+                    setIsEditOpen(false);
+                    setSelectedVocalist(null);
+                    setEditFormData({
+                      vocalistName: "",
+                      hourlyRate: "",
+                    });
+                  }}
+                  disabled={editing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={editing}
+                >
+                  {editing ? "Updating..." : "Update Vocalist"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModel
+        isOpen={isDeleteOpen}
+        onClose={() => {
+          if (!deletingVocalistId) {
+            setIsDeleteOpen(false);
+            setPendingDeleteVocalist(null);
+          }
+        }}
+        submit={handleConfirmDelete}
+        text={
+          pendingDeleteVocalist
+            ? `Are you sure you want to delete "${
+                pendingDeleteVocalist?.name ||
+                pendingDeleteVocalist?.vocalistName ||
+                "this vocalist"
+              }"? This action cannot be undone.`
+            : "Are you sure you want to delete this vocalist?"
+        }
+      />
     </div>
   );
 };

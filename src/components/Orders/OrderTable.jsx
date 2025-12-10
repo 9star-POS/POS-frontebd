@@ -5,12 +5,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DeleteModel from "../DeleteModel";
 
-function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
+function OrderTable({
+  sendData,
+  orders,
+  deleteOrder,
+  setOrderIds,
+  onSoftDelete,
+}) {
   // console.log(orders[0].tax);
   const navigate = useNavigate();
   const [selectedOrders, setselectedOrders] = useState([]); // For selected mail _IDs
   const [orderId, setOrderId] = useState([]);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false); // For selected mail _IDs
+  const [deletingOrderId, setDeletingOrderId] = useState(null);
 
   const handleViewOrder = (order, e) => {
     e.stopPropagation();
@@ -24,6 +31,15 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
 
   const handleSendData = (orderId) => {
     sendData(orderId);
+  };
+
+  const handleDeleteClick = (order, e) => {
+    e.stopPropagation();
+    // Only allow delete for restaurant orders (not KTV orders)
+    if (!order.roomService) {
+      setOrderId([order._id]);
+      setIsDeleteOpen(true);
+    }
   };
 
   useEffect(() => {
@@ -163,20 +179,25 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
                   <button
                     className="text-blue-500 font-bold hover:text-blue-700"
                     onClick={(e) => handleViewOrder(order, e)}
+                    title="View Order"
                   >
                     <MdOutlineRemoveRedEye size={25} />
                   </button>
-                  {/* <button
-                    className="text-blzck hover:text-gray-700"
-                    onClick={(e) => {
-                      setOrderId([order._id]);
-                      setIsDeleteOpen(true);
-                      e.stopPropagation();
-                      // deleteOrder([order._id]);
-                    }}
-                  >
-                    <FaRegTrashAlt size={23} />
-                  </button> */}
+                  {/* Only show delete button for restaurant orders (not KTV orders) */}
+                  {!order.roomService && (
+                    <button
+                      className="text-red-500 font-bold hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={(e) => handleDeleteClick(order, e)}
+                      disabled={deletingOrderId === order._id}
+                      title="Delete Order"
+                    >
+                      {deletingOrderId === order._id ? (
+                        <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <FaRegTrashAlt size={23} />
+                      )}
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>
@@ -185,11 +206,25 @@ function OrderTable({ sendData, orders, deleteOrder, setOrderIds }) {
       </table>
       <DeleteModel
         isOpen={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
-        submit={() => {
-          deleteOrder(orderId);
+        onClose={() => {
           setIsDeleteOpen(false);
+          setDeletingOrderId(null);
         }}
+        submit={async () => {
+          if (orderId.length > 0 && onSoftDelete) {
+            setDeletingOrderId(orderId[0]);
+            try {
+              await onSoftDelete(orderId[0]);
+              setIsDeleteOpen(false);
+              setOrderId([]);
+            } catch (error) {
+              console.error("Error deleting order:", error);
+            } finally {
+              setDeletingOrderId(null);
+            }
+          }
+        }}
+        text="Are you sure you want to delete this order? This action cannot be undone."
       />
     </div>
   );

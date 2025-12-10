@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import getExpenses from "../api/expense/getExpenses";
 import addExpense from "../api/expense/addExpense";
+import updateExpense from "../api/expense/updateExpense";
+import deleteExpense from "../api/expense/deleteExpense";
 import { format } from "date-fns";
+import DeleteModel from "../components/DeleteModel";
 import Calendar from "../components/Calender";
 import { Calendar as DatePickerCalendar } from "react-date-range";
 import "react-date-range/dist/styles.css";
@@ -15,6 +18,8 @@ import {
   Plus,
   X,
   Eye,
+  Trash2,
+  Edit,
 } from "lucide-react";
 
 const ExpenseTrackerPage = () => {
@@ -24,6 +29,10 @@ const ExpenseTrackerPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState(null);
+  const [pendingDeleteExpense, setPendingDeleteExpense] = useState(null);
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const datePickerRef = useRef(null);
   const [formData, setFormData] = useState({
@@ -311,30 +320,56 @@ const ExpenseTrackerPage = () => {
         manualDate: manualDateUTC,
       };
 
-      // console.log("Expense Data:", expenseData);
-
-      const response = await addExpense(expenseData);
-
-      if (response?.success) {
-        toast.success("Expense added successfully");
-        setIsModalOpen(false);
-        const today = format(new Date(), "yyyy-MM-dd");
-        const todayDisplay = format(new Date(), "dd/MM/yyyy");
-        setFormData({
-          title: "",
-          description: "",
-          expense: "",
-          manualDate: today,
-          manualDateDisplay: todayDisplay,
-        });
-        // Refresh expenses list
-        fetchExpenses();
+      let response;
+      if (editingExpenseId) {
+        // Update existing expense
+        response = await updateExpense(editingExpenseId, expenseData);
+        if (response?.success) {
+          toast.success("Expense updated successfully");
+          setIsModalOpen(false);
+          setEditingExpenseId(null);
+          const today = format(new Date(), "yyyy-MM-dd");
+          const todayDisplay = format(new Date(), "dd/MM/yyyy");
+          setFormData({
+            title: "",
+            description: "",
+            expense: "",
+            manualDate: today,
+            manualDateDisplay: todayDisplay,
+            manualTime: format(new Date(), "HH:mm"),
+          });
+          // Refresh expenses list
+          fetchExpenses(filters);
+        } else {
+          toast.error(response.message || "Failed to update expense");
+        }
       } else {
-        toast.error(response.message || "Failed to add expense");
+        // Add new expense
+        response = await addExpense(expenseData);
+        if (response?.success) {
+          toast.success("Expense added successfully");
+          setIsModalOpen(false);
+          const today = format(new Date(), "yyyy-MM-dd");
+          const todayDisplay = format(new Date(), "dd/MM/yyyy");
+          setFormData({
+            title: "",
+            description: "",
+            expense: "",
+            manualDate: today,
+            manualDateDisplay: todayDisplay,
+            manualTime: format(new Date(), "HH:mm"),
+          });
+          // Refresh expenses list
+          fetchExpenses(filters);
+        } else {
+          toast.error(response.message || "Failed to add expense");
+        }
       }
     } catch (error) {
-      toast.error("Error adding expense");
-      console.error("Error adding expense:", error);
+      toast.error(
+        editingExpenseId ? "Error updating expense" : "Error adding expense"
+      );
+      console.error("Error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -342,6 +377,7 @@ const ExpenseTrackerPage = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditingExpenseId(null);
     const today = format(new Date(), "yyyy-MM-dd");
     const todayDisplay = format(new Date(), "dd/MM/yyyy");
     const currentTime = format(new Date(), "HH:mm");
@@ -353,6 +389,108 @@ const ExpenseTrackerPage = () => {
       manualDateDisplay: todayDisplay,
       manualTime: currentTime,
     });
+  };
+
+  const handleEditClick = (expense) => {
+    setEditingExpenseId(expense._id || expense.id);
+
+    // Parse the manualDate from the expense
+    let dateValue = "";
+    let dateDisplay = "";
+    let timeValue = "00:00";
+
+    if (expense.manualDate) {
+      try {
+        // Parse ISO date string (e.g., "2024-12-10T15:01:22.892Z" or "2024-12-10T15:01:22.892+06:30")
+        const dateObj = new Date(expense.manualDate);
+        if (!isNaN(dateObj.getTime())) {
+          // Extract date parts
+          const year = dateObj.getFullYear();
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const hours = String(dateObj.getHours()).padStart(2, "0");
+          const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+
+          dateValue = `${year}-${month}-${day}`;
+          dateDisplay = `${day}/${month}/${year}`;
+          timeValue = `${hours}:${minutes}`;
+        }
+      } catch (error) {
+        console.error("Error parsing date:", error);
+      }
+    }
+
+    // If manualDate parsing failed, try createdAt
+    if (!dateValue && expense.createdAt) {
+      try {
+        const dateObj = new Date(expense.createdAt);
+        if (!isNaN(dateObj.getTime())) {
+          const year = dateObj.getFullYear();
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const hours = String(dateObj.getHours()).padStart(2, "0");
+          const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+
+          dateValue = `${year}-${month}-${day}`;
+          dateDisplay = `${day}/${month}/${year}`;
+          timeValue = `${hours}:${minutes}`;
+        }
+      } catch (error) {
+        console.error("Error parsing createdAt:", error);
+      }
+    }
+
+    // Default to today if still no date
+    if (!dateValue) {
+      dateValue = format(new Date(), "yyyy-MM-dd");
+      dateDisplay = format(new Date(), "dd/MM/yyyy");
+      timeValue = format(new Date(), "HH:mm");
+    }
+
+    setFormData({
+      title: expense.title || "",
+      description: expense.description || "",
+      expense: expense.expense || "",
+      manualDate: dateValue,
+      manualDateDisplay: dateDisplay,
+      manualTime: timeValue,
+    });
+
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = (expense) => {
+    setPendingDeleteExpense(expense);
+    setIsDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteExpense) return;
+
+    const expenseId = pendingDeleteExpense._id || pendingDeleteExpense.id;
+    if (!expenseId) {
+      toast.error("Invalid expense ID");
+      setIsDeleteOpen(false);
+      setPendingDeleteExpense(null);
+      return;
+    }
+
+    try {
+      setDeletingExpenseId(expenseId);
+      const res = await deleteExpense(expenseId);
+      if (res?.success) {
+        toast.success(res?.message || "Expense deleted successfully");
+        await fetchExpenses(filters);
+        setIsDeleteOpen(false);
+        setPendingDeleteExpense(null);
+      } else {
+        toast.error(res?.message || "Failed to delete expense");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to delete expense");
+    } finally {
+      setDeletingExpenseId(null);
+    }
   };
 
   return (
@@ -517,17 +655,43 @@ const ExpenseTrackerPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => {
-                          setSelectedExpense(expense);
-                          setIsDetailModalOpen(true);
-                        }}
-                        className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
-                        title="View Details"
-                      >
-                        <Eye size={18} />
-                        <span className="text-sm">View</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setSelectedExpense(expense);
+                            setIsDetailModalOpen(true);
+                          }}
+                          className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                          title="View Details"
+                        >
+                          <Eye size={18} />
+                          <span className="text-sm">View</span>
+                        </button>
+                        <button
+                          onClick={() => handleEditClick(expense)}
+                          disabled={
+                            isSubmitting || deletingExpenseId === expense._id
+                          }
+                          className="text-blue-500 hover:text-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Edit Expense"
+                        >
+                          <Edit size={18} />
+                          <span className="text-sm">Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(expense)}
+                          disabled={deletingExpenseId === expense._id}
+                          className="text-red-500 hover:text-red-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete Expense"
+                        >
+                          {deletingExpenseId === expense._id ? (
+                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
+                          <span className="text-sm">Delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -543,7 +707,9 @@ const ExpenseTrackerPage = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             {/* Header */}
             <div className="flex justify-between items-center p-5 border-b">
-              <h3 className="text-lg font-bold">Add New Expense</h3>
+              <h3 className="text-lg font-bold">
+                {editingExpenseId ? "Edit Expense" : "Add New Expense"}
+              </h3>
               <button
                 onClick={handleCloseModal}
                 className="text-gray-500 hover:text-gray-700"
@@ -680,7 +846,13 @@ const ExpenseTrackerPage = () => {
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold disabled:opacity-50"
                 >
-                  {isSubmitting ? "Adding..." : "Add Expense"}
+                  {isSubmitting
+                    ? editingExpenseId
+                      ? "Updating..."
+                      : "Adding..."
+                    : editingExpenseId
+                    ? "Update Expense"
+                    : "Add Expense"}
                 </button>
               </div>
             </form>
@@ -774,6 +946,25 @@ const ExpenseTrackerPage = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModel
+        isOpen={isDeleteOpen}
+        onClose={() => {
+          if (!deletingExpenseId) {
+            setIsDeleteOpen(false);
+            setPendingDeleteExpense(null);
+          }
+        }}
+        submit={handleConfirmDelete}
+        text={
+          pendingDeleteExpense
+            ? `Are you sure you want to delete the expense "${
+                pendingDeleteExpense?.title || "this expense"
+              }"? This action cannot be undone.`
+            : "Are you sure you want to delete this expense?"
+        }
+      />
     </div>
   );
 };

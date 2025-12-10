@@ -4,7 +4,7 @@ import { toast } from "sonner";
 const deleteDebt = async (id) => {
   const toastId = toast.loading("Deleting debt...");
   try {
-    const res = await axios.patch(`api/v1/debt-tracker/${id}`);
+    const res = await axios.delete(`api/v1/debt-tracker/${id}`);
     if (res?.data?.success) {
       toast.success(res?.data?.message || "Debt deleted successfully", {
         id: toastId,
@@ -19,16 +19,12 @@ const deleteDebt = async (id) => {
       return res?.data || { error: "Failed to delete debt" };
     }
   } catch (error) {
-    toast.error(
-      error?.response?.data?.message || "Failed to delete debt",
-      {
-        id: toastId,
-        autoClose: 2000,
-      }
-    );
+    toast.error(error?.response?.data?.message || "Failed to delete debt", {
+      id: toastId,
+      autoClose: 2000,
+    });
     return error?.response?.data || error;
   }
 };
 
 export default deleteDebt;
-
