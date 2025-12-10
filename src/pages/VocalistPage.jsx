@@ -320,12 +320,12 @@ const VocalistPage = () => {
                           </span>
                         )}
                         {(vocalist?.hourlyRate || vocalist?.rate) && (
-                          <div className="mt-1 text-xs font-semibold">
-                            Rate:{" "}
+                          <div className="mt-1 text-md font-semibold">
+                          
                             {(
                               vocalist?.hourlyRate || vocalist?.rate
-                            ).toLocaleString()}{" "}
-                            MMK/hr
+                            ).toLocaleString()} MMK
+                          
                           </div>
                         )}
                         {!vocalist?.specialty &&

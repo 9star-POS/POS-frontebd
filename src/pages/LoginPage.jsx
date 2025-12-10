@@ -26,7 +26,7 @@ const LoginPage = () => {
       };
       localStorage.setItem("bz-user", JSON.stringify(user));
       localStorage.setItem("biz-bozz-token", res.data.token);
-      
+
       // Redirect based on user role
       if (user.role === "ktv-waiter") {
         window.location.href = "/ktv";
@@ -94,7 +94,7 @@ const LoginPage = () => {
             type="submit"
             className="w-full bg-primary mt-5 text-white font-bold py-4 rounded hover:bg-blue-600 transition duration-200"
           >
-            Login BIZ BOZZ
+            Login
           </button>
         </form>
         {/* <div className="border-b border-gray-500 mt-5"></div>

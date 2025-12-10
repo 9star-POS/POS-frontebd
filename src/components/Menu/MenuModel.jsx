@@ -233,7 +233,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
                 className="hidden"
               />
               <div className="flex items-center justify-between border border-primary rounded-md px-3 py-2">
-                <p className="font-medium text-primary">Upload Dish Image</p>
+                <p className="font-medium text-primary">Upload Image</p>
                 <label
                   htmlFor="file-upload"
                   className="cursor-pointer text-white bg-primary text-sm rounded-md px-4 py-1 text-center hover:bg-prilight hover:text-white border boder-primary transition"
