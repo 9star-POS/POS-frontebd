@@ -242,7 +242,7 @@ const VocalistPage = () => {
   return (
     <div className="p-5 h-[calc(100vh-90px)]">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-secondary rounded-lg">
             <Mic className="w-6 h-6 text-primary" />

@@ -214,218 +214,22 @@ const KitchenPage = () => {
     // Listen for "new-restaurant-order" event
     socket.on("new-restaurant-order", (data) => {
       console.log("New restaurant order received:", data);
-      // try {
-      //   // Transform the incoming order data to match our structure
-      //   if (data && Array.isArray(data.items)) {
-      //     // If data contains multiple items
-      //     const newOrderItems = data.items.map((item) => ({
-      //       id: item.orderItemId || Date.now() + Math.random(),
-      //       orderId: item.orderId || data.orderId,
-      //       orderItemId: item.orderItemId,
-      //       stockName: item.stockName || item.name,
-      //       quantity: item.quantity || 1,
-      //       kitchenStatus: item.kitchenStatus || "pending",
-      //       notes: item.notes || "",
-      //       orderType: item.orderType || "restaurant",
-      //       roomNumber: item.roomNumber,
-      //       tableNumber: item.tableNumber || data.tableNumber,
-      //       createdAt: item.createdAt || new Date().toISOString(),
-      //       requiresCooking: item.requiresCooking !== false,
-      //       orderDisplay: `${(
-      //         item.orderType || "restaurant"
-      //       ).toUpperCase()} #${(item.orderId || data.orderId || "").slice(
-      //         -6
-      //       )}`,
-      //       statusColor:
-      //         (item.kitchenStatus || "pending") === "pending"
-      //           ? "orange"
-      //           : "green",
-      //     }));
-
-      //     // Add new orders to the existing list (prepend to show newest first)
-      //     setAllOrders((prev) => {
-      //       // Filter out duplicates based on orderItemId
-      //       const existingIds = new Set(prev.map((order) => order.orderItemId));
-      //       const uniqueNewItems = newOrderItems.filter(
-      //         (item) => !existingIds.has(item.orderItemId)
-      //       );
-      //       return [...uniqueNewItems, ...prev];
-      //     });
-
-      //     // Show toast notification for new orders
-      //     const orderCount = newOrderItems.length;
-      //     const tableInfo = data.tableNumber
-      //       ? `Table ${data.tableNumber}`
-      //       : "Restaurant";
-      //     toast.success(
-      //       `New order from ${tableInfo}: ${orderCount} item${
-      //         orderCount > 1 ? "s" : ""
-      //       }`,
-      //       {
-      //         duration: 5000,
-      //       }
-      //     );
-      //   } else if (data && data.orderItemId) {
-      //     // If data is a single item
-      //     const newOrderItem = {
-      //       id: data.orderItemId || Date.now() + Math.random(),
-      //       orderId: data.orderId,
-      //       orderItemId: data.orderItemId,
-      //       stockName: data.stockName || data.name,
-      //       quantity: data.quantity || 1,
-      //       kitchenStatus: data.kitchenStatus || "pending",
-      //       notes: data.notes || "",
-      //       orderType: data.orderType || "restaurant",
-      //       roomNumber: data.roomNumber,
-      //       tableNumber: data.tableNumber,
-      //       createdAt: data.createdAt || new Date().toISOString(),
-      //       requiresCooking: data.requiresCooking !== false,
-      //       orderDisplay: `${(
-      //         data.orderType || "restaurant"
-      //       ).toUpperCase()} #${(data.orderId || "").slice(-6)}`,
-      //       statusColor:
-      //         (data.kitchenStatus || "pending") === "pending"
-      //           ? "orange"
-      //           : "green",
-      //     };
-
-      //     // Add new order to the existing list (prepend to show newest first)
-      //     setAllOrders((prev) => {
-      //       // Check if order already exists
-      //       const exists = prev.some(
-      //         (order) => order.orderItemId === newOrderItem.orderItemId
-      //       );
-      //       if (exists) {
-      //         return prev;
-      //       }
-      //       return [newOrderItem, ...prev];
-      //     });
-
-      //     // Show toast notification
-      //     const tableInfo = data.tableNumber
-      //       ? `Table ${data.tableNumber}`
-      //       : "Restaurant";
-      //     toast.success(
-      //       `New order from ${tableInfo}: ${newOrderItem.quantity}x ${newOrderItem.stockName}`,
-      //       {
-      //         duration: 5000,
-      //       }
-      //     );
-      //   }
-      // } catch (error) {
-      //   console.error("Error processing new restaurant order:", error);
-      //   toast.error("Error processing new order", {
-      //     duration: 3000,
-      //   });
-      // }
+      fetchOrders(true);
     });
 
     socket.on("new-ktv-order", (data) => {
       console.log("New KTV order received:", data);
-      // try {
-      //   // Transform the incoming order data to match our structure
-      //   if (data && Array.isArray(data.items)) {
-      //     // If data contains multiple items
-      //     const newOrderItems = data.items.map((item) => ({
-      //       id: item.orderItemId || Date.now() + Math.random(),
-      //       orderId: item.orderId || data.orderId,
-      //       orderItemId: item.orderItemId,
-      //       stockName: item.stockName || item.name,
-      //       quantity: item.quantity || 1,
-      //       kitchenStatus: item.kitchenStatus || "pending",
-      //       notes: item.notes || "",
-      //       orderType: item.orderType || "restaurant",
-      //       roomNumber: item.roomNumber,
-      //       tableNumber: item.tableNumber || data.tableNumber,
-      //       createdAt: item.createdAt || new Date().toISOString(),
-      //       requiresCooking: item.requiresCooking !== false,
-      //       orderDisplay: `${(
-      //         item.orderType || "restaurant"
-      //       ).toUpperCase()} #${(item.orderId || data.orderId || "").slice(
-      //         -6
-      //       )}`,
-      //       statusColor:
-      //         (item.kitchenStatus || "pending") === "pending"
-      //           ? "orange"
-      //           : "green",
-      //     }));
+      fetchOrders(true);
+    });
 
-      //     // Add new orders to the existing list (prepend to show newest first)
-      //     setAllOrders((prev) => {
-      //       // Filter out duplicates based on orderItemId
-      //       const existingIds = new Set(prev.map((order) => order.orderItemId));
-      //       const uniqueNewItems = newOrderItems.filter(
-      //         (item) => !existingIds.has(item.orderItemId)
-      //       );
-      //       return [...uniqueNewItems, ...prev];
-      //     });
+    socket.on("restaurant-order-updated", (data) => {
+      console.log("Restaurant order updated:", data);
+      fetchOrders(true);
+    });
 
-      //     // Show toast notification for new orders
-      //     const orderCount = newOrderItems.length;
-      //     const tableInfo = data.tableNumber
-      //       ? `Table ${data.tableNumber}`
-      //       : "Restaurant";
-      //     toast.success(
-      //       `New order from ${tableInfo}: ${orderCount} item${
-      //         orderCount > 1 ? "s" : ""
-      //       }`,
-      //       {
-      //         duration: 5000,
-      //       }
-      //     );
-      //   } else if (data && data.orderItemId) {
-      //     // If data is a single item
-      //     const newOrderItem = {
-      //       id: data.orderItemId || Date.now() + Math.random(),
-      //       orderId: data.orderId,
-      //       orderItemId: data.orderItemId,
-      //       stockName: data.stockName || data.name,
-      //       quantity: data.quantity || 1,
-      //       kitchenStatus: data.kitchenStatus || "pending",
-      //       notes: data.notes || "",
-      //       orderType: data.orderType || "restaurant",
-      //       roomNumber: data.roomNumber,
-      //       tableNumber: data.tableNumber,
-      //       createdAt: data.createdAt || new Date().toISOString(),
-      //       requiresCooking: data.requiresCooking !== false,
-      //       orderDisplay: `${(
-      //         data.orderType || "restaurant"
-      //       ).toUpperCase()} #${(data.orderId || "").slice(-6)}`,
-      //       statusColor:
-      //         (data.kitchenStatus || "pending") === "pending"
-      //           ? "orange"
-      //           : "green",
-      //     };
-
-      //     // Add new order to the existing list (prepend to show newest first)
-      //     setAllOrders((prev) => {
-      //       // Check if order already exists
-      //       const exists = prev.some(
-      //         (order) => order.orderItemId === newOrderItem.orderItemId
-      //       );
-      //       if (exists) {
-      //         return prev;
-      //       }
-      //       return [newOrderItem, ...prev];
-      //     });
-
-      //     // Show toast notification
-      //     const tableInfo = data.tableNumber
-      //       ? `Table ${data.tableNumber}`
-      //       : "Restaurant";
-      //     toast.success(
-      //       `New order from ${tableInfo}: ${newOrderItem.quantity}x ${newOrderItem.stockName}`,
-      //       {
-      //         duration: 5000,
-      //       }
-      //     );
-      //   }
-      // } catch (error) {
-      //   console.error("Error processing new restaurant order:", error);
-      //   toast.error("Error processing new order", {
-      //     duration: 3000,
-      //   });
-      // }
+    socket.on("ktv-order-updated", (data) => {
+      console.log("KTV order updated:", data);
+      fetchOrders(true);
     });
 
     // Cleanup on unmount
@@ -627,7 +431,7 @@ const KitchenPage = () => {
 
                   {/* Item Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                    <div className="flex flex-col sm:flex-row md:items-center justify-between gap-2 mb-2">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
                           {item.stockName}

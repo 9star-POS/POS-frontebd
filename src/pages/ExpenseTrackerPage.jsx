@@ -494,10 +494,12 @@ const ExpenseTrackerPage = () => {
   };
 
   return (
-    <div className="p-5 h-[calc(100vh-90px)]">
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="sub-header font-bold">Expense Tracker</h1>
-        <div className="flex gap-2 flex-wrap justify-end">
+    <div className="p-3 md:p-5 h-[calc(100vh-90px)] overflow-y-auto">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-5 gap-3">
+        <h1 className="sub-header font-bold text-xl md:text-2xl">
+          Expense Tracker
+        </h1>
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap justify-end">
           <Calendar
             sendDate={handleDateRangeChange}
             selectedStartDate={filters.startDate}
@@ -508,21 +510,22 @@ const ExpenseTrackerPage = () => {
           {(filters.startDate !== today || filters.endDate !== today) && (
             <button
               onClick={handleResetFilters}
-              className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold"
+              className="border border-gray-300 px-3 md:px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold text-sm md:text-base"
             >
               Reset
             </button>
           )}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 font-semibold"
+            className="bg-primary text-white px-3 md:px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center justify-center gap-2 font-semibold text-sm md:text-base"
           >
-            <Plus size={20} />
-            Add Expense
+            <Plus size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Add Expense</span>
+            <span className="sm:hidden">Add</span>
           </button>
           <button
             onClick={() => fetchExpenses(filters)}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 font-semibold"
+            className="bg-primary text-white px-3 md:px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center justify-center gap-2 font-semibold text-sm md:text-base"
             disabled={loading}
           >
             {loading ? "Loading..." : "Refresh"}
@@ -531,36 +534,42 @@ const ExpenseTrackerPage = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Total Expenses</h3>
-              <p className="text-[36px] font-futura text-primary">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                Total Expenses
+              </h3>
+              <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
                 {formatCurrency(calculateTotal())} MMK
               </p>
             </div>
-            <DollarSign className="w-12 h-12 text-primary opacity-50" />
+            <DollarSign className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Total Records</h3>
-              <p className="text-[36px] font-futura text-primary">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                Total Records
+              </h3>
+              <p className="text-2xl md:text-[36px] font-futura text-primary">
                 {expenses.length}
               </p>
             </div>
-            <FileText className="w-12 h-12 text-primary opacity-50" />
+            <FileText className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Average Expense</h3>
-              <p className="text-[36px] font-futura text-primary">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                Average Expense
+              </h3>
+              <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
                 {expenses.length > 0
                   ? formatCurrency(
                       Math.round(calculateTotal() / expenses.length)
@@ -569,44 +578,45 @@ const ExpenseTrackerPage = () => {
                 MMK
               </p>
             </div>
-            <TrendingUp className="w-12 h-12 text-primary opacity-50" />
+            <TrendingUp className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 ml-2" />
           </div>
         </div>
       </div>
 
       {/* Expenses Table */}
-      <div className="bg-white rounded-lg overflow-hidden pb-10">
-        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
+      <div className="bg-white rounded-lg overflow-hidden">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Title
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Description
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Amount
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Date
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -617,7 +627,7 @@ const ExpenseTrackerPage = () => {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-4 text-center text-gray-500"
+                    className="px-4 lg:px-6 py-4 text-center text-gray-500"
                   >
                     Loading expenses...
                   </td>
@@ -626,7 +636,7 @@ const ExpenseTrackerPage = () => {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-4 text-center text-gray-500"
+                    className="px-4 lg:px-6 py-4 text-center text-gray-500"
                   >
                     No expenses found. Add your first expense to get started.
                   </td>
@@ -634,28 +644,28 @@ const ExpenseTrackerPage = () => {
               ) : (
                 expenses.map((expense) => (
                   <tr key={expense._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {expense.title || "N/A"}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 lg:px-6 py-4">
                       <div className="text-sm text-gray-900 max-w-md truncate">
                         {expense.description || "No description"}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-primary">
                         {formatCurrency(expense.expense || 0)} MMK
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500">
                         {formatDate(expense.manualDate || expense.createdAt)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
+                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2 lg:gap-3">
                         <button
                           onClick={() => {
                             setSelectedExpense(expense);
@@ -664,8 +674,10 @@ const ExpenseTrackerPage = () => {
                           className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                           title="View Details"
                         >
-                          <Eye size={18} />
-                          <span className="text-sm">View</span>
+                          <Eye size={16} className="lg:w-[18px] lg:h-[18px]" />
+                          <span className="text-xs lg:text-sm hidden lg:inline">
+                            View
+                          </span>
                         </button>
                         <button
                           onClick={() => handleEditClick(expense)}
@@ -675,8 +687,10 @@ const ExpenseTrackerPage = () => {
                           className="text-blue-500 hover:text-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Edit Expense"
                         >
-                          <Edit size={18} />
-                          <span className="text-sm">Edit</span>
+                          <Edit size={16} className="lg:w-[18px] lg:h-[18px]" />
+                          <span className="text-xs lg:text-sm hidden lg:inline">
+                            Edit
+                          </span>
                         </button>
                         <button
                           onClick={() => handleDeleteClick(expense)}
@@ -687,9 +701,14 @@ const ExpenseTrackerPage = () => {
                           {deletingExpenseId === expense._id ? (
                             <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                           ) : (
-                            <Trash2 size={18} />
+                            <Trash2
+                              size={16}
+                              className="lg:w-[18px] lg:h-[18px]"
+                            />
                           )}
-                          <span className="text-sm">Delete</span>
+                          <span className="text-xs lg:text-sm hidden lg:inline">
+                            Delete
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -699,15 +718,88 @@ const ExpenseTrackerPage = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3 p-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+          {loading ? (
+            <div className="text-center text-gray-500 py-8">
+              Loading expenses...
+            </div>
+          ) : expenses.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              No expenses found. Add your first expense to get started.
+            </div>
+          ) : (
+            expenses.map((expense) => (
+              <div
+                key={expense._id}
+                className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-gray-900 truncate">
+                      {expense.title || "N/A"}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {formatDate(expense.manualDate || expense.createdAt)}
+                    </p>
+                  </div>
+                  <div className="text-right ml-2">
+                    <p className="text-lg font-bold text-primary">
+                      {formatCurrency(expense.expense || 0)} MMK
+                    </p>
+                  </div>
+                </div>
+                {expense.description && (
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {expense.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setSelectedExpense(expense);
+                      setIsDetailModalOpen(true);
+                    }}
+                    className="flex-1 px-3 py-2 text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                  >
+                    <Eye size={16} />
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleEditClick(expense)}
+                    disabled={isSubmitting || deletingExpenseId === expense._id}
+                    className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Edit size={16} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(expense)}
+                    disabled={deletingExpenseId === expense._id}
+                    className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deletingExpenseId === expense._id ? (
+                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Add Expense Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 md:p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex justify-between items-center p-5 border-b">
-              <h3 className="text-lg font-bold">
+            <div className="flex justify-between items-center p-4 md:p-5 border-b sticky top-0 bg-white">
+              <h3 className="text-base md:text-lg font-bold">
                 {editingExpenseId ? "Edit Expense" : "Add New Expense"}
               </h3>
               <button
@@ -721,7 +813,7 @@ const ExpenseTrackerPage = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit}>
-              <div className="p-5 space-y-4">
+              <div className="p-4 md:p-5 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Title <span className="text-red-500">*</span>
@@ -801,7 +893,7 @@ const ExpenseTrackerPage = () => {
                     </button>
                   </div>
                   {showDatePicker && (
-                    <div className="absolute z-50 top-[-300px] mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+                    <div className="absolute z-50 bottom-full mb-2 md:top-[-300px] md:bottom-auto md:mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 left-0 right-0 md:left-auto md:right-auto md:w-auto">
                       <DatePickerCalendar
                         date={
                           formData.manualDate
@@ -832,19 +924,19 @@ const ExpenseTrackerPage = () => {
               </div>
 
               {/* Footer */}
-              <div className="border-t p-5 flex justify-end gap-3">
+              <div className="border-t p-4 md:p-5 flex flex-col sm:flex-row justify-end gap-3 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={handleCloseModal}
                   disabled={isSubmitting}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-semibold disabled:opacity-50 text-sm md:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold disabled:opacity-50 text-sm md:text-base"
                 >
                   {isSubmitting
                     ? editingExpenseId
@@ -862,11 +954,13 @@ const ExpenseTrackerPage = () => {
 
       {/* Expense Detail Modal */}
       {isDetailModalOpen && selectedExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 md:p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex justify-between items-center p-5 border-b sticky top-0 bg-white">
-              <h3 className="text-lg font-bold">Expense Details</h3>
+            <div className="flex justify-between items-center p-4 md:p-5 border-b sticky top-0 bg-white">
+              <h3 className="text-base md:text-lg font-bold">
+                Expense Details
+              </h3>
               <button
                 onClick={() => {
                   setIsDetailModalOpen(false);
@@ -879,7 +973,7 @@ const ExpenseTrackerPage = () => {
             </div>
 
             {/* Content */}
-            <div className="p-5 space-y-6">
+            <div className="p-4 md:p-5 space-y-4 md:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-2">
                   Title
@@ -932,13 +1026,13 @@ const ExpenseTrackerPage = () => {
             </div>
 
             {/* Footer */}
-            <div className="border-t p-5 flex justify-end sticky bottom-0 bg-white">
+            <div className="border-t p-4 md:p-5 flex justify-end sticky bottom-0 bg-white">
               <button
                 onClick={() => {
                   setIsDetailModalOpen(false);
                   setSelectedExpense(null);
                 }}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold"
+                className="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-semibold text-sm md:text-base"
               >
                 Close
               </button>

@@ -248,16 +248,16 @@ const SalesReportPage = () => {
       data.totalTotal !== undefined ? data.totalTotal : data.total || 0;
 
     return (
-      <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
+        <h3 className="text-base md:text-lg font-semibold mb-2">{title}</h3>
+        <div className="grid grid-cols-2 gap-2 md:gap-3">
           <div>
-            <p className="text-sm text-gray-500">Total Orders</p>
-            <p className="text-[36px] font-futura">{orderCount}</p>
+            <p className="text-xs md:text-sm text-gray-500">Total Orders</p>
+            <p className="text-2xl md:text-[36px] font-futura">{orderCount}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total Amount</p>
-            <p className="text-[36px] font-futura text-primary">
+            <p className="text-xs md:text-sm text-gray-500">Total Amount</p>
+            <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
               {(totalAmount / 1000).toFixed(2)}K KS
             </p>
           </div>
@@ -268,25 +268,35 @@ const SalesReportPage = () => {
 
   const AnalyticsSummaryCard = ({ data }) => {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
-          <h3 className="text-lg font-semibold mb-2">Unique Items</h3>
-          <p className="text-[36px] font-futura">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
+          <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+            Unique Items
+          </h3>
+          <p className="text-2xl md:text-[36px] font-futura">
             {data?.totalUniqueStocks || 0}
           </p>
-          <p className="text-sm text-gray-500">Different items sold</p>
+          <p className="text-xs md:text-sm text-gray-500">
+            Different items sold
+          </p>
         </div>
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
-          <h3 className="text-lg font-semibold mb-2">Total Quantity</h3>
-          <p className="text-[36px] font-futura">{data?.totalItemsSold || 0}</p>
-          <p className="text-sm text-gray-500">Items sold</p>
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
+          <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+            Total Quantity
+          </h3>
+          <p className="text-2xl md:text-[36px] font-futura">
+            {data?.totalItemsSold || 0}
+          </p>
+          <p className="text-xs md:text-sm text-gray-500">Items sold</p>
         </div>
-        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-2">
-          <h3 className="text-lg font-semibold mb-2">Total Revenue</h3>
-          <p className="text-[36px] font-futura text-primary">
+        <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4 sm:col-span-2 lg:col-span-1">
+          <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+            Total Revenue
+          </h3>
+          <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
             {(data?.totalRevenue / 1000).toFixed(2) || "0.00"}K KS
           </p>
-          <p className="text-sm text-gray-500">Revenue generated</p>
+          <p className="text-xs md:text-sm text-gray-500">Revenue generated</p>
         </div>
       </div>
     );
@@ -315,10 +325,10 @@ const SalesReportPage = () => {
   };
 
   return (
-    <div className="p-5 h-[calc(100vh-90px)]">
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="sub-header font-bold">Reports</h1>
-        <div className="flex items-center gap-4 flex-wrap justify-end">
+    <div className="p-3 md:p-5 h-[calc(100vh-90px)] overflow-y-auto">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-5 gap-3">
+        <h1 className="sub-header font-bold text-xl md:text-2xl">Reports</h1>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 flex-wrap md:justify-end">
           <Calendar
             sendDate={handleDateChange}
             selectedStartDate={startDate}
@@ -338,7 +348,7 @@ const SalesReportPage = () => {
               fileName={`sales-report-${formatFileDate(
                 startDate
               )}-${formatFileDate(endDate)}.pdf`}
-              className="bg-white border border-primary text-primary px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors"
+              className="bg-white border border-primary text-primary px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors text-sm md:text-base text-center"
             >
               {({ loading: pdfLoading }) =>
                 pdfLoading ? "Preparing PDF..." : "Download Sales PDF"
@@ -357,7 +367,7 @@ const SalesReportPage = () => {
               fileName={`stock-analytics-${formatFileDate(
                 startDate
               )}-${formatFileDate(endDate)}.pdf`}
-              className="bg-white border border-primary text-primary px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors"
+              className="bg-white border border-primary text-primary px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors text-sm md:text-base text-center"
             >
               {({ loading: pdfLoading }) =>
                 pdfLoading ? "Preparing PDF..." : "Download Analytics PDF"
@@ -366,7 +376,7 @@ const SalesReportPage = () => {
           )}
           <button
             onClick={generateReport}
-            className="bg-primary text-white px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold"
+            className="bg-primary text-white px-4 md:px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold text-sm md:text-base"
             disabled={activeTab === "sales" ? loading : analyticsLoading}
           >
             {(activeTab === "sales" ? loading : analyticsLoading)
@@ -377,9 +387,9 @@ const SalesReportPage = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-5">
+      <div className="flex border-b border-gray-200 mb-4 md:mb-5 overflow-x-auto">
         <button
-          className={`px-6 py-3 font-semibold transition-all ${
+          className={`px-4 md:px-6 py-2 md:py-3 font-semibold transition-all text-sm md:text-base whitespace-nowrap ${
             activeTab === "sales"
               ? "text-primary border-b-2 border-primary"
               : "text-gray-500 hover:text-gray-700"
@@ -389,7 +399,7 @@ const SalesReportPage = () => {
           Sales Report
         </button>
         <button
-          className={`px-6 py-3 font-semibold transition-all ${
+          className={`px-4 md:px-6 py-2 md:py-3 font-semibold transition-all text-sm md:text-base whitespace-nowrap ${
             activeTab === "analytics"
               ? "text-primary border-b-2 border-primary"
               : "text-gray-500 hover:text-gray-700"
@@ -425,7 +435,7 @@ const SalesReportPage = () => {
       {activeTab === "sales" && (
         <>
           {reportData && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
               <ReportCard
                 title="Restaurant Orders"
                 data={reportData.restaurantOrders}
@@ -457,7 +467,7 @@ const SalesReportPage = () => {
         <>
           {analyticsData && (
             <div>
-              <div className="flex gap-3 mb-4">
+              <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
                 {[
                   { key: "all", label: "All" },
                   { key: "restaurant", label: "Restaurant" },
@@ -466,7 +476,7 @@ const SalesReportPage = () => {
                   <button
                     key={option.key}
                     onClick={() => setAnalyticsFilter(option.key)}
-                    className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+                    className={`px-3 md:px-4 py-2 rounded-lg border font-semibold transition-all text-sm md:text-base ${
                       analyticsFilter === option.key
                         ? "bg-primary text-white border-primary"
                         : "border-gray-300 text-gray-600 hover:bg-gray-100"
@@ -479,20 +489,21 @@ const SalesReportPage = () => {
 
               <AnalyticsSummaryCard data={filteredSummary} />
 
-              <div className="bg-white rounded-lg shadow-md pb-10 overflow-hidden">
-                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-470px)]">
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[calc(100vh-470px)]">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
                           Item Name
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                           onClick={() => requestSort("totalQuantity")}
                         >
                           <div className="flex items-center">
@@ -502,7 +513,7 @@ const SalesReportPage = () => {
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                           onClick={() => requestSort("totalRevenue")}
                         >
                           <div className="flex items-center">
@@ -513,7 +524,7 @@ const SalesReportPage = () => {
                         {analyticsFilter !== "ktv" && (
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                           >
                             Restaurant
                           </th>
@@ -521,14 +532,14 @@ const SalesReportPage = () => {
                         {analyticsFilter !== "restaurant" && (
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                           >
                             KTV
                           </th>
                         )}
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                           onClick={() => requestSort("orderCount")}
                         >
                           <div className="flex items-center">
@@ -541,36 +552,36 @@ const SalesReportPage = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {sortData(filteredAnalyticsItems).map((item) => (
                         <tr key={item.stockId} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
                               {item.stockName}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
                               {item.totalQuantity}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-primary">
                               {(item.totalRevenue / 1000).toFixed(2)}K KS
                             </div>
                           </td>
                           {analyticsFilter !== "ktv" && (
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
                                 {item.restaurantQuantity}
                               </div>
                             </td>
                           )}
                           {analyticsFilter !== "restaurant" && (
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
                                 {item.ktvQuantity}
                               </div>
                             </td>
                           )}
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
                               {item.orderCount}
                             </div>
@@ -579,6 +590,57 @@ const SalesReportPage = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 p-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {sortData(filteredAnalyticsItems).map((item) => (
+                    <div
+                      key={item.stockId}
+                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-base font-semibold text-gray-900 flex-1 min-w-0 pr-2">
+                          {item.stockName}
+                        </h3>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">
+                            {(item.totalRevenue / 1000).toFixed(2)}K KS
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-500 mb-1">Quantity</p>
+                          <p className="font-semibold text-gray-900">
+                            {item.totalQuantity}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Orders</p>
+                          <p className="font-semibold text-gray-900">
+                            {item.orderCount}
+                          </p>
+                        </div>
+                        {analyticsFilter !== "ktv" && (
+                          <div>
+                            <p className="text-gray-500 mb-1">Restaurant</p>
+                            <p className="font-semibold text-gray-900">
+                              {item.restaurantQuantity}
+                            </p>
+                          </div>
+                        )}
+                        {analyticsFilter !== "restaurant" && (
+                          <div>
+                            <p className="text-gray-500 mb-1">KTV</p>
+                            <p className="font-semibold text-gray-900">
+                              {item.ktvQuantity}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

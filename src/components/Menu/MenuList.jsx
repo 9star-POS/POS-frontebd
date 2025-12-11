@@ -146,7 +146,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
           />
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {filteredMenus.map((menu) => {
             // Show all items if "All" is selected, otherwise filter by subCategory
             return selectedCategory === "All" ||

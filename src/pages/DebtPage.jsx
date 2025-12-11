@@ -564,11 +564,13 @@ const DebtPage = () => {
   };
 
   return (
-    <div className="p-5 h-[calc(100vh-90px)]">
+    <div className="p-3 md:p-5 h-[calc(100vh-90px)] overflow-y-auto">
       <div className="min-h-screen">
-        <div className="md:flex justify-between mb-5">
-          <h1 className="sub-header font-bold">Debt Tracker</h1>
-          <div className="flex gap-2 flex-wrap justify-end">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-5 gap-3">
+          <h1 className="sub-header font-bold text-xl md:text-2xl">
+            Debt Tracker
+          </h1>
+          <div className="flex flex-col sm:flex-row gap-2 flex-wrap justify-end">
             <Calendar
               sendDate={handleDateRangeChange}
               selectedStartDate={filters.startDate}
@@ -579,21 +581,22 @@ const DebtPage = () => {
             {(filters.startDate !== today || filters.endDate !== today) && (
               <button
                 onClick={handleResetFilters}
-                className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold"
+                className="border border-gray-300 px-3 md:px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold text-sm md:text-base"
               >
                 Reset
               </button>
             )}
             <button
               onClick={handleOpenModal}
-              className="bg-primary text-white px-4 py-2 rounded-md transition-all hover:bg-primary/90 font-semibold flex items-center gap-2"
+              className="bg-primary text-white px-3 md:px-4 py-2 rounded-md transition-all hover:bg-primary/90 font-semibold flex items-center justify-center gap-2 text-sm md:text-base"
             >
               <Plus size={18} />
-              Add Debt
+              <span className="hidden sm:inline">Add Debt</span>
+              <span className="sm:hidden">Add</span>
             </button>
             <button
               onClick={() => fetchDebts(filters)}
-              className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold"
+              className="border border-gray-300 px-3 md:px-4 py-2 rounded-md transition-all hover:bg-gray-100 font-semibold text-sm md:text-base"
               disabled={loading}
             >
               {loading ? "Loading..." : "Refresh"}
@@ -602,11 +605,11 @@ const DebtPage = () => {
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex gap-3">
+        <div className="bg-white rounded-lg shadow-md p-3 md:p-4 mb-4 md:mb-6">
+          <div className="flex gap-2 md:gap-3">
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`px-3 md:px-4 py-2 rounded-lg font-semibold transition-all text-sm md:text-base ${
                 statusFilter === "all"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -616,7 +619,7 @@ const DebtPage = () => {
             </button>
             <button
               onClick={() => setStatusFilter("unpaid")}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`px-3 md:px-4 py-2 rounded-lg font-semibold transition-all text-sm md:text-base ${
                 statusFilter === "unpaid"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -626,7 +629,7 @@ const DebtPage = () => {
             </button>
             <button
               onClick={() => setStatusFilter("paid")}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              className={`px-3 md:px-4 py-2 rounded-lg font-semibold transition-all text-sm md:text-base ${
                 statusFilter === "paid"
                   ? "bg-primary text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -638,78 +641,88 @@ const DebtPage = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-6">
           {/* Total Debt - Show when filter is "all" */}
           {statusFilter === "all" && (
-            <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-4">
+            <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Total Debt</h3>
-                  <p className="text-[36px] font-futura text-primary">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Total Debt
+                  </h3>
+                  <p className="text-xl md:text-[36px] font-futura text-primary break-words">
                     {formatCurrency(calculateTotalDebt())} MMK
                   </p>
                 </div>
-                <DollarSign className="w-12 h-12 text-primary opacity-50" />
+                <DollarSign className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 ml-2" />
               </div>
             </div>
           )}
 
           {/* Unpaid Debt - Show when filter is "all" or "unpaid" */}
           {(statusFilter === "all" || statusFilter === "unpaid") && (
-            <div className="border-l-4 border-red-500 bg-white rounded-lg shadow-md p-4">
+            <div className="border-l-4 border-red-500 bg-white rounded-lg shadow-md p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Unpaid Debt</h3>
-                  <p className="text-[36px] font-futura text-red-500">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Unpaid Debt
+                  </h3>
+                  <p className="text-xl md:text-[36px] font-futura text-red-500 break-words">
                     {formatCurrency(calculateUnpaidDebt())} MMK
                   </p>
                 </div>
-                <CreditCard className="w-12 h-12 text-red-500 opacity-50" />
+                <CreditCard className="w-8 h-8 md:w-12 md:h-12 text-red-500 opacity-50 flex-shrink-0 ml-2" />
               </div>
             </div>
           )}
 
           {/* Unpaid Records - Show when filter is "all" or "unpaid" */}
           {(statusFilter === "all" || statusFilter === "unpaid") && (
-            <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-4">
+            <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Unpaid Records</h3>
-                  <p className="text-[36px] font-futura text-primary">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Unpaid Records
+                  </h3>
+                  <p className="text-xl md:text-[36px] font-futura text-primary">
                     {unpaidCount}
                   </p>
                 </div>
-                <FileText className="w-12 h-12 text-primary opacity-50" />
+                <FileText className="w-8 h-8 md:w-12 md:h-12 text-primary opacity-50 flex-shrink-0 ml-2" />
               </div>
             </div>
           )}
 
           {/* Paid Debt - Show when filter is "all" or "paid" */}
           {(statusFilter === "all" || statusFilter === "paid") && (
-            <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-4">
+            <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Paid Debt</h3>
-                  <p className="text-[36px] font-futura text-green-500">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Paid Debt
+                  </h3>
+                  <p className="text-xl md:text-[36px] font-futura text-green-500 break-words">
                     {formatCurrency(calculatePaidDebt())} MMK
                   </p>
                 </div>
-                <CheckCircle className="w-12 h-12 text-green-500 opacity-50" />
+                <CheckCircle className="w-8 h-8 md:w-12 md:h-12 text-green-500 opacity-50 flex-shrink-0 ml-2" />
               </div>
             </div>
           )}
 
           {/* Paid Records - Show when filter is "all" or "paid" */}
           {(statusFilter === "all" || statusFilter === "paid") && (
-            <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-4">
+            <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-3 md:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Paid Records</h3>
-                  <p className="text-[36px] font-futura text-green-500">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Paid Records
+                  </h3>
+                  <p className="text-xl md:text-[36px] font-futura text-green-500">
                     {paidCount}
                   </p>
                 </div>
-                <FileText className="w-12 h-12 text-green-500 opacity-50" />
+                <FileText className="w-8 h-8 md:w-12 md:h-12 text-green-500 opacity-50 flex-shrink-0 ml-2" />
               </div>
             </div>
           )}
@@ -723,7 +736,7 @@ const DebtPage = () => {
         ) : (
           <div className="bg-white w-full rounded-lg overflow-hidden">
             {filteredDebts && filteredDebts.length === 0 ? (
-              <div className="flex justify-center items-center mt-20">
+              <div className="flex justify-center items-center mt-10 md:mt-20">
                 <NoItems
                   header={
                     statusFilter === "all"
@@ -742,138 +755,219 @@ const DebtPage = () => {
                 />
               </div>
             ) : (
-              <div className="shadow-lg h-[calc(100vh-470px)] overflow-y-auto border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-primary sticky top-0">
-                    <tr className="font-bold text-md md:text-lg">
-                      <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        No
-                      </th>
-                      <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Customer Name
-                      </th>
-                      <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Status
-                      </th>
-                      {/* <th className="hidden md:block px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Order Type
-                      </th> */}
-                      <th className="hidden lg:block px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Table/Room
-                      </th>
-                      <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Created Date
-                      </th>
-                      <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredDebts.map((debt, index) => {
-                      // Calculate the row number based on filtered results
-                      const rowNumber = index + 1;
-                      return (
-                        <tr
-                          key={debt._id}
-                          className="font-bold text-md md:text-lg hover:bg-gray-50"
-                        >
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            {rowNumber}
-                          </td>
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block shadow-lg h-[calc(100vh-470px)] overflow-y-auto border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-primary sticky top-0">
+                      <tr className="font-bold text-md md:text-lg">
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          No
+                        </th>
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          Customer Name
+                        </th>
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          Status
+                        </th>
+                        <th className="hidden lg:block px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          Table/Room
+                        </th>
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          Created Date
+                        </th>
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredDebts.map((debt, index) => {
+                        const rowNumber = index + 1;
+                        return (
+                          <tr
+                            key={debt._id}
+                            className="font-bold text-md md:text-lg hover:bg-gray-50"
+                          >
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              {rowNumber}
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">
+                                {debt.customerName || "N/A"}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold text-primary">
+                                {formatCurrency(debt.amount || 0)} MMK
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              {getStatusBadge(debt.status)}
+                            </td>
+                            <td className="hidden lg:block px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {debt.tabelOrRoom || "N/A"}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">
+                                {formatDate(debt.manualDate)}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleEditClick(debt)}
+                                  className="px-3 py-3 rounded-md text-sm font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all flex items-center gap-1"
+                                  title="Edit debt"
+                                >
+                                  <Edit size={18} className="lg:w-5 lg:h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleStatusChange(debt)}
+                                  disabled={updatingDebtId === debt._id}
+                                  className={`px-3 py-3 rounded-md text-sm justify-center font-semibold transition-all flex items-center gap-1 ${
+                                    debt.status === "paid"
+                                      ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                      : "bg-green-100 text-green-800 hover:bg-green-200"
+                                  } ${
+                                    updatingDebtId === debt._id
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                  title={
+                                    debt.status === "paid"
+                                      ? "Mark as Unpaid"
+                                      : "Mark as Paid"
+                                  }
+                                >
+                                  {updatingDebtId === debt._id ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  ) : debt.status === "paid" ? (
+                                    <XCircle
+                                      size={18}
+                                      className="lg:w-5 lg:h-5"
+                                    />
+                                  ) : (
+                                    <CheckCircle
+                                      size={18}
+                                      className="lg:w-5 lg:h-5"
+                                    />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(debt)}
+                                  className="px-3 py-3 rounded-md text-sm font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-all flex items-center gap-1"
+                                  title="Delete debt"
+                                >
+                                  <Trash2 size={18} className="lg:w-5 lg:h-5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 p-3 max-h-[calc(100vh-400px)]">
+                  {filteredDebts.map((debt, index) => {
+                    const rowNumber = index + 1;
+                    return (
+                      <div
+                        key={debt._id}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1 min-w-0 pr-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-gray-500">
+                                #{rowNumber}
+                              </span>
+                              {getStatusBadge(debt.status)}
+                            </div>
+                            <h3 className="text-base font-semibold text-gray-900 truncate">
                               {debt.customerName || "N/A"}
-                            </div>
-                          </td>
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-primary">
-                              {formatCurrency(debt.amount || 0)} MMK
-                            </div>
-                          </td>
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(debt.status)}
-                          </td>
-                          {/* <td className="hidden md:block px-2 lg:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 capitalize">
-                            {debt.orderType || "N/A"}
-                          </div>
-                        </td> */}
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {debt.tabelOrRoom || "N/A"}
-                            </div>
-                          </td>
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500">
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">
                               {formatDate(debt.manualDate)}
-                            </div>
-                          </td>
-                          <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleEditClick(debt)}
-                                className="px-3 py-3 rounded-md text-sm font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all flex items-center gap-1"
-                                title="Edit debt"
-                              >
-                                <Edit size={20} />
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(debt)}
-                                disabled={updatingDebtId === debt._id}
-                                className={`px-3 py-3 rounded-md text-sm justify-center font-semibold transition-all flex items-center gap-1 ${
-                                  debt.status === "paid"
-                                    ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                                    : "bg-green-100 text-green-800 hover:bg-green-200"
-                                } ${
-                                  updatingDebtId === debt._id
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                                title={
-                                  debt.status === "paid"
-                                    ? "Mark as Unpaid"
-                                    : "Mark as Paid"
-                                }
-                              >
-                                {updatingDebtId === debt._id ? (
-                                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                ) : debt.status === "paid" ? (
-                                  <XCircle size={20} />
-                                ) : (
-                                  <CheckCircle size={20} />
-                                )}
-                                {/* {debt.status === "paid" ? "Unpaid" : "Paid"} */}
-                              </button>
-                              <button
-                                onClick={() => handleDeleteClick(debt)}
-                                className="px-3 py-3 rounded-md text-sm font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-all flex items-center gap-1"
-                                title="Delete debt"
-                              >
-                                <Trash2 size={20} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-primary">
+                              {formatCurrency(debt.amount || 0)} MMK
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                          <div>
+                            <p className="text-gray-500 text-xs">Table/Room</p>
+                            <p className="font-semibold text-gray-900">
+                              {debt.tabelOrRoom || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                          <button
+                            onClick={() => handleEditClick(debt)}
+                            className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                          >
+                            <Edit size={16} />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(debt)}
+                            disabled={updatingDebtId === debt._id}
+                            className={`flex-1 px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                              debt.status === "paid"
+                                ? "text-yellow-600 border border-yellow-600 hover:bg-yellow-600 hover:text-white"
+                                : "text-green-600 border border-green-600 hover:bg-green-600 hover:text-white"
+                            }`}
+                          >
+                            {updatingDebtId === debt._id ? (
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : debt.status === "paid" ? (
+                              <>
+                                <XCircle size={16} />
+                                <span className="hidden sm:inline">Unpaid</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle size={16} />
+                                <span className="hidden sm:inline">Paid</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(debt)}
+                            className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         )}
 
         {/* Add Debt Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 md:p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               {/* Header */}
-              <div className="flex justify-between items-center p-5 border-b">
-                <h3 className="text-lg font-bold">Add New Debt</h3>
+              <div className="flex justify-between items-center p-4 md:p-5 border-b sticky top-0 bg-white">
+                <h3 className="text-base md:text-lg font-bold">Add New Debt</h3>
                 <button
                   onClick={handleCloseModal}
                   className="text-gray-500 hover:text-gray-700"
@@ -964,7 +1058,7 @@ const DebtPage = () => {
                     </button>
                   </div>
                   {showDatePicker && (
-                    <div className="absolute z-50 top-[-300px] mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+                    <div className="absolute z-50 bottom-full mb-2 md:top-[-300px] md:bottom-auto md:mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 left-0 right-0 md:left-auto md:right-auto md:w-auto">
                       <DatePickerCalendar
                         date={
                           newDebt.manualDate
@@ -996,11 +1090,11 @@ const DebtPage = () => {
               </div>
 
               {/* Footer */}
-              <div className="border-t p-5">
-                <div className="flex gap-3">
+              <div className="border-t p-4 md:p-5 sticky bottom-0 bg-white">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleCloseModal}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="w-full sm:w-auto flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm md:text-base"
                     disabled={isCreating}
                   >
                     Cancel
@@ -1013,7 +1107,7 @@ const DebtPage = () => {
                       !newDebt.customerName.trim() ||
                       !newDebt.tabelOrRoom.trim()
                     }
-                    className={`flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
+                    className={`w-full sm:w-auto flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 text-sm md:text-base ${
                       isCreating ||
                       !newDebt.amount ||
                       !newDebt.customerName.trim() ||
@@ -1042,11 +1136,11 @@ const DebtPage = () => {
 
         {/* Edit Debt Modal */}
         {isEditModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 md:p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               {/* Header */}
-              <div className="flex justify-between items-center p-5 border-b">
-                <h3 className="text-lg font-bold">Edit Debt</h3>
+              <div className="flex justify-between items-center p-4 md:p-5 border-b sticky top-0 bg-white">
+                <h3 className="text-base md:text-lg font-bold">Edit Debt</h3>
                 <button
                   onClick={handleCloseEditModal}
                   className="text-gray-500 hover:text-gray-700"
@@ -1057,7 +1151,7 @@ const DebtPage = () => {
               </div>
 
               {/* Form */}
-              <div className="p-5 space-y-4">
+              <div className="p-4 md:p-5 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Customer Name <span className="text-red-500">*</span>
@@ -1137,7 +1231,7 @@ const DebtPage = () => {
                     </button>
                   </div>
                   {showEditDatePicker && (
-                    <div className="absolute z-50 top-[-300px] mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+                    <div className="absolute z-50 bottom-full mb-2 md:top-[-300px] md:bottom-auto md:mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 left-0 right-0 md:left-auto md:right-auto md:w-auto">
                       <DatePickerCalendar
                         date={
                           editDebt.manualDate
@@ -1169,11 +1263,11 @@ const DebtPage = () => {
               </div>
 
               {/* Footer */}
-              <div className="border-t p-5">
-                <div className="flex gap-3">
+              <div className="border-t p-4 md:p-5 sticky bottom-0 bg-white">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleCloseEditModal}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="w-full sm:w-auto flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm md:text-base"
                     disabled={isUpdating}
                   >
                     Cancel
@@ -1186,7 +1280,7 @@ const DebtPage = () => {
                       !editDebt.customerName.trim() ||
                       !editDebt.tabelOrRoom.trim()
                     }
-                    className={`flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
+                    className={`w-full sm:w-auto flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 text-sm md:text-base ${
                       isUpdating ||
                       !editDebt.amount ||
                       !editDebt.customerName.trim() ||

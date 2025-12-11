@@ -19,7 +19,7 @@ const MenuCard = ({ menu, refreshMenu }) => {
   };
   // console.log(menu);
   return (
-    <div className="sm:w-[200px] bg-white shadow-lg overflow-hidden relative">
+    <div className="bg-white shadow-lg overflow-hidden relative">
       <div className="hidden md:block">
         <img
           className="w-full h-48 sm:h-32 object-cover"
