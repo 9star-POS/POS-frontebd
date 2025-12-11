@@ -19,6 +19,7 @@ import deleteVocalist from "../api/KTV/deleteVocalist";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import DeleteModel from "../components/DeleteModel";
+import { canEdit } from "../utils/getUserRole";
 
 const VocalistPage = () => {
   const [vocalists, setVocalists] = useState([]);
@@ -443,18 +444,20 @@ const VocalistPage = () => {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleEditClick(vocalist)}
-                            disabled={editing && selectedVocalist?._id === id}
-                            className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-blue-500 hover:text-blue-700"
-                            title="Edit Vocalist"
-                          >
-                            {editing && selectedVocalist?._id === id ? (
-                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <Edit size={18} />
-                            )}
-                          </button>
+                          {canEdit() && (
+                            <button
+                              onClick={() => handleEditClick(vocalist)}
+                              disabled={editing && selectedVocalist?._id === id}
+                              className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-blue-500 hover:text-blue-700"
+                              title="Edit Vocalist"
+                            >
+                              {editing && selectedVocalist?._id === id ? (
+                                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <Edit size={18} />
+                              )}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteClick(vocalist)}
                             disabled={deletingVocalistId === id}

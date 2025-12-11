@@ -12,6 +12,7 @@ import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import DeleteModel from "../components/DeleteModel";
 import Calendar from "../components/Calender";
+import { canEdit } from "../utils/getUserRole";
 import {
   CreditCard,
   DollarSign,
@@ -820,13 +821,15 @@ const DebtPage = () => {
                             </td>
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleEditClick(debt)}
-                                  className="px-3 py-3 rounded-md text-sm font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all flex items-center gap-1"
-                                  title="Edit debt"
-                                >
-                                  <Edit size={18} className="lg:w-5 lg:h-5" />
-                                </button>
+                                {canEdit() && (
+                                  <button
+                                    onClick={() => handleEditClick(debt)}
+                                    className="px-3 py-3 rounded-md text-sm font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all flex items-center gap-1"
+                                    title="Edit debt"
+                                  >
+                                    <Edit size={18} className="lg:w-5 lg:h-5" />
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => handleStatusChange(debt)}
                                   disabled={updatingDebtId === debt._id}
@@ -914,13 +917,15 @@ const DebtPage = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                          <button
-                            onClick={() => handleEditClick(debt)}
-                            className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
-                          >
-                            <Edit size={16} />
-                            Edit
-                          </button>
+                          {canEdit() && (
+                            <button
+                              onClick={() => handleEditClick(debt)}
+                              className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                            >
+                              <Edit size={16} />
+                              Edit
+                            </button>
+                          )}
                           <button
                             onClick={() => handleStatusChange(debt)}
                             disabled={updatingDebtId === debt._id}

@@ -19,6 +19,7 @@ import softDeleteAccount from "../api/admin/softDeleteAccount";
 import updatePassword from "../api/admin/updatePassword";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
+import { canEdit } from "../utils/getUserRole";
 
 const AccountManagementPage = () => {
   const [accounts, setAccounts] = useState([]);
@@ -488,32 +489,34 @@ const AccountManagementPage = () => {
                       </td>
                       <td className="px-4 lg:px-6 py-3 text-right">
                         <div className="flex justify-end gap-2">
-                          <button
-                            className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors"
-                            onClick={() => openDetailModal(account)}
-                            aria-label="View account details"
-                            title="View / Edit"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5 text-primary"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={1.8}
+                          {canEdit() && (
+                            <button
+                              className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors"
+                              onClick={() => openDetailModal(account)}
+                              aria-label="View account details"
+                              title="View / Edit"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M1.5 12s3.75-6.75 10.5-6.75S22.5 12 22.5 12s-3.75 6.75-10.5 6.75S1.5 12 1.5 12z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                            </svg>
-                          </button>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5 text-primary"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={1.8}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M1.5 12s3.75-6.75 10.5-6.75S22.5 12 22.5 12s-3.75 6.75-10.5 6.75S1.5 12 1.5 12z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                              </svg>
+                            </button>
+                          )}
                           <button
                             className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors"
                             onClick={() => handlePasswordClick(account)}
@@ -603,31 +606,33 @@ const AccountManagementPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
-                    <button
-                      className="flex-1 px-3 py-2 text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
-                      onClick={() => openDetailModal(account)}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.8}
+                    {canEdit() && (
+                      <button
+                        className="flex-1 px-3 py-2 text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                        onClick={() => openDetailModal(account)}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M1.5 12s3.75-6.75 10.5-6.75S22.5 12 22.5 12s-3.75 6.75-10.5 6.75S1.5 12 1.5 12z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      View
-                    </button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.8}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M1.5 12s3.75-6.75 10.5-6.75S22.5 12 22.5 12s-3.75 6.75-10.5 6.75S1.5 12 1.5 12z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        View
+                      </button>
+                    )}
                     <button
                       className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
                       onClick={() => handlePasswordClick(account)}

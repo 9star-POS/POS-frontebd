@@ -7,6 +7,7 @@ import deleteExpense from "../api/expense/deleteExpense";
 import { format } from "date-fns";
 import DeleteModel from "../components/DeleteModel";
 import Calendar from "../components/Calender";
+import { canEdit } from "../utils/getUserRole";
 import { Calendar as DatePickerCalendar } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
@@ -679,19 +680,24 @@ const ExpenseTrackerPage = () => {
                             View
                           </span>
                         </button>
-                        <button
-                          onClick={() => handleEditClick(expense)}
-                          disabled={
-                            isSubmitting || deletingExpenseId === expense._id
-                          }
-                          className="text-blue-500 hover:text-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Edit Expense"
-                        >
-                          <Edit size={16} className="lg:w-[18px] lg:h-[18px]" />
-                          <span className="text-xs lg:text-sm hidden lg:inline">
-                            Edit
-                          </span>
-                        </button>
+                        {canEdit() && (
+                          <button
+                            onClick={() => handleEditClick(expense)}
+                            disabled={
+                              isSubmitting || deletingExpenseId === expense._id
+                            }
+                            className="text-blue-500 hover:text-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Edit Expense"
+                          >
+                            <Edit
+                              size={16}
+                              className="lg:w-[18px] lg:h-[18px]"
+                            />
+                            <span className="text-xs lg:text-sm hidden lg:inline">
+                              Edit
+                            </span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteClick(expense)}
                           disabled={deletingExpenseId === expense._id}
@@ -766,14 +772,18 @@ const ExpenseTrackerPage = () => {
                     <Eye size={16} />
                     View
                   </button>
-                  <button
-                    onClick={() => handleEditClick(expense)}
-                    disabled={isSubmitting || deletingExpenseId === expense._id}
-                    className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Edit size={16} />
-                    Edit
-                  </button>
+                  {canEdit() && (
+                    <button
+                      onClick={() => handleEditClick(expense)}
+                      disabled={
+                        isSubmitting || deletingExpenseId === expense._id
+                      }
+                      className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Edit size={16} />
+                      Edit
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDeleteClick(expense)}
                     disabled={deletingExpenseId === expense._id}

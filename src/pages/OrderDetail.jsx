@@ -9,6 +9,7 @@ import {
   Receipt,
   Edit,
 } from "lucide-react";
+import { canEdit } from "../utils/getUserRole";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useDispatch } from "react-redux";
 import { selectRoom } from "../redux/ktvReceiptSlice";
