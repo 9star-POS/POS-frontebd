@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNotifications } from "../contexts/NotificationContext";
+import { canEdit } from "../utils/getUserRole";
 
 const NotificationPage = () => {
   const {
@@ -273,13 +274,15 @@ const NotificationPage = () => {
                             Mark Read
                           </button>
                         )} */}
-                        <button
-                          onClick={() => deleteNotification(notification.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
-                          title="Delete notification"
-                        >
-                          <X size={16} className="md:w-[18px] md:h-[18px]" />
-                        </button>
+                        {canEdit() && (
+                          <button
+                            onClick={() => deleteNotification(notification.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
+                            title="Delete notification"
+                          >
+                            <X size={16} className="md:w-[18px] md:h-[18px]" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

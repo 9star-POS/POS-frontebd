@@ -2,7 +2,7 @@ import axios from "../axios";
 
 const softDeleteAccount = async (accountId) => {
   try {
-    const res = await axios.patch(`api/v1/admin/soft-delete/${accountId}`);
+    const res = await axios.delete(`api/v1/admin/${accountId}`);
     return res.data;
   } catch (error) {
     return error?.response?.data || error;
@@ -10,4 +10,3 @@ const softDeleteAccount = async (accountId) => {
 };
 
 export default softDeleteAccount;
-

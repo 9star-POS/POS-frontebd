@@ -6,6 +6,7 @@ import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
 import createNotification from "../api/notification/createNotification";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
+import { canEdit } from "../utils/getUserRole";
 
 const KitchenPage = () => {
   const [allOrders, setAllOrders] = useState([]); // Store all orders for stats calculation
@@ -385,49 +386,51 @@ const KitchenPage = () => {
         <div className="overflow-hidden pb-10  overflow-y-auto h-[calc(100vh-500px)]">
           {/* Order Items */}
           <div className="divide-y divide-gray-200">
-            {getFilteredOrders().map((item, index) => (
+            {getFilteredOrders().map((item) => (
               <div
                 key={item.id}
                 className={`p-4 hover:bg-gray-50 transition-colors ${
                   item.kitchenStatus === "ready" ? "bg-green-50" : ""
                 }`}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-4">
                   {/* Ready Checkbox with Label */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={item.kitchenStatus === "ready"}
-                        onChange={() => handleItemStatusToggle(item)}
-                        disabled={updatingItems.has(item.id)}
-                        className={`w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 ${
-                          updatingItems.has(item.id)
-                            ? "opacity-50 cursor-not-allowed"
-                            : "cursor-pointer"
-                        }`}
-                        title={
-                          updatingItems.has(item.id)
-                            ? "Updating..."
-                            : item.kitchenStatus === "ready"
-                            ? "Mark as pending"
-                            : "Mark as ready"
-                        }
-                      />
-                      {updatingItems.has(item.id) && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
+                  {canEdit() && (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={item.kitchenStatus === "ready"}
+                          onChange={() => handleItemStatusToggle(item)}
+                          disabled={updatingItems.has(item.id)}
+                          className={`w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 ${
+                            updatingItems.has(item.id)
+                              ? "opacity-50 cursor-not-allowed"
+                              : "cursor-pointer"
+                          }`}
+                          title={
+                            updatingItems.has(item.id)
+                              ? "Updating..."
+                              : item.kitchenStatus === "ready"
+                              ? "Mark as pending"
+                              : "Mark as ready"
+                          }
+                        />
+                        {updatingItems.has(item.id) && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500 text-center">
+                        {updatingItems.has(item.id)
+                          ? "Updating..."
+                          : item.kitchenStatus === "ready"
+                          ? "Ready"
+                          : "Cook"}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500 text-center">
-                      {updatingItems.has(item.id)
-                        ? "Updating..."
-                        : item.kitchenStatus === "ready"
-                        ? "Ready"
-                        : "Cook"}
-                    </span>
-                  </div>
+                  )}
 
                   {/* Item Info */}
                   <div className="flex-1 min-w-0">

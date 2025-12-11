@@ -862,13 +862,18 @@ const DebtPage = () => {
                                     />
                                   )}
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteClick(debt)}
-                                  className="px-3 py-3 rounded-md text-sm font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-all flex items-center gap-1"
-                                  title="Delete debt"
-                                >
-                                  <Trash2 size={18} className="lg:w-5 lg:h-5" />
-                                </button>
+                                {canEdit() && (
+                                  <button
+                                    onClick={() => handleDeleteClick(debt)}
+                                    className="px-3 py-3 rounded-md text-sm font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-all flex items-center gap-1"
+                                    title="Delete debt"
+                                  >
+                                    <Trash2
+                                      size={18}
+                                      className="lg:w-5 lg:h-5"
+                                    />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -949,13 +954,15 @@ const DebtPage = () => {
                               </>
                             )}
                           </button>
-                          <button
-                            onClick={() => handleDeleteClick(debt)}
-                            className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
-                          >
-                            <Trash2 size={16} />
-                            Delete
-                          </button>
+                          {canEdit() && (
+                            <button
+                              onClick={() => handleDeleteClick(debt)}
+                              className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                            >
+                              <Trash2 size={16} />
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

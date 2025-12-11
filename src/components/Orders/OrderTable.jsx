@@ -4,6 +4,7 @@ import { FaRegTrashAlt } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DeleteModel from "../DeleteModel";
+import { canEdit } from "../../utils/getUserRole";
 
 function OrderTable({
   sendData,
@@ -183,8 +184,8 @@ function OrderTable({
                   >
                     <MdOutlineRemoveRedEye size={25} />
                   </button>
-                  {/* Only show delete button for restaurant orders (not KTV orders) */}
-                  {!order.roomService && (
+                  {/* Only show delete button for restaurant orders (not KTV orders) and if user can edit */}
+                  {!order.roomService && canEdit() && (
                     <button
                       className="text-red-500 font-bold hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={(e) => handleDeleteClick(order, e)}

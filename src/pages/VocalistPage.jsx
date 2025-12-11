@@ -458,18 +458,20 @@ const VocalistPage = () => {
                               )}
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDeleteClick(vocalist)}
-                            disabled={deletingVocalistId === id}
-                            className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-red-500 hover:text-red-700"
-                            title="Delete Vocalist"
-                          >
-                            {deletingVocalistId === id ? (
-                              <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <Trash2 size={18} />
-                            )}
-                          </button>
+                          {canEdit() && (
+                            <button
+                              onClick={() => handleDeleteClick(vocalist)}
+                              disabled={deletingVocalistId === id}
+                              className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-red-500 hover:text-red-700"
+                              title="Delete Vocalist"
+                            >
+                              {deletingVocalistId === id ? (
+                                <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <Trash2 size={18} />
+                              )}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

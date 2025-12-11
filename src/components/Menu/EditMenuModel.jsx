@@ -468,10 +468,10 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
             ← Back
           </button>
           <h2 className="text-lg font-bold text-gray-800">
-            {activeModal === "image" && "Edit Image"}
-            {activeModal === "quantity" && "Edit Quantity"}
-            {activeModal === "data" && "Edit Data"}
-            {activeModal === "details" && "Menu Details"}
+            {activeModal === "image" && `Edit ${menu.name} Image`}
+            {activeModal === "quantity" && `Edit ${menu.name} Quantity`}
+            {activeModal === "data" && `Edit ${menu.name} Data`}
+            {activeModal === "details" && `Menu Details`}
           </h2>
           <button
             onClick={handleClose}
@@ -691,7 +691,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
             </div>
 
             {/* Stock Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Stock Name
@@ -712,7 +712,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                   </span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {quantityError && (
               <div className="p-3 bg-red-50 border border-red-300 rounded-lg">

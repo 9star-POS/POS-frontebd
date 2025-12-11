@@ -587,37 +587,37 @@ const ExpenseTrackerPage = () => {
       {/* Expenses Table */}
       <div className="bg-white rounded-lg overflow-hidden">
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
+        <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[calc(100vh-150px)]">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
                 <th
                   scope="col"
-                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-3 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Title
                 </th>
                 <th
                   scope="col"
-                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Description
                 </th>
                 <th
                   scope="col"
-                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-3 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Amount
                 </th>
                 <th
                   scope="col"
-                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="hidden md:table-cell px-3 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Date
                 </th>
                 <th
                   scope="col"
-                  className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-3 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -628,7 +628,7 @@ const ExpenseTrackerPage = () => {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-4 lg:px-6 py-4 text-center text-gray-500"
+                    className="px-3 md:px-4 lg:px-6 py-4 text-center text-gray-500"
                   >
                     Loading expenses...
                   </td>
@@ -637,7 +637,7 @@ const ExpenseTrackerPage = () => {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-4 lg:px-6 py-4 text-center text-gray-500"
+                    className="px-3 md:px-4 lg:px-6 py-4 text-center text-gray-500"
                   >
                     No expenses found. Add your first expense to get started.
                   </td>
@@ -645,28 +645,31 @@ const ExpenseTrackerPage = () => {
               ) : (
                 expenses.map((expense) => (
                   <tr key={expense._id} className="hover:bg-gray-50">
-                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                    <td className="px-3 md:px-4 lg:px-6 py-4">
+                      <div className="text-xs md:text-sm font-medium text-gray-900">
                         {expense.title || "N/A"}
                       </div>
+                      <div className="text-xs text-gray-500 mt-1 md:hidden">
+                        {formatDate(expense.manualDate || expense.createdAt)}
+                      </div>
                     </td>
-                    <td className="px-4 lg:px-6 py-4">
+                    <td className="hidden lg:table-cell px-4 lg:px-6 py-4">
                       <div className="text-sm text-gray-900 max-w-md truncate">
                         {expense.description || "No description"}
                       </div>
                     </td>
-                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-primary">
+                    <td className="px-3 md:px-4 lg:px-6 py-4 whitespace-nowrap">
+                      <div className="text-xs md:text-sm font-semibold text-primary">
                         {formatCurrency(expense.expense || 0)} MMK
                       </div>
                     </td>
-                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-500">
+                    <td className="hidden md:table-cell px-3 md:px-4 lg:px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-xs md:text-sm text-gray-500">
                         {formatDate(expense.manualDate || expense.createdAt)}
                       </div>
                     </td>
-                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 lg:gap-3">
+                    <td className="px-3 md:px-4 lg:px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1 md:gap-2 lg:gap-3">
                         <button
                           onClick={() => {
                             setSelectedExpense(expense);
@@ -675,10 +678,10 @@ const ExpenseTrackerPage = () => {
                           className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                           title="View Details"
                         >
-                          <Eye size={16} className="lg:w-[18px] lg:h-[18px]" />
-                          <span className="text-xs lg:text-sm hidden lg:inline">
-                            View
-                          </span>
+                          <Eye
+                            size={14}
+                            className="md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]"
+                          />
                         </button>
                         {canEdit() && (
                           <button
@@ -690,32 +693,30 @@ const ExpenseTrackerPage = () => {
                             title="Edit Expense"
                           >
                             <Edit
-                              size={16}
-                              className="lg:w-[18px] lg:h-[18px]"
+                              size={14}
+                              className="md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]"
                             />
-                            <span className="text-xs lg:text-sm hidden lg:inline">
-                              Edit
-                            </span>
+                            <span className="text-xs hidden xl:inline"></span>
                           </button>
                         )}
-                        <button
-                          onClick={() => handleDeleteClick(expense)}
-                          disabled={deletingExpenseId === expense._id}
-                          className="text-red-500 hover:text-red-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Delete Expense"
-                        >
-                          {deletingExpenseId === expense._id ? (
-                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <Trash2
-                              size={16}
-                              className="lg:w-[18px] lg:h-[18px]"
-                            />
-                          )}
-                          <span className="text-xs lg:text-sm hidden lg:inline">
-                            Delete
-                          </span>
-                        </button>
+                        {canEdit() && (
+                          <button
+                            onClick={() => handleDeleteClick(expense)}
+                            disabled={deletingExpenseId === expense._id}
+                            className="text-red-500 hover:text-red-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete Expense"
+                          >
+                            {deletingExpenseId === expense._id ? (
+                              <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Trash2
+                                size={14}
+                                className="md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]"
+                              />
+                            )}
+                            <span className="text-xs hidden xl:inline"></span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -770,7 +771,6 @@ const ExpenseTrackerPage = () => {
                     className="flex-1 px-3 py-2 text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium"
                   >
                     <Eye size={16} />
-                    View
                   </button>
                   {canEdit() && (
                     <button
@@ -781,21 +781,21 @@ const ExpenseTrackerPage = () => {
                       className="flex-1 px-3 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Edit size={16} />
-                      Edit
                     </button>
                   )}
-                  <button
-                    onClick={() => handleDeleteClick(expense)}
-                    disabled={deletingExpenseId === expense._id}
-                    className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {deletingExpenseId === expense._id ? (
-                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <Trash2 size={16} />
-                    )}
-                    Delete
-                  </button>
+                  {canEdit() && (
+                    <button
+                      onClick={() => handleDeleteClick(expense)}
+                      disabled={deletingExpenseId === expense._id}
+                      className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingExpenseId === expense._id ? (
+                        <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             ))

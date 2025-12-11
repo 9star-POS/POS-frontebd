@@ -525,32 +525,34 @@ const AccountManagementPage = () => {
                           >
                             <Key className="w-5 h-5 text-blue-500" />
                           </button>
-                          <button
-                            className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                            onClick={() => handleDeleteClick(account)}
-                            aria-label="Soft delete account"
-                            title="Deactivate"
-                            disabled={deletingAccountId === account._id}
-                          >
-                            {deletingAccountId === account._id ? (
-                              <svg
-                                className="w-5 h-5 text-red-500 animate-spin"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M4 12a8 8 0 018-8"
-                                />
-                              </svg>
-                            ) : (
-                              <Trash2 className="w-5 h-5 text-red-500" />
-                            )}
-                          </button>
+                          {canEdit() && (
+                            <button
+                              className="inline-flex items-center justify-center w-9 h-9 hover:scale-105 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                              onClick={() => handleDeleteClick(account)}
+                              aria-label="Soft delete account"
+                              title="Deactivate"
+                              disabled={deletingAccountId === account._id}
+                            >
+                              {deletingAccountId === account._id ? (
+                                <svg
+                                  className="w-5 h-5 text-red-500 animate-spin"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4 12a8 8 0 018-8"
+                                  />
+                                </svg>
+                              ) : (
+                                <Trash2 className="w-5 h-5 text-red-500" />
+                              )}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -640,31 +642,33 @@ const AccountManagementPage = () => {
                       <Key size={16} />
                       Password
                     </button>
-                    <button
-                      className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={() => handleDeleteClick(account)}
-                      disabled={deletingAccountId === account._id}
-                    >
-                      {deletingAccountId === account._id ? (
-                        <svg
-                          className="w-4 h-4 animate-spin"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4 12a8 8 0 018-8"
-                          />
-                        </svg>
-                      ) : (
-                        <Trash2 size={16} />
-                      )}
-                      Delete
-                    </button>
+                    {canEdit() && (
+                      <button
+                        className="flex-1 px-3 py-2 text-red-500 border border-red-500 rounded-md hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleDeleteClick(account)}
+                        disabled={deletingAccountId === account._id}
+                      >
+                        {deletingAccountId === account._id ? (
+                          <svg
+                            className="w-4 h-4 animate-spin"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M4 12a8 8 0 018-8"
+                            />
+                          </svg>
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

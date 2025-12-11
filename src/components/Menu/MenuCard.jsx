@@ -22,7 +22,7 @@ const MenuCard = ({ menu, refreshMenu }) => {
     <div className="bg-white shadow-lg overflow-hidden relative">
       <div className="hidden md:block">
         <img
-          className="w-full h-48 sm:h-32 object-cover"
+          className="w-full h-48 sm:h-52 object-cover"
           src={menu.stockImagesUrl[0].url || defaultImage}
           alt="Food"
         />

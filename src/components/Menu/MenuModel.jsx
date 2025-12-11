@@ -1,7 +1,7 @@
 // CreateMenu.js
 import { useState, useEffect, useRef } from "react";
 import axios from "../../api/axios";
-import defaultMenu from "./../../assets/black.jpg";
+import defaultMenu from "./../../assets/Biz-Bozz.jpg";
 import PropTypes from "prop-types";
 
 const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
@@ -54,6 +54,19 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
 
   const handleRemoveImage = () => {
     setImage(null); // Clear the image state
+  };
+
+  // Convert default image to File object for FormData
+  const getDefaultImageFile = async () => {
+    try {
+      const response = await fetch(defaultMenu);
+      const blob = await response.blob();
+      const file = new File([blob], "default-menu.jpg", { type: blob.type });
+      return file;
+    } catch (error) {
+      console.error("Error loading default image:", error);
+      return null;
+    }
   };
 
   const handleSubcategorySelect = (selectedSubcat) => {
@@ -109,6 +122,12 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
       formData.append("type", itemType);
       if (image) {
         formData.append("images", image);
+      } else {
+        // If no image is selected, use default image
+        const defaultImageFile = await getDefaultImageFile();
+        if (defaultImageFile) {
+          formData.append("images", defaultImageFile);
+        }
       }
 
       const res = await axios.post("api/v1/stock", formData, {
