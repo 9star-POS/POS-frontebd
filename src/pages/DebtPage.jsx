@@ -5,7 +5,6 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import getDebts from "../api/debt/getDebts";
 import createDebt from "../api/debt/createDebt";
-import updateDebt from "../api/debt/updateDebt";
 import deleteDebt from "../api/debt/deleteDebt";
 import updateDebtStatus from "../api/debt/updateDebtStatus";
 import Loading from "../components/Loading";
@@ -22,7 +21,6 @@ import {
   CheckCircle,
   XCircle,
   Calendar as CalendarIcon,
-  Edit,
 } from "lucide-react";
 
 const DebtPage = () => {
@@ -43,7 +41,6 @@ const DebtPage = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [debtToDelete, setDebtToDelete] = useState(null);
   const [updatingDebtId, setUpdatingDebtId] = useState(null);
-  const [editingDebtId, setEditingDebtId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "paid", "unpaid"
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
@@ -266,7 +263,6 @@ const DebtPage = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingDebtId(null);
     const today = format(new Date(), "yyyy-MM-dd");
     const todayDisplay = format(new Date(), "dd/MM/yyyy");
     const currentTime = format(new Date(), "HH:mm");
@@ -278,74 +274,6 @@ const DebtPage = () => {
       manualDateDisplay: todayDisplay,
       manualTime: currentTime,
     });
-  };
-
-  const handleEditClick = (debt) => {
-    setEditingDebtId(debt._id || debt.id);
-
-    // Parse the manualDate from the debt
-    let dateValue = "";
-    let dateDisplay = "";
-    let timeValue = "00:00";
-
-    if (debt.manualDate) {
-      try {
-        // Parse ISO date string (e.g., "2024-12-10T15:01:22.892Z" or "2024-12-10T15:01:22.892+06:30")
-        const dateObj = new Date(debt.manualDate);
-        if (!isNaN(dateObj.getTime())) {
-          // Extract date parts
-          const year = dateObj.getFullYear();
-          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-          const day = String(dateObj.getDate()).padStart(2, "0");
-          const hours = String(dateObj.getHours()).padStart(2, "0");
-          const minutes = String(dateObj.getMinutes()).padStart(2, "0");
-
-          dateValue = `${year}-${month}-${day}`;
-          dateDisplay = `${day}/${month}/${year}`;
-          timeValue = `${hours}:${minutes}`;
-        }
-      } catch (error) {
-        console.error("Error parsing date:", error);
-      }
-    }
-
-    // If manualDate parsing failed, try createdAt
-    if (!dateValue && debt.createdAt) {
-      try {
-        const dateObj = new Date(debt.createdAt);
-        if (!isNaN(dateObj.getTime())) {
-          const year = dateObj.getFullYear();
-          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-          const day = String(dateObj.getDate()).padStart(2, "0");
-          const hours = String(dateObj.getHours()).padStart(2, "0");
-          const minutes = String(dateObj.getMinutes()).padStart(2, "0");
-
-          dateValue = `${year}-${month}-${day}`;
-          dateDisplay = `${day}/${month}/${year}`;
-          timeValue = `${hours}:${minutes}`;
-        }
-      } catch (error) {
-        console.error("Error parsing createdAt:", error);
-      }
-    }
-
-    // Default to today if still no date
-    if (!dateValue) {
-      dateValue = format(new Date(), "yyyy-MM-dd");
-      dateDisplay = format(new Date(), "dd/MM/yyyy");
-      timeValue = format(new Date(), "HH:mm");
-    }
-
-    setNewDebt({
-      amount: debt.amount || "",
-      customerName: debt.customerName || "",
-      tabelOrRoom: debt.tabelOrRoom || "",
-      manualDate: dateValue,
-      manualDateDisplay: dateDisplay,
-      manualTime: timeValue,
-    });
-
-    setIsModalOpen(true);
   };
 
   const handleCreateDebt = async () => {
@@ -379,21 +307,12 @@ const DebtPage = () => {
         manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}.${millisecondStr}+06:30`;
       }
 
-      const debtData = {
+      const response = await createDebt({
         amount: parseFloat(newDebt.amount),
         customerName: newDebt.customerName.trim(),
         tabelOrRoom: newDebt.tabelOrRoom.trim(),
         manualDate: manualDateUTC,
-      };
-
-      let response;
-      if (editingDebtId) {
-        // Update existing debt
-        response = await updateDebt(editingDebtId, debtData);
-      } else {
-        // Create new debt
-        response = await createDebt(debtData);
-      }
+      });
 
       console.log("Debt Data:", response);
 
@@ -403,7 +322,7 @@ const DebtPage = () => {
         fetchDebts(filters);
       }
     } catch (error) {
-      console.error("Error saving debt:", error);
+      console.error("Error creating debt:", error);
     } finally {
       setIsCreating(false);
     }
@@ -750,16 +669,6 @@ const DebtPage = () => {
                                 {/* {debt.status === "paid" ? "Unpaid" : "Paid"} */}
                               </button>
                               <button
-                                onClick={() => handleEditClick(debt)}
-                                disabled={
-                                  isCreating || updatingDebtId === debt._id
-                                }
-                                className="px-3 py-3 rounded-md text-sm font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Edit debt"
-                              >
-                                <Edit size={20} />
-                              </button>
-                              <button
                                 onClick={() => handleDeleteClick(debt)}
                                 className="px-3 py-3 rounded-md text-sm font-semibold bg-red-100 text-red-800 hover:bg-red-200 transition-all flex items-center gap-1"
                                 title="Delete debt"
@@ -784,9 +693,7 @@ const DebtPage = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
               {/* Header */}
               <div className="flex justify-between items-center p-5 border-b">
-                <h3 className="text-lg font-bold">
-                  {editingDebtId ? "Edit Debt" : "Add New Debt"}
-                </h3>
+                <h3 className="text-lg font-bold">Add New Debt</h3>
                 <button
                   onClick={handleCloseModal}
                   className="text-gray-500 hover:text-gray-700"
@@ -938,21 +845,12 @@ const DebtPage = () => {
                     {isCreating ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        {editingDebtId ? "Updating..." : "Adding..."}
+                        Adding...
                       </>
                     ) : (
                       <>
-                        {editingDebtId ? (
-                          <>
-                            <Edit size={18} />
-                            Update Debt
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={18} />
-                            Add Debt
-                          </>
-                        )}
+                        <Plus size={18} />
+                        Add Debt
                       </>
                     )}
                   </button>

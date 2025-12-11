@@ -28,7 +28,11 @@ const LoginPage = () => {
       localStorage.setItem("biz-bozz-token", res.data.token);
 
       // Redirect based on user role
-      if (user.role === "ktv-waiter") {
+      if (user.role === "kitchen") {
+        window.location.href = "/kitchen";
+      } else if (user.role === "bar-counter") {
+        window.location.href = "/bar";
+      } else if (user.role === "ktv-waiter") {
         window.location.href = "/ktv";
       } else {
         window.location.href = "/";

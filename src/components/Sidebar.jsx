@@ -37,6 +37,8 @@ const Sidebar = ({ closeSidebar }) => {
   const isCashier = userRole === "cashier";
   const isKtvWaiter = userRole === "ktv-waiter";
   const isRestaurantWaiter = userRole === "restaurant-waiter";
+  const isKitchen = userRole === "kitchen";
+  const isBar = userRole === "bar-counter";
 
   const allNavItems = [
     { to: "/", icon: Home, label: "Restaurant" },
@@ -55,7 +57,13 @@ const Sidebar = ({ closeSidebar }) => {
 
   // Filter nav items based on role
   let navItems;
-  if (isKtvWaiter) {
+  if (isKitchen) {
+    // Kitchen role - show only Kitchen
+    navItems = allNavItems.filter((item) => item.to === "/kitchen");
+  } else if (isBar) {
+    // Bar role - show only Bar
+    navItems = allNavItems.filter((item) => item.to === "/bar");
+  } else if (isKtvWaiter) {
     // KTV waiter - show KTV and Notifications
     navItems = allNavItems.filter(
       (item) => item.to === "/ktv" || item.to === "/notifications"
