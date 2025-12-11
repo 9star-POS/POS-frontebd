@@ -7,6 +7,7 @@ import getDebts from "../api/debt/getDebts";
 import createDebt from "../api/debt/createDebt";
 import deleteDebt from "../api/debt/deleteDebt";
 import updateDebtStatus from "../api/debt/updateDebtStatus";
+import updateDebt from "../api/debt/updateDebt";
 import Loading from "../components/Loading";
 import NoItems from "../components/NoItems";
 import DeleteModel from "../components/DeleteModel";
@@ -21,16 +22,30 @@ import {
   CheckCircle,
   XCircle,
   Calendar as CalendarIcon,
+  Edit,
 } from "lucide-react";
 
 const DebtPage = () => {
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
   const datePickerRef = useRef(null);
+  const editDatePickerRef = useRef(null);
   const [newDebt, setNewDebt] = useState({
+    amount: "",
+    customerName: "",
+    tabelOrRoom: "",
+    manualDate: format(new Date(), "yyyy-MM-dd"),
+    manualDateDisplay: format(new Date(), "dd/MM/yyyy"),
+    manualTime: format(new Date(), "HH:mm"),
+  });
+  const [editingDebt, setEditingDebt] = useState(null);
+  const [editDebt, setEditDebt] = useState({
     amount: "",
     customerName: "",
     tabelOrRoom: "",
@@ -250,16 +265,22 @@ const DebtPage = () => {
       ) {
         setShowDatePicker(false);
       }
+      if (
+        editDatePickerRef.current &&
+        !editDatePickerRef.current.contains(event.target)
+      ) {
+        setShowEditDatePicker(false);
+      }
     };
 
-    if (showDatePicker) {
+    if (showDatePicker || showEditDatePicker) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showDatePicker]);
+  }, [showDatePicker, showEditDatePicker]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -387,6 +408,158 @@ const DebtPage = () => {
       console.error("Error updating debt status:", error);
     } finally {
       setUpdatingDebtId(null);
+    }
+  };
+
+  const handleEditClick = (debt) => {
+    setEditingDebt(debt);
+    // Parse the manualDate to extract date and time
+    let dateStr = "";
+    let timeStr = "00:00";
+    let displayDate = "";
+
+    if (debt.manualDate) {
+      try {
+        const date = new Date(debt.manualDate);
+        dateStr = format(date, "yyyy-MM-dd");
+        displayDate = format(date, "dd/MM/yyyy");
+        timeStr = format(date, "HH:mm");
+      } catch (error) {
+        console.error("Error parsing date:", error);
+        dateStr = format(new Date(), "yyyy-MM-dd");
+        displayDate = format(new Date(), "dd/MM/yyyy");
+        timeStr = format(new Date(), "HH:mm");
+      }
+    } else {
+      dateStr = format(new Date(), "yyyy-MM-dd");
+      displayDate = format(new Date(), "dd/MM/yyyy");
+      timeStr = format(new Date(), "HH:mm");
+    }
+
+    setEditDebt({
+      amount: debt.amount?.toString() || "",
+      customerName: debt.customerName || "",
+      tabelOrRoom: debt.tabelOrRoom || "",
+      manualDate: dateStr,
+      manualDateDisplay: displayDate,
+      manualTime: timeStr,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingDebt(null);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const todayDisplay = format(new Date(), "dd/MM/yyyy");
+    const currentTime = format(new Date(), "HH:mm");
+    setEditDebt({
+      amount: "",
+      customerName: "",
+      tabelOrRoom: "",
+      manualDate: today,
+      manualDateDisplay: todayDisplay,
+      manualTime: currentTime,
+    });
+  };
+
+  // Handle date input change for edit modal
+  const handleEditDateInputChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+
+    // Format as dd/mm/yyyy
+    if (value.length > 0) {
+      if (value.length <= 2) {
+        value = value;
+      } else if (value.length <= 4) {
+        value = value.slice(0, 2) + "/" + value.slice(2);
+      } else {
+        value =
+          value.slice(0, 2) + "/" + value.slice(2, 4) + "/" + value.slice(4, 8);
+      }
+    }
+
+    // Update display value
+    const displayValue = value;
+
+    // Convert to yyyy-MM-dd format for internal storage
+    const internalValue = parseDateFromDisplay(displayValue);
+
+    setEditDebt((prev) => ({
+      ...prev,
+      manualDate: internalValue || prev.manualDate,
+      manualDateDisplay: displayValue,
+    }));
+  };
+
+  // Handle date selection from calendar picker for edit modal
+  const handleEditDateSelect = (date) => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    const displayDate = format(date, "dd/MM/yyyy");
+
+    setEditDebt((prev) => ({
+      ...prev,
+      manualDate: formattedDate,
+      manualDateDisplay: displayDate,
+    }));
+
+    setShowEditDatePicker(false);
+  };
+
+  const handleUpdateDebt = async () => {
+    // Validate form
+    if (!editDebt.amount || !editDebt.customerName || !editDebt.tabelOrRoom) {
+      return;
+    }
+
+    if (
+      !editDebt.manualDateDisplay ||
+      !isValidDate(editDebt.manualDateDisplay)
+    ) {
+      return;
+    }
+
+    if (!editingDebt) return;
+
+    setIsUpdating(true);
+    try {
+      // Convert manualDate and manualTime to ISO 8601 format with UTC timezone
+      let manualDateUTC = "";
+      if (editDebt.manualDate) {
+        const timePart = editDebt.manualTime || "00:00";
+        const [hours, minutes] = timePart.split(":");
+        const [year, month, day] = editDebt.manualDate.split("-");
+
+        // Format as ISO 8601 with UTC timezone offset (+00:00)
+        const yearStr = year;
+        const monthStr = month.padStart(2, "0");
+        const dayStr = day.padStart(2, "0");
+        const hourStr = hours.padStart(2, "0");
+        const minuteStr = minutes.padStart(2, "0");
+        const secondStr = "00";
+        const millisecondStr = "000";
+
+        manualDateUTC = `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}.${millisecondStr}+00:00`;
+      }
+
+      const response = await updateDebt(editingDebt._id, {
+        amount: parseFloat(editDebt.amount),
+        customerName: editDebt.customerName.trim(),
+        tabelOrRoom: editDebt.tabelOrRoom.trim(),
+        manualDate: manualDateUTC,
+      });
+
+      console.log("Updated Debt Data:", response);
+
+      if (response?.success) {
+        handleCloseEditModal();
+        // Refresh the debts list
+        fetchDebts(filters);
+      }
+    } catch (error) {
+      console.error("Error updating debt:", error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -642,6 +815,13 @@ const DebtPage = () => {
                           <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <button
+                                onClick={() => handleEditClick(debt)}
+                                className="px-3 py-3 rounded-md text-sm font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all flex items-center gap-1"
+                                title="Edit debt"
+                              >
+                                <Edit size={20} />
+                              </button>
+                              <button
                                 onClick={() => handleStatusChange(debt)}
                                 disabled={updatingDebtId === debt._id}
                                 className={`px-3 py-3 rounded-md text-sm justify-center font-semibold transition-all flex items-center gap-1 ${
@@ -851,6 +1031,179 @@ const DebtPage = () => {
                       <>
                         <Plus size={18} />
                         Add Debt
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Debt Modal */}
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              {/* Header */}
+              <div className="flex justify-between items-center p-5 border-b">
+                <h3 className="text-lg font-bold">Edit Debt</h3>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="text-gray-500 hover:text-gray-700"
+                  disabled={isUpdating}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Customer Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editDebt.customerName}
+                    onChange={(e) =>
+                      setEditDebt({ ...editDebt, customerName: e.target.value })
+                    }
+                    placeholder="Enter customer name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                    disabled={isUpdating}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount (MMK) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={editDebt.amount}
+                    onChange={(e) =>
+                      setEditDebt({ ...editDebt, amount: e.target.value })
+                    }
+                    placeholder="Enter amount"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                    min="0"
+                    step="0.01"
+                    disabled={isUpdating}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Table/Room <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editDebt.tabelOrRoom}
+                    onChange={(e) =>
+                      setEditDebt({ ...editDebt, tabelOrRoom: e.target.value })
+                    }
+                    placeholder="Enter table or room number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                    disabled={isUpdating}
+                  />
+                </div>
+
+                <div className="relative" ref={editDatePickerRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      (dd/mm/yyyy)
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editDebt.manualDateDisplay || ""}
+                      onChange={handleEditDateInputChange}
+                      placeholder="dd/mm/yyyy"
+                      maxLength={10}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                      disabled={isUpdating}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditDatePicker(!showEditDatePicker)}
+                      disabled={isUpdating}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-primary transition-colors"
+                      title="Open calendar"
+                    >
+                      <CalendarIcon size={20} />
+                    </button>
+                  </div>
+                  {showEditDatePicker && (
+                    <div className="absolute z-50 top-[-300px] mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+                      <DatePickerCalendar
+                        date={
+                          editDebt.manualDate
+                            ? new Date(editDebt.manualDate)
+                            : new Date()
+                        }
+                        onChange={handleEditDateSelect}
+                        color="#2b2f33"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Time{" "}
+                    <span className="text-xs text-gray-500 ml-2">(HH:mm)</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={editDebt.manualTime || ""}
+                    onChange={(e) =>
+                      setEditDebt({ ...editDebt, manualTime: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                    disabled={isUpdating}
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="border-t p-5">
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseEditModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    disabled={isUpdating}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateDebt}
+                    disabled={
+                      isUpdating ||
+                      !editDebt.amount ||
+                      !editDebt.customerName.trim() ||
+                      !editDebt.tabelOrRoom.trim()
+                    }
+                    className={`flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
+                      isUpdating ||
+                      !editDebt.amount ||
+                      !editDebt.customerName.trim() ||
+                      !editDebt.tabelOrRoom.trim()
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-primary hover:bg-primary/90"
+                    }`}
+                  >
+                    {isUpdating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Edit size={18} />
+                        Update Debt
                       </>
                     )}
                   </button>
