@@ -809,7 +809,7 @@ const DebtPage = () => {
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               {getStatusBadge(debt.status)}
                             </td>
-                            <td className="hidden lg:block px-4 lg:px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
                                 {debt.tabelOrRoom || "N/A"}
                               </div>

@@ -339,7 +339,7 @@ const VocalistPage = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="h-[calc(100vh-470px)] overflow-y-auto">
+          <div className="h-[calc(100vh-400px)] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>

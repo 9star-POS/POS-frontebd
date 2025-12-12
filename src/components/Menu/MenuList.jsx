@@ -81,7 +81,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-40">
+    <div className="flex flex-col gap-5 pb-10">
       {/* Menu Type Tabs */}
       <div className="flex gap-2 border-b border-gray-200">
         <button

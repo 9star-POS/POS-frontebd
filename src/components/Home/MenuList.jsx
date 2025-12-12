@@ -71,7 +71,7 @@ const MenuList = ({ category }) => {
 
   if (!loading && menuLists.length > 0) {
     return (
-      <div className="flex flex-col lg:flex-row lg:flex-wrap gap-5 mt-5 pb-40">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-5 pb-40">
         {menuLists.map((menu) => {
           return category === menu.subCategory ? (
             <MenuCard key={menu._id} menu={menu} />

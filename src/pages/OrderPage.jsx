@@ -9,6 +9,7 @@ import OrderTable from "../components/Orders/OrderTable";
 import Calendar from "../components/Calender";
 import deleteOrders from "../api/Order/deleteOrder";
 import softDeleteRestaurantOrder from "../api/Order/softDeleteRestaurantOrder";
+import deleteKtvOrder from "../api/KTV/deleteKtvOrder";
 import EditOrder from "./EditOrder";
 // import getReport from "../api/report/getReport";
 import NoItems from "../components/NoItems";
@@ -96,6 +97,16 @@ const OrdersPage = () => {
       return res;
     }
     throw new Error(res?.message || "Failed to delete order");
+  };
+
+  const handleDeleteKtvOrder = async (orderId) => {
+    const res = await deleteKtvOrder(orderId);
+    if (res?.success) {
+      // Refresh orders list
+      await getOrders();
+      return res;
+    }
+    throw new Error(res?.message || "Failed to delete KTV order");
   };
 
   const handleEditOrder = () => {
@@ -275,6 +286,7 @@ const OrdersPage = () => {
                 setOrderIds={getOerderIds}
                 deleteOrder={handleDeleteOrder}
                 onSoftDelete={handleSoftDeleteRestaurantOrder}
+                onDeleteKtvOrder={handleDeleteKtvOrder}
               />
             )}
           </div>

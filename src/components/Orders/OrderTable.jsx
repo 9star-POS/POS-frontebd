@@ -12,6 +12,7 @@ function OrderTable({
   deleteOrder,
   setOrderIds,
   onSoftDelete,
+  onDeleteKtvOrder,
 }) {
   // console.log(orders[0].tax);
   const navigate = useNavigate();
@@ -36,11 +37,8 @@ function OrderTable({
 
   const handleDeleteClick = (order, e) => {
     e.stopPropagation();
-    // Only allow delete for restaurant orders (not KTV orders)
-    if (!order.roomService) {
-      setOrderId([order._id]);
-      setIsDeleteOpen(true);
-    }
+    setOrderId([order._id]);
+    setIsDeleteOpen(true);
   };
 
   useEffect(() => {
@@ -184,8 +182,8 @@ function OrderTable({
                   >
                     <MdOutlineRemoveRedEye size={25} />
                   </button>
-                  {/* Only show delete button for restaurant orders (not KTV orders) and if user can edit */}
-                  {!order.roomService && canEdit() && (
+                  {/* Show delete button for both restaurant and KTV orders if user can edit */}
+                  {canEdit() && (
                     <button
                       className="text-red-500 font-bold hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={(e) => handleDeleteClick(order, e)}
@@ -212,10 +210,18 @@ function OrderTable({
           setDeletingOrderId(null);
         }}
         submit={async () => {
-          if (orderId.length > 0 && onSoftDelete) {
+          if (orderId.length > 0) {
             setDeletingOrderId(orderId[0]);
             try {
-              await onSoftDelete(orderId[0]);
+              // Find the order to determine if it's KTV or restaurant
+              const order = orders.find((o) => o._id === orderId[0]);
+              if (order?.roomService && onDeleteKtvOrder) {
+                // Delete KTV order
+                await onDeleteKtvOrder(orderId[0]);
+              } else if (!order?.roomService && onSoftDelete) {
+                // Delete restaurant order
+                await onSoftDelete(orderId[0]);
+              }
               setIsDeleteOpen(false);
               setOrderId([]);
             } catch (error) {
