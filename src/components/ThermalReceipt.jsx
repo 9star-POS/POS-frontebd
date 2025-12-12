@@ -188,283 +188,342 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
     );
   }
 
-  return (
-    <div
-      className="thermal-receipt"
-      style={{
-        width: "148mm",
-        maxWidth: "148mm",
-        margin: "0 auto",
-        padding: "15mm 10mm",
-        fontFamily: "monospace",
-        fontSize: "14px",
-        lineHeight: "1.5",
-        backgroundColor: "white",
-        color: "black",
-      }}
-    >
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: "15px" }}>
-        <h2
-          style={{
-            fontSize: "22px",
-            fontWeight: "bold",
-            marginBottom: "8px",
-            textTransform: "uppercase",
-          }}
-        >
-          Nine Star
-        </h2>
-        <div
-          style={{
-            borderTop: "1px dashed #000",
-            borderBottom: "1px dashed #000",
-            padding: "5px 0",
-            margin: "10px 0",
-          }}
-        >
-          <p style={{ margin: "3px 0", fontSize: "13px" }}>
-            {isKtv ? `Room: ${getTableOrRoom()}` : `Table: ${getTableOrRoom()}`}
-          </p>
-          {order?.createdAt && (
-            <>
-              <p style={{ margin: "3px 0", fontSize: "13px" }}>
-                Date: {formatDate(order.createdAt)}
-              </p>
-              <p style={{ margin: "3px 0", fontSize: "13px" }}>
-                Time: {formatTime(order.createdAt)}
-              </p>
-            </>
-          )}
-          {order?._id && (
-            <p style={{ margin: "3px 0", fontSize: "12px", opacity: 0.7 }}>
-              Order ID: {order._id.slice(-8)}
-            </p>
-          )}
-        </div>
-      </div>
+  // Pagination: Split items into pages (15 items per page minimum)
+  const ITEMS_PER_PAGE = 15;
+  const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
-      {/* Items */}
-      <div style={{ marginBottom: "15px" }}>
-        <div
-          style={{
-            borderBottom: "1px dashed #000",
-            paddingBottom: "5px",
-            marginBottom: "10px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "13px",
-              fontWeight: "bold",
-            }}
-          >
-            <span style={{ flex: "2" }}>Item</span>
-            <span style={{ flex: "1", textAlign: "center" }}>Qty</span>
-            <span style={{ flex: "1", textAlign: "right" }}>Price</span>
-          </div>
-        </div>
+  const getItemsForPage = (pageIndex) => {
+    const start = pageIndex * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return items.slice(start, end);
+  };
 
-        {items.length > 0 ? (
-          items.map((item, index) => (
-            <div
-              key={item._id || index}
-              style={{
-                marginBottom: "8px",
-                paddingBottom: "8px",
-                borderBottom: "1px dotted #ccc",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "2px",
-                }}
-              >
-                <span style={{ flex: "2", fontSize: "13px" }}>
-                  {item.stockName || item.name || "Item"}
-                </span>
-                <span
-                  style={{
-                    flex: "1",
-                    textAlign: "center",
-                    fontSize: "13px",
-                  }}
-                >
-                  {item.quantity || 1}
-                </span>
-                <span
-                  style={{
-                    flex: "1",
-                    textAlign: "right",
-                    fontSize: "13px",
-                  }}
-                >
-                  {(item.price || 0).toLocaleString()}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "12px",
-                  color: "#666",
-                }}
-              >
-                <span style={{ flex: "2" }}>
-                  {item.notes && `Note: ${item.notes}`}
-                </span>
-                <span
-                  style={{
-                    flex: "2",
-                    textAlign: "right",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {((item.price || 0) * (item.quantity || 1)).toLocaleString()}{" "}
-                  MMK
-                </span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p style={{ textAlign: "center", fontSize: "11px" }}>No items</p>
-        )}
-      </div>
-
-      {/* Room Service - Hidden for KTV orders */}
-      {!isKtv && getRoomCharges() > 0 && (
-        <div
-          style={{
-            marginBottom: "10px",
-            paddingBottom: "10px",
-            borderBottom: "1px dashed #000",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "13px",
-            }}
-          >
-            <span>Room Service</span>
-            <span style={{ fontWeight: "bold" }}>
-              {getRoomCharges().toLocaleString()} MMK
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Vocalist Charges - Hidden for KTV orders */}
-      {!isKtv && getVocalistCharges() > 0 && (
-        <div
-          style={{
-            marginBottom: "10px",
-            paddingBottom: "10px",
-            borderBottom: "1px dashed #000",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "13px",
-            }}
-          >
-            <span>Vocalist Charges</span>
-            <span style={{ fontWeight: "bold" }}>
-              {getVocalistCharges().toLocaleString()} MMK
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Summary */}
+  const renderReceiptPage = (pageIndex, pageItems, isLastPage) => {
+    return (
       <div
+        key={pageIndex}
+        className="thermal-receipt-page"
         style={{
-          borderTop: "1px dashed #000",
-          borderBottom: "1px dashed #000",
-          padding: "10px 0",
-          marginBottom: "15px",
+          width: "148mm",
+          maxWidth: "148mm",
+          margin: "0 auto",
+          padding: "15mm 10mm",
+          fontFamily: "monospace",
+          fontSize: "14px",
+          lineHeight: "1.5",
+          backgroundColor: "white",
+          color: "black",
+          pageBreakAfter: isLastPage ? "auto" : "always",
+          pageBreakInside: "avoid",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: "6px",
-            fontSize: "13px",
-          }}
-        >
-          <span>Subtotal:</span>
-          <span>{getSubtotal().toLocaleString()} MMK</span>
-        </div>
-
-        {getDiscount() > 0 && (
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "10px" }}>
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: "bold",
+              marginBottom: "4px",
+              marginTop: "0",
+              textTransform: "uppercase",
+            }}
+          >
+            Nine Star
+          </h2>
           <div
             style={{
+              borderTop: "1px dashed #000",
+              borderBottom: "1px dashed #000",
+              padding: "3px 0",
+              margin: "4px 0",
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "6px",
-              fontSize: "13px",
+              alignItems: "center",
+            }}
+          >
+            <p style={{ margin: "1px 0", fontSize: "12px" }}>
+              {isKtv
+                ? `Room: ${getTableOrRoom()}`
+                : `Table: ${getTableOrRoom()}`}
+            </p>
+            {order?.createdAt && (
+              <>
+                <p style={{ margin: "1px 0", fontSize: "12px" }}>
+                  Date: {formatDate(order.createdAt)}
+                </p>
+                <p style={{ margin: "1px 0", fontSize: "12px" }}>
+                  Time: {formatTime(order.createdAt)}
+                </p>
+              </>
+            )}
+            {order?._id && (
+              <p style={{ margin: "1px 0", fontSize: "11px", opacity: 0.7 }}>
+                Order ID: {order._id.slice(-8)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Items */}
+        <div style={{ marginBottom: "15px" }}>
+          <div
+            style={{
+              borderBottom: "1px dashed #000",
+              paddingBottom: "5px",
+              marginBottom: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "13px",
+                fontWeight: "bold",
+              }}
+            >
+              <span style={{ flex: "2" }}>Item</span>
+              <span style={{ flex: "1", textAlign: "center" }}>Qty</span>
+              <span style={{ flex: "1", textAlign: "right" }}>Price</span>
+            </div>
+          </div>
+
+          {pageItems.length > 0 ? (
+            pageItems.map((item, index) => (
+              <div
+                key={item._id || index}
+                style={{
+                  marginBottom: "8px",
+                  paddingBottom: "8px",
+                  borderBottom: "1px dotted #ccc",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "2px",
+                  }}
+                >
+                  <span style={{ flex: "2", fontSize: "13px" }}>
+                    {item.stockName || item.name || "Item"}
+                  </span>
+                  <span
+                    style={{
+                      flex: "1",
+                      textAlign: "center",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {item.quantity || 1}
+                  </span>
+                  <span
+                    style={{
+                      flex: "1",
+                      textAlign: "right",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {(
+                      (item.price || 0) * (item.quantity || 1)
+                    ).toLocaleString()}{" "}
+                    MMK
+                  </span>
+                </div>
+                {/* <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                    color: "#666",
+                  }}
+                >
+                  <span style={{ flex: "2" }}>
+                    {item.notes && `Note: ${item.notes}`}
+                  </span>
+                  <span
+                    style={{
+                      flex: "2",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {(
+                      (item.price || 0) * (item.quantity || 1)
+                    ).toLocaleString()}{" "}
+                    MMK
+                  </span>
+                </div> */}
+              </div>
+            ))
+          ) : (
+            <p style={{ textAlign: "center", fontSize: "11px" }}>No items</p>
+          )}
+        </div>
+
+        {/* Show page number if multiple pages */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "10px",
+              marginBottom: "10px",
+              fontSize: "11px",
               color: "#666",
             }}
           >
-            <span>Discount:</span>
-            <span>-{getDiscount().toLocaleString()} MMK</span>
+            Page {pageIndex + 1} of {totalPages}
           </div>
         )}
 
-        {getTax() > 0 && (
+        {/* Show "Continued..." on pages after the first */}
+        {pageIndex > 0 && (
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "6px",
-              fontSize: "13px",
+              textAlign: "center",
+              marginBottom: "10px",
+              paddingBottom: "10px",
+              borderBottom: "1px dashed #000",
+              fontSize: "12px",
+              color: "#666",
+              fontStyle: "italic",
             }}
           >
-            <span>Gov Tax ({getTaxRate()}%):</span>
-            <span>{getTax().toLocaleString()} MMK</span>
+            (Continued from previous page...)
           </div>
         )}
 
-        {getServiceFee() > 0 && (
+        {/* Room Service - Hidden for KTV orders - Only show on first page */}
+        {pageIndex === 0 && !isKtv && getRoomCharges() > 0 && (
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "6px",
-              fontSize: "13px",
+              marginBottom: "10px",
+              paddingBottom: "10px",
+              borderBottom: "1px dashed #000",
             }}
           >
-            <span>Service Fee ({getServiceFeeRate()}%):</span>
-            <span>{getServiceFee().toLocaleString()} MMK</span>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "13px",
+              }}
+            >
+              <span>Room Service</span>
+              <span style={{ fontWeight: "bold" }}>
+                {getRoomCharges().toLocaleString()} MMK
+              </span>
+            </div>
           </div>
         )}
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: "12px",
-            paddingTop: "12px",
-            borderTop: "2px solid #000",
-            fontSize: "16px",
-            fontWeight: "bold",
-          }}
-        >
-          <span>TOTAL:</span>
-          <span>{getTotal().toLocaleString()} MMK</span>
-        </div>
-      </div>
+        {/* Vocalist Charges - Hidden for KTV orders - Only show on first page */}
+        {pageIndex === 0 && !isKtv && getVocalistCharges() > 0 && (
+          <div
+            style={{
+              marginBottom: "10px",
+              paddingBottom: "10px",
+              borderBottom: "1px dashed #000",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "13px",
+              }}
+            >
+              <span>Vocalist Charges</span>
+              <span style={{ fontWeight: "bold" }}>
+                {getVocalistCharges().toLocaleString()} MMK
+              </span>
+            </div>
+          </div>
+        )}
 
-      {/* Payment Method */}
-      {/* {order?.paymentMethod && order.paymentMethod !== "none" && (
+        {/* Summary - Only show on last page */}
+        {isLastPage && (
+          <div
+            style={{
+              borderTop: "1px dashed #000",
+              borderBottom: "1px dashed #000",
+              padding: "10px 0",
+              marginBottom: "15px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "6px",
+                fontSize: "13px",
+              }}
+            >
+              <span>Subtotal:</span>
+              <span>{getSubtotal().toLocaleString()} MMK</span>
+            </div>
+
+            {getDiscount() > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "6px",
+                  fontSize: "13px",
+                  color: "#666",
+                }}
+              >
+                <span>Discount:</span>
+                <span>-{getDiscount().toLocaleString()} MMK</span>
+              </div>
+            )}
+
+            {getTax() > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "6px",
+                  fontSize: "13px",
+                }}
+              >
+                <span>Gov Tax ({getTaxRate()}%):</span>
+                <span>{getTax().toLocaleString()} MMK</span>
+              </div>
+            )}
+
+            {getServiceFee() > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "6px",
+                  fontSize: "13px",
+                }}
+              >
+                <span>Service Fee ({getServiceFeeRate()}%):</span>
+                <span>{getServiceFee().toLocaleString()} MMK</span>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: "12px",
+                paddingTop: "12px",
+                borderTop: "2px solid #000",
+                fontSize: "16px",
+                fontWeight: "bold",
+              }}
+            >
+              <span>TOTAL:</span>
+              <span>{getTotal().toLocaleString()} MMK</span>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Method */}
+        {/* {order?.paymentMethod && order.paymentMethod !== "none" && (
         <div
           style={{
             marginBottom: "15px",
@@ -487,25 +546,38 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
         </div>
       )} */}
 
-      {/* Footer */}
-      <div
-        style={{
-          textAlign: "center",
-          marginTop: "20px",
-          paddingTop: "15px",
-          borderTop: "1px dashed #000",
-          fontSize: "12px",
-          color: "#666",
-        }}
-      >
-        <p style={{ margin: "6px 0" }}>Thank you for your visit!</p>
-        <p style={{ margin: "6px 0" }}>
-          {order?.updatedAt &&
-            `Printed: ${formatDate(order.updatedAt)} ${formatTime(
-              order.updatedAt
-            )}`}
-        </p>
+        {/* Footer - Only show on last page */}
+        {isLastPage && (
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "20px",
+              paddingTop: "15px",
+              borderTop: "1px dashed #000",
+              fontSize: "12px",
+              color: "#666",
+            }}
+          >
+            <p style={{ margin: "6px 0" }}>Thank you for your visit!</p>
+            <p style={{ margin: "6px 0" }}>
+              {order?.updatedAt &&
+                `Printed: ${formatDate(order.updatedAt)} ${formatTime(
+                  order.updatedAt
+                )}`}
+            </p>
+          </div>
+        )}
       </div>
+    );
+  };
+
+  return (
+    <div className="thermal-receipt-container">
+      {Array.from({ length: totalPages }, (_, index) => {
+        const pageItems = getItemsForPage(index);
+        const isLastPage = index === totalPages - 1;
+        return renderReceiptPage(index, pageItems, isLastPage);
+      })}
 
       {/* Print Styles */}
       <style>{`
@@ -533,11 +605,18 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             padding: 0 !important;
             background: white !important;
             display: flex !important;
-            justify-content: center !important;
-            align-items: flex-start !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
             z-index: 99999 !important;
           }
-          .thermal-receipt {
+          .thermal-receipt-container {
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+          }
+          .thermal-receipt-page {
             position: relative !important;
             width: 148mm !important;
             max-width: 148mm !important;
@@ -548,12 +627,18 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
             border: none !important;
             color: black !important;
             font-size: 14px !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
+          }
+          .thermal-receipt-page:last-child {
+            page-break-after: auto !important;
           }
         }
         @media screen {
-          .thermal-receipt {
+          .thermal-receipt-page {
             border: 1px solid #ccc;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
           }
         }
       `}</style>
