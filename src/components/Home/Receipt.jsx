@@ -40,6 +40,9 @@ function Receipt({ onClose }) {
   const [orderItemsForRemove, setOrderItemsForRemove] = useState([]);
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [tableServiceId, setTableServiceId] = useState(null);
+  const [paperSize, setPaperSize] = useState(
+    () => localStorage.getItem("receipt-paper-size") || "A5"
+  );
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -494,7 +497,8 @@ function Receipt({ onClose }) {
         };
 
         // Print receipt
-        printReceipt(orderForPrint, false);
+        const paperSize = localStorage.getItem("receipt-paper-size") || "A5";
+        printReceipt(orderForPrint, false, paperSize);
 
         setRemoteOrder(res?.data || null);
         setOrderId(null);
@@ -730,6 +734,19 @@ function Receipt({ onClose }) {
       <div className="pt-2">
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
+          <div className="flex items-center gap-3">
+            <select
+              value={paperSize}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPaperSize(val);
+                localStorage.setItem("receipt-paper-size", val);
+              }}
+              className="border border-primary/40 text-primary bg-white rounded-md px-2 py-1 text-sm"
+            >
+              <option value="A5">A5</option>
+              <option value="A4">A4</option>
+            </select>
           <button
             className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
             onClick={onClose}
@@ -744,6 +761,7 @@ function Receipt({ onClose }) {
               Split Order
             </button>
           )}
+          </div>
         </div>
 
         {!selectedTable && (

@@ -1,6 +1,6 @@
 import React from "react";
 
-const ThermalReceipt = ({ order, isKtv = false }) => {
+const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -188,8 +188,9 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
     );
   }
 
-  // Pagination: Split items into pages (15 items per page minimum)
-  const ITEMS_PER_PAGE = 15;
+  // Pagination: Split items into pages (adjust by paper size)
+  const PAGE_WIDTH_MM = paperSize === "A4" ? 210 : 148;
+  const ITEMS_PER_PAGE = paperSize === "A4" ? 25 : 15;
   const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
 
   const getItemsForPage = (pageIndex) => {
@@ -204,8 +205,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
         key={pageIndex}
         className="thermal-receipt-page"
         style={{
-          width: "148mm",
-          maxWidth: "148mm",
+          width: `${PAGE_WIDTH_MM}mm`,
+          maxWidth: `${PAGE_WIDTH_MM}mm`,
           margin: "0 auto",
           padding: "15mm 10mm",
           fontFamily: "monospace",
@@ -393,7 +394,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
         )}
 
         {/* Room Service - Hidden for KTV orders - Only show on first page */}
-        {pageIndex === 0 && !isKtv && getRoomCharges() > 0 && (
+        {pageIndex === 0 && isKtv && getRoomCharges() > 0 && (
           <div
             style={{
               marginBottom: "10px",
@@ -417,7 +418,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
         )}
 
         {/* Vocalist Charges - Hidden for KTV orders - Only show on first page */}
-        {pageIndex === 0 && !isKtv && getVocalistCharges() > 0 && (
+        {pageIndex === 0 && isKtv && getVocalistCharges() > 0 && (
           <div
             style={{
               marginBottom: "10px",
@@ -583,7 +584,7 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
       <style>{`
         @media print {
           @page {
-            size: A5;
+            size: ${paperSize};
             margin: 0;
           }
           html, body {
@@ -618,8 +619,8 @@ const ThermalReceipt = ({ order, isKtv = false }) => {
           }
           .thermal-receipt-page {
             position: relative !important;
-            width: 148mm !important;
-            max-width: 148mm !important;
+            width: ${PAGE_WIDTH_MM}mm !important;
+            max-width: ${PAGE_WIDTH_MM}mm !important;
             margin: 0 !important;
             padding: 15mm 10mm !important;
             background: white !important;

@@ -37,8 +37,8 @@ function OrderTable({
 
   const handleDeleteClick = (order, e) => {
     e.stopPropagation();
-    setOrderId([order._id]);
-    setIsDeleteOpen(true);
+      setOrderId([order._id]);
+      setIsDeleteOpen(true);
   };
 
   useEffect(() => {
@@ -220,7 +220,7 @@ function OrderTable({
                 await onDeleteKtvOrder(orderId[0]);
               } else if (!order?.roomService && onSoftDelete) {
                 // Delete restaurant order
-                await onSoftDelete(orderId[0]);
+              await onSoftDelete(orderId[0]);
               }
               setIsDeleteOpen(false);
               setOrderId([]);

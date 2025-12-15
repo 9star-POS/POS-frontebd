@@ -675,7 +675,8 @@ function Receipt({ onClose }) {
         };
 
         // Print receipt
-        printReceipt(orderForPrint, true);
+        const paperSize = localStorage.getItem("receipt-paper-size") || "A5";
+        printReceipt(orderForPrint, true, paperSize);
 
         setRemoteOrder(res?.data || null);
         setOrderId(null);

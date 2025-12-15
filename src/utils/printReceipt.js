@@ -7,7 +7,7 @@ import ThermalReceipt from "../components/ThermalReceipt";
  * @param {Object} order - The order object to print
  * @param {boolean} isKtv - Whether this is a KTV order (default: false)
  */
-export const printReceipt = (order, isKtv = false) => {
+export const printReceipt = (order, isKtv = false, paperSize = "A5") => {
   // Remove any existing print container and styles
   const existingContainer = document.getElementById(
     "thermal-receipt-print-container"
@@ -22,15 +22,11 @@ export const printReceipt = (order, isKtv = false) => {
     existingStyles.remove();
   }
 
-  // Inject global print styles
+  // Inject minimal global print styles (component controls page size and width)
   const styleElement = document.createElement("style");
   styleElement.id = "thermal-receipt-print-styles";
   styleElement.textContent = `
     @media print {
-      @page {
-        size: A5;
-        margin: 0;
-      }
       html, body {
         margin: 0 !important;
         padding: 0 !important;
@@ -53,18 +49,6 @@ export const printReceipt = (order, isKtv = false) => {
         justify-content: center !important;
         align-items: flex-start !important;
         z-index: 99999 !important;
-      }
-      .thermal-receipt {
-        position: relative !important;
-        width: 148mm !important;
-        max-width: 148mm !important;
-        margin: 0 !important;
-        padding: 15mm 10mm !important;
-        background: white !important;
-        box-shadow: none !important;
-        border: none !important;
-        color: black !important;
-        font-size: 14px !important;
       }
     }
   `;
@@ -89,7 +73,7 @@ export const printReceipt = (order, isKtv = false) => {
 
   // Create a React root and render the receipt
   const root = ReactDOM.createRoot(printContainer);
-  root.render(React.createElement(ThermalReceipt, { order, isKtv }));
+  root.render(React.createElement(ThermalReceipt, { order, isKtv, paperSize }));
 
   // Wait for the component to render, then trigger print
   // Use requestAnimationFrame to ensure DOM is ready
