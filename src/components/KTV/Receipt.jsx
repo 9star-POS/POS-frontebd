@@ -62,6 +62,9 @@ function Receipt({ onClose }) {
   const [orderItemsForRemove, setOrderItemsForRemove] = useState([]);
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [isLoadingRemoveModal, setIsLoadingRemoveModal] = useState(false);
+  const [paperSize, setPaperSize] = useState(
+    () => localStorage.getItem("receipt-paper-size") || "A5"
+  );
   useEffect(() => {
     const fetchOrdersForTable = async () => {
       if (!selectedRoom) {
@@ -959,20 +962,34 @@ function Receipt({ onClose }) {
       <div className="pt-2 h-full">
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
-          <button
-            className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
-            onClick={onClose}
-          >
-            Save
-          </button>
-          {hasLocalItems && (
-            <button
-              onClick={() => setIsSplitOpen(true)}
-              className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+          <div className="flex items-center gap-3">
+            <select
+              value={paperSize}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPaperSize(val);
+                localStorage.setItem("receipt-paper-size", val);
+              }}
+              className="border border-primary/40 text-primary bg-white rounded-md px-2 py-1 text-sm"
             >
-              Split Order
+              <option value="A5">A5</option>
+              <option value="A4">A4</option>
+            </select>
+            <button
+              className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              onClick={onClose}
+            >
+              Save
             </button>
-          )}
+            {hasLocalItems && (
+              <button
+                onClick={() => setIsSplitOpen(true)}
+                className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              >
+                Split Order
+              </button>
+            )}
+          </div>
         </div>
 
         {!selectedRoom && (

@@ -19,7 +19,7 @@ const MenuCard = ({ menu, refreshMenu }) => {
   };
   // console.log(menu);
   return (
-    <div className="bg-white shadow-lg overflow-hidden relative">
+    <div className="bg-white shadow-lg overflow-hidden relative rounded-lg w-full min-w-0">
       <div className="hidden md:block">
         <img
           className="w-full h-48 sm:h-52 object-cover"
@@ -28,14 +28,14 @@ const MenuCard = ({ menu, refreshMenu }) => {
         />
       </div>
 
-      <div className="flex h-[80px] gap-2 justify-between items-center mt-2 mx-1  ">
-        <div className="font-raleway ">
-          <h2 className="font-semibold text-gray-800 multi-line-truncate">
+      <div className="flex h-[80px] gap-2 justify-between items-center mt-2 mx-1">
+        <div className="font-raleway min-w-0">
+          <h2 className="font-semibold text-gray-800 multi-line-truncate break-words">
             {menu.name}{" "}
           </h2>
           <p className="text-gray-500 text-sm mt-1">{menu.price} MMK</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-shrink-0">
           <button
             className="block md:hidden m-2 bg-red-500 text-white p-2 rounded-md hover:scale-95 active:scale-105"
             onClick={() => setIsDeleteOpen(true)}

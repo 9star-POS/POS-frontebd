@@ -35,35 +35,30 @@ function MenuPage() {
   }, [isModalOpen2, menuType]);
 
   return (
-    <>
-      <div className="p-5 h-[calc(100vh-50px)]">
-        <div className="mb-5 flex justify-between items-center">
-          <p className="sub-header">Menu Management</p>
-          <div className="py-2 md:py-0">
-            <button
-              className="bg-primary w-full md:w-48 text-white px-4 py-2 rounded-md transition duration-200 border border-primary hover:bg-white hover:text-primary focus:outline-none focus:scale-105"
-              onClick={() => setIsModalOpen2(true)}
-            >
-              <p className="font-bold">Add Menu</p>
-            </button>
-          </div>
+    <div className="h-[calc(100vh-50px)] w-screen md:w-full py-3 px-3">
+      <div className="flex justify-between mb-3">
+        <p className="sub-header">Menu Management</p>
+        <div className="py-2 md:py-0">
+          <button
+            className="bg-primary text-white px-4 py-2 rounded-md transition duration-200 border border-primary hover:bg-white hover:text-primary focus:outline-none focus:scale-105"
+            onClick={() => setIsModalOpen2(true)}
+          >
+            <p className="font-bold">Add Menu</p>
+          </button>
         </div>
-        <div className="flex flex-col md:flex-row gap-1"></div>
-        <div className="overflow-y-auto h-[70vh]">
-          <MenuList
-            isModalOpen2={isModalOpen2}
-            onMenuTypeChange={setMenuType}
-          />
-        </div>
-
-        <MenuModel
-          isOpen={isModalOpen2}
-          onClose={() => setIsModalOpen2(false)}
-          subcategories={subcategories}
-          menuType={menuType}
-        />
       </div>
-    </>
+      <div className="flex flex-col md:flex-row gap-1 "></div>
+      <div className="overflow-y-auto h-[calc(100vh-180px)] md:h-[calc(100vh-200px)]">
+        <MenuList isModalOpen2={isModalOpen2} onMenuTypeChange={setMenuType} />
+      </div>
+
+      <MenuModel
+        isOpen={isModalOpen2}
+        onClose={() => setIsModalOpen2(false)}
+        subcategories={subcategories}
+        menuType={menuType}
+      />
+    </div>
   );
 }
 

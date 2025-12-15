@@ -81,15 +81,15 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-10">
+    <div className="flex flex-col gap-4 md:gap-5 pb-10 min-w-0">
       {/* Menu Type Tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto md:overflow-visible hide-scrollbar px-2 md:px-0 min-w-0">
         <button
           onClick={() => {
             handleMenuTypeChange("restaurant");
             setSelectedCategory("All");
           }}
-          className={`px-6 py-3 font-semibold transition-all ${
+          className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
             menuType === "restaurant"
               ? "text-primary border-b-2 border-primary"
               : "text-gray-500 hover:text-gray-700"
@@ -102,7 +102,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
             handleMenuTypeChange("ktv");
             setSelectedCategory("All");
           }}
-          className={`px-6 py-3 font-semibold transition-all ${
+          className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
             menuType === "ktv"
               ? "text-primary border-b-2 border-primary"
               : "text-gray-500 hover:text-gray-700"
@@ -114,7 +114,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
 
       {/* Category Filters */}
       {categoryList.length > 0 && (
-        <div className="w-full overflow-x-auto md:overflow-hidden flex md:flex-wrap gap-5 me-[200px] md:me-[0] hide-scrollbar">
+        <div className="w-full overflow-x-auto md:overflow-visible flex md:flex-wrap gap-3 md:gap-4 hide-scrollbar px-2 md:px-0 min-w-0">
           {categoryList.map((category, index) => (
             <div key={index} className="flex items-center gap-2 cursor-pointer">
               <button
@@ -123,7 +123,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
                   selectedCategory === category
                     ? "bg-prilight text-primary"
                     : "bg-white text-black"
-                } font-bold text-[14px] px-5 py-2 rounded-3xl transition duration-200 hover:bg-prilight hover:text-primary focus:outline-none focus:scale-105`}
+                } font-bold text-[13px] md:text-[14px] px-4 md:px-5 py-1.5 md:py-2 rounded-3xl transition duration-200 hover:bg-prilight hover:text-primary focus:outline-none focus:scale-105 whitespace-nowrap`}
                 onClick={() => setSelectedCategory(category)}
               >
                 <p className="font-bold">{category}</p>
@@ -146,7 +146,7 @@ const MenuList = ({ isModalOpen2, onMenuTypeChange }) => {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
           {filteredMenus.map((menu) => {
             // Show all items if "All" is selected, otherwise filter by subCategory
             return selectedCategory === "All" ||

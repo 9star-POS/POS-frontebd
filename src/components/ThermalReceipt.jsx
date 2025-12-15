@@ -210,7 +210,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
           margin: "0 auto",
           padding: "15mm 10mm",
           fontFamily: "monospace",
-          fontSize: "14px",
+          fontSize: "12px",
           lineHeight: "1.5",
           backgroundColor: "white",
           color: "black",
@@ -222,7 +222,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
         <div style={{ textAlign: "center", marginBottom: "10px" }}>
           <h2
             style={{
-              fontSize: "18px",
+              fontSize: "14px",
               fontWeight: "bold",
               marginBottom: "4px",
               marginTop: "0",
@@ -242,23 +242,23 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
               alignItems: "center",
             }}
           >
-            <p style={{ margin: "1px 0", fontSize: "12px" }}>
+            <p style={{ margin: "1px 0", fontSize: "10px" }}>
               {isKtv
                 ? `Room: ${getTableOrRoom()}`
                 : `Table: ${getTableOrRoom()}`}
             </p>
             {order?.createdAt && (
               <>
-                <p style={{ margin: "1px 0", fontSize: "12px" }}>
+                <p style={{ margin: "1px 0", fontSize: "10px" }}>
                   Date: {formatDate(order.createdAt)}
                 </p>
-                <p style={{ margin: "1px 0", fontSize: "12px" }}>
+                <p style={{ margin: "1px 0", fontSize: "10px" }}>
                   Time: {formatTime(order.createdAt)}
                 </p>
               </>
             )}
             {order?._id && (
-              <p style={{ margin: "1px 0", fontSize: "11px", opacity: 0.7 }}>
+              <p style={{ margin: "1px 0", fontSize: "9px", opacity: 0.7 }}>
                 Order ID: {order._id.slice(-8)}
               </p>
             )}
@@ -266,19 +266,19 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
         </div>
 
         {/* Items */}
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: "5px" }}>
           <div
             style={{
               borderBottom: "1px dashed #000",
-              paddingBottom: "5px",
-              marginBottom: "10px",
+              paddingBottom: "2px",
+              marginBottom: "2px",
             }}
           >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                fontSize: "13px",
+                fontSize: "11px",
                 fontWeight: "bold",
               }}
             >
@@ -430,7 +430,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                fontSize: "13px",
+                fontSize: "11px",
               }}
             >
               <span>Vocalist Charges</span>
@@ -456,7 +456,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
                 display: "flex",
                 justifyContent: "space-between",
                 marginBottom: "6px",
-                fontSize: "13px",
+                fontSize: "11px",
               }}
             >
               <span>Subtotal:</span>
@@ -469,7 +469,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "6px",
-                  fontSize: "13px",
+                  fontSize: "11px",
                   color: "#666",
                 }}
               >
@@ -484,7 +484,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "6px",
-                  fontSize: "13px",
+                  fontSize: "11px",
                 }}
               >
                 <span>Gov Tax ({getTaxRate()}%):</span>
@@ -498,7 +498,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "6px",
-                  fontSize: "13px",
+                  fontSize: "11px",
                 }}
               >
                 <span>Service Fee ({getServiceFeeRate()}%):</span>
@@ -513,7 +513,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
                 marginTop: "12px",
                 paddingTop: "12px",
                 borderTop: "2px solid #000",
-                fontSize: "16px",
+                fontSize: "10px",
                 fontWeight: "bold",
               }}
             >
@@ -555,7 +555,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
               marginTop: "20px",
               paddingTop: "15px",
               borderTop: "1px dashed #000",
-              fontSize: "12px",
+              fontSize: "10px",
               color: "#666",
             }}
           >
