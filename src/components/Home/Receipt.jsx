@@ -22,6 +22,7 @@ import checkoutOrder from "../../api/Order/checkout";
 import SplitOrderModal from "../KTV/SplitOrderModal";
 import getTableService from "../../api/Table/getTableService";
 import printReceipt from "../../utils/printReceipt";
+import { getUserRole } from "../../utils/getUserRole";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -488,7 +489,8 @@ function Receipt({ onClose }) {
             [],
           subTotal: res?.data?.subTotal || calculateSubtotal(),
           tax: res?.data?.tax || calculateTax(calculateSubtotal()),
-          serviceFee: res?.data?.serviceFee || calculateServiceFee(calculateSubtotal()),
+          serviceFee:
+            res?.data?.serviceFee || calculateServiceFee(calculateSubtotal()),
           discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
           paymentMethod: "cash",
@@ -747,20 +749,20 @@ function Receipt({ onClose }) {
               <option value="A5">A5</option>
               <option value="A4">A4</option>
             </select>
-          <button
-            className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
-            onClick={onClose}
-          >
-            Save
-          </button>
-          {hasLocalItems && (
             <button
-              onClick={() => setIsSplitOpen(true)}
-              className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              onClick={onClose}
             >
-              Split Order
+              Save
             </button>
-          )}
+            {hasLocalItems && (
+              <button
+                onClick={() => setIsSplitOpen(true)}
+                className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              >
+                Split Order
+              </button>
+            )}
           </div>
         </div>
 
@@ -955,7 +957,7 @@ function Receipt({ onClose }) {
                   >
                     Split Order
                   </button>
-                  {orderId && (
+                  {orderId && getUserRole() !== "restaurant-waiter" && (
                     <button
                       // onClick={handleCheckout}
                       onClick={handlePayment}

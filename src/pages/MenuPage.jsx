@@ -48,7 +48,7 @@ function MenuPage() {
         </div>
       </div>
       <div className="flex flex-col md:flex-row gap-1 "></div>
-      <div className="overflow-y-auto h-[calc(100vh-180px)] md:h-[calc(100vh-200px)]">
+      <div className="overflow-y-auto h-[calc(100vh-180px)] md:h-[calc(100vh-120px)]">
         <MenuList isModalOpen2={isModalOpen2} onMenuTypeChange={setMenuType} />
       </div>
 
