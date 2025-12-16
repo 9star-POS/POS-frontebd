@@ -34,10 +34,12 @@ import removeKtvOrderItems from "../../api/KTV/removeKtvOrderItems";
 import TimestampFormatter from "../Orders/TimestampFormatter";
 import SplitOrderModal from "./SplitOrderModal";
 import printReceipt from "../../utils/printReceipt";
+import { getUserRole } from "../../utils/getUserRole";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const userRole = getUserRole();
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
   console.log("selectedRoom", selectedRoom);
   const receipts = useSelector((state) => state.ktvReceipts.receipts);
@@ -1385,7 +1387,7 @@ function Receipt({ onClose }) {
                       Split Order
                     </button>
                   )}
-                  {orderId && (
+                  {orderId && userRole !== "ktv-waiter" && (
                     <button
                       // onClick={handleCheckout}
                       onClick={handlePayment}

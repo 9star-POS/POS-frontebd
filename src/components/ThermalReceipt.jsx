@@ -219,7 +219,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "10px" }}>
+        <div style={{ textAlign: "center", marginBottom: "5px" }}>
           <h2
             style={{
               fontSize: "14px",
@@ -271,7 +271,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
             style={{
               borderBottom: "1px dashed #000",
               paddingBottom: "2px",
-              marginBottom: "2px",
+              marginBottom: "5px",
             }}
           >
             <div
@@ -293,9 +293,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
               <div
                 key={item._id || index}
                 style={{
-                  marginBottom: "8px",
-                  paddingBottom: "8px",
-                  borderBottom: "1px dotted #ccc",
+                  marginBottom: "3px",
                 }}
               >
                 <div
@@ -305,7 +303,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "A5" }) => {
                     marginBottom: "2px",
                   }}
                 >
-                  <span style={{ flex: "2", fontSize: "13px" }}>
+                  <span style={{ flex: "2", fontSize: "10px" }}>
                     {item.stockName || item.name || "Item"}
                   </span>
                   <span
