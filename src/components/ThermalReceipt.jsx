@@ -519,19 +519,32 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
       <style>{`
         @media print {
           @page {
-            size: ${PAPER_WIDTH_MM}mm auto;
+            size: ${PAPER_WIDTH_MM}mm ${(() => {
+        // Calculate height based on content
+        const baseHeight = 60;
+        const itemsHeight = items.length * 4;
+        const ktvExtra = isKtv ? 15 : 0;
+        return baseHeight + itemsHeight + ktvExtra + 10;
+      })()}mm;
             margin: 0;
+            padding: 0;
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             width: ${PAPER_WIDTH_MM}mm !important;
+            overflow: hidden !important;
           }
           body > *:not(#thermal-receipt-print-container) {
             display: none !important;
+            visibility: hidden !important;
           }
           #thermal-receipt-print-container {
-            position: fixed !important;
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: ${PAPER_WIDTH_MM}mm !important;
@@ -539,9 +552,13 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             padding: 0 !important;
             background: white !important;
             z-index: 99999 !important;
+            overflow: hidden !important;
+            page-break-after: always !important;
           }
           .thermal-receipt-container {
             width: ${PAPER_WIDTH_MM}mm !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
           }
           .thermal-receipt-page {
             width: ${PAPER_WIDTH_MM}mm !important;
@@ -552,6 +569,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             box-shadow: none !important;
             border: none !important;
             color: black !important;
+            page-break-after: always !important;
           }
         }
         @media screen {

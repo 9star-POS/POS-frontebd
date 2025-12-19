@@ -14,12 +14,12 @@ function Dashboard() {
   const [orderCount, setOrderCount] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [dishes, setDishes] = useState([]);
-  
+
   // Initialize date range from sessionStorage or default to today
   // sessionStorage automatically clears when browser closes, so it resets to today
   const [dataFromCalendar, setDataFromCalendar] = useState(() => {
     const savedFilters = sessionStorage.getItem("dashboardDateRange");
-    
+
     if (savedFilters) {
       try {
         const parsed = JSON.parse(savedFilters);
@@ -33,7 +33,7 @@ function Dashboard() {
         console.error("Error parsing saved date range:", e);
       }
     }
-    
+
     return {
       startDate: formattedDate,
       endDate: formattedDate,
