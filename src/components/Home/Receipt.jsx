@@ -42,7 +42,7 @@ function Receipt({ onClose }) {
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [tableServiceId, setTableServiceId] = useState(null);
   const [paperSize, setPaperSize] = useState(
-    () => localStorage.getItem("receipt-paper-size") || "A5"
+    () => localStorage.getItem("receipt-paper-size") || "57mm"
   );
 
   useEffect(() => {
@@ -499,7 +499,7 @@ function Receipt({ onClose }) {
         };
 
         // Print receipt
-        const paperSize = localStorage.getItem("receipt-paper-size") || "A5";
+        const paperSize = localStorage.getItem("receipt-paper-size") || "57mm";
         printReceipt(orderForPrint, false, paperSize);
 
         setRemoteOrder(res?.data || null);
@@ -746,8 +746,9 @@ function Receipt({ onClose }) {
               }}
               className="border border-primary/40 text-primary bg-white rounded-md px-2 py-1 text-sm"
             >
-              <option value="A5">A5</option>
-              <option value="A4">A4</option>
+              <option value="57mm">57mm Thermal</option>
+              <option value="58mm">58mm Thermal</option>
+              <option value="80mm">80mm Thermal</option>
             </select>
             <button
               className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"

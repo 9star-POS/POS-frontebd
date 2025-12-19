@@ -6,8 +6,12 @@ import ThermalReceipt from "../components/ThermalReceipt";
  * Prints a thermal receipt for the given order
  * @param {Object} order - The order object to print
  * @param {boolean} isKtv - Whether this is a KTV order (default: false)
+ * @param {string} paperSize - Paper size: "57mm", "58mm", "80mm" (default: "57mm")
  */
-export const printReceipt = (order, isKtv = false, paperSize = "A5") => {
+export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
+  // Get paper width from size string
+  const paperWidth = parseInt(paperSize) || 57;
+  
   // Remove any existing print container and styles
   const existingContainer = document.getElementById(
     "thermal-receipt-print-container"
@@ -22,16 +26,19 @@ export const printReceipt = (order, isKtv = false, paperSize = "A5") => {
     existingStyles.remove();
   }
 
-  // Inject minimal global print styles (component controls page size and width)
+  // Inject thermal paper print styles
   const styleElement = document.createElement("style");
   styleElement.id = "thermal-receipt-print-styles";
   styleElement.textContent = `
     @media print {
+      @page {
+        size: ${paperWidth}mm auto;
+        margin: 0;
+      }
       html, body {
         margin: 0 !important;
         padding: 0 !important;
-        width: 100%;
-        height: 100%;
+        width: ${paperWidth}mm !important;
       }
       body > *:not(#thermal-receipt-print-container) {
         display: none !important;
@@ -40,14 +47,10 @@ export const printReceipt = (order, isKtv = false, paperSize = "A5") => {
         position: fixed !important;
         left: 0 !important;
         top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
+        width: ${paperWidth}mm !important;
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: flex-start !important;
         z-index: 99999 !important;
       }
     }
