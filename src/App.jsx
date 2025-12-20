@@ -32,6 +32,7 @@ import KTVPage from "./pages/KTVPage";
 import RoomPage from "./components/KTV/RoomPage";
 import KitchenPage from "./pages/KitchenPage";
 import BarPage from "./pages/BarPage";
+import QzTrayTestPage from "./pages/QzTrayTestPage";
 
 export default function App() {
   const selectedTable = useSelector((state) => state.receipts.selectedTable);
@@ -280,6 +281,7 @@ export default function App() {
                         }
                       />
 
+                      <Route path="/qz-test" element={<QzTrayTestPage />} />
                       <Route path="*" element={<PageNotFound />} />
                     </Routes>
                   </div>

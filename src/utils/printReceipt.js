@@ -1,14 +1,43 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import ThermalReceipt from "../components/ThermalReceipt";
+import { printReceiptQzTray } from "./qzTrayPrint";
 
 /**
- * Prints a thermal receipt for the given order
+ * Prints a thermal receipt for the given order using QZ Tray (RAW ESC/POS)
+ * Falls back to window.print() if QZ Tray fails
  * @param {Object} order - The order object to print
  * @param {boolean} isKtv - Whether this is a KTV order (default: false)
  * @param {string} paperSize - Paper size: "57mm", "58mm", "80mm" (default: "57mm")
  */
-export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
+export const printReceipt = async (
+  order,
+  isKtv = false,
+  paperSize = "57mm"
+) => {
+  // Try QZ Tray first (RAW ESC/POS printing)
+  try {
+    await printReceiptQzTray(order, isKtv, paperSize, "POS-58");
+    console.log("Receipt printed via QZ Tray");
+    return;
+  } catch (err) {
+    console.warn(
+      "QZ Tray print failed, falling back to window.print():",
+      err.message
+    );
+  }
+
+  // Fallback to window.print()
+  printReceiptFallback(order, isKtv, paperSize);
+};
+
+/**
+ * Fallback print method using window.print()
+ * @param {Object} order - The order object to print
+ * @param {boolean} isKtv - Whether this is a KTV order (default: false)
+ * @param {string} paperSize - Paper size: "57mm", "58mm", "80mm" (default: "57mm")
+ */
+const printReceiptFallback = (order, isKtv = false, paperSize = "57mm") => {
   // Get paper width from size string
   const paperWidth = parseInt(paperSize) || 57;
 
