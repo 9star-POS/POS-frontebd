@@ -11,13 +11,12 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
   // Adjust font sizes based on paper width - larger for better print visibility
   const isWide = PAPER_WIDTH_MM >= 80;
   const fontSize = {
-    title: isWide ? "18px" : "20px",
-    header: isWide ? "14px" : "12px",
-    item: isWide ? "13px" : "11px",
-    itemQty: isWide ? "14px" : "12px",
-    summary: isWide ? "13px" : "11px",
-    total: isWide ? "16px" : "14px",
-    footer: isWide ? "12px" : "10px",
+    title: isWide ? "22px" : "20px",
+    header: isWide ? "16px" : "14px",
+    item: isWide ? "16px" : "14px",
+    summary: isWide ? "15px" : "13px",
+    total: isWide ? "18px" : "16px",
+    footer: isWide ? "14px" : "12px",
   };
 
   const formatDate = (dateString) => {
@@ -216,8 +215,6 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
         style={{
           width: `${PAPER_WIDTH_MM}mm`,
           maxWidth: `${PAPER_WIDTH_MM}mm`,
-          margin: "0",
-          padding: "1mm 0.5mm",
           fontFamily: "'Courier New', monospace",
           fontSize: "9px",
           lineHeight: "1.2",
@@ -295,8 +292,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
               }}
             >
               <span style={{ flex: "1", textAlign: "left" }}>Item</span>
-              <span style={{ width: "18px", textAlign: "center" }}>Qty</span>
-              <span style={{ width: "50px", textAlign: "right" }}>Amt</span>
+              <span style={{ width: "55px", textAlign: "right" }}>Amt</span>
             </div>
           </div>
 
@@ -320,27 +316,20 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                       flex: "1",
                       fontSize: fontSize.item,
                       wordBreak: "break-word",
-                      paddingRight: "0.5mm",
+                      paddingRight: "1mm",
                       textAlign: "left",
+                      fontWeight: "700",
                     }}
                   >
-                    {item.stockName || item.name || "Item"}
-                  </span>
-                  <span
-                    style={{
-                      width: "18px",
-                      textAlign: "center",
-                      fontSize: fontSize.itemQty,
-                      fontWeight: "900",
-                    }}
-                  >
+                    {item.stockName || item.name || "Item"} x{" "}
                     {item.quantity || 1}
                   </span>
                   <span
                     style={{
-                      width: "50px",
+                      width: "55px",
                       textAlign: "right",
                       fontSize: fontSize.item,
+                      fontWeight: "700",
                     }}
                   >
                     {(
