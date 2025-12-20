@@ -8,16 +8,16 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
   // Calculate printable width (accounting for ~4mm margins on each side)
   const PRINTABLE_WIDTH_MM = PAPER_WIDTH_MM - 9;
 
-  // Adjust font sizes based on paper width
+  // Adjust font sizes based on paper width - larger for better print visibility
   const isWide = PAPER_WIDTH_MM >= 80;
   const fontSize = {
-    title: isWide ? "14px" : "12px",
-    header: isWide ? "10px" : "8px",
-    item: isWide ? "9px" : "7px",
-    itemQty: isWide ? "10px" : "8px",
-    summary: isWide ? "9px" : "7px",
-    total: isWide ? "11px" : "9px",
-    footer: isWide ? "8px" : "6px",
+    title: isWide ? "18px" : "16px",
+    header: isWide ? "14px" : "12px",
+    item: isWide ? "13px" : "11px",
+    itemQty: isWide ? "14px" : "12px",
+    summary: isWide ? "13px" : "11px",
+    total: isWide ? "16px" : "14px",
+    footer: isWide ? "12px" : "10px",
   };
 
   const formatDate = (dateString) => {
@@ -216,25 +216,25 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
         style={{
           width: `${PAPER_WIDTH_MM}mm`,
           maxWidth: `${PAPER_WIDTH_MM}mm`,
-          margin: "0 auto",
-          padding: "2mm 2mm",
+          margin: "0",
+          padding: "1mm 0.5mm",
           fontFamily: "'Courier New', monospace",
           fontSize: "9px",
-          lineHeight: "1.3",
+          lineHeight: "1.2",
           backgroundColor: "white",
           color: "black",
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "3mm" }}>
+        <div style={{ textAlign: "center", marginBottom: "1mm" }}>
           <h2
             style={{
               fontSize: fontSize.title,
               fontWeight: "bold",
-              marginBottom: "2mm",
+              marginBottom: "1mm",
               marginTop: "0",
               textTransform: "uppercase",
-              letterSpacing: "0.5px",
+              letterSpacing: "0",
             }}
           >
             Nine Star
@@ -243,8 +243,8 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             style={{
               borderTop: "1px dashed #000",
               borderBottom: "1px dashed #000",
-              padding: "1mm 0",
-              margin: "2mm 0",
+              padding: "0.5mm 0",
+              margin: "1mm 0",
             }}
           >
             <p
@@ -294,17 +294,9 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                 fontWeight: "bold",
               }}
             >
-              <span style={{ flex: "2" }}>Item</span>
-              <span
-                style={{ width: isWide ? "25px" : "20px", textAlign: "center" }}
-              >
-                Qty
-              </span>
-              <span
-                style={{ width: isWide ? "55px" : "45px", textAlign: "right" }}
-              >
-                Amount
-              </span>
+              <span style={{ flex: "1", textAlign: "left" }}>Item</span>
+              <span style={{ width: "18px", textAlign: "center" }}>Qty</span>
+              <span style={{ width: "50px", textAlign: "right" }}>Amt</span>
             </div>
           </div>
 
@@ -325,17 +317,18 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                 >
                   <span
                     style={{
-                      flex: "2",
+                      flex: "1",
                       fontSize: fontSize.item,
                       wordBreak: "break-word",
-                      paddingRight: "1mm",
+                      paddingRight: "0.5mm",
+                      textAlign: "left",
                     }}
                   >
                     {item.stockName || item.name || "Item"}
                   </span>
                   <span
                     style={{
-                      width: isWide ? "25px" : "20px",
+                      width: "18px",
                       textAlign: "center",
                       fontSize: fontSize.itemQty,
                       fontWeight: "bold",
@@ -345,7 +338,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                   </span>
                   <span
                     style={{
-                      width: isWide ? "55px" : "45px",
+                      width: "50px",
                       textAlign: "right",
                       fontSize: fontSize.item,
                     }}
@@ -520,11 +513,11 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
         @media print {
           @page {
             size: ${PAPER_WIDTH_MM}mm ${(() => {
-        // Calculate height based on content
-        const baseHeight = 60;
-        const itemsHeight = items.length * 4;
-        const ktvExtra = isKtv ? 15 : 0;
-        return baseHeight + itemsHeight + ktvExtra + 10;
+        // Calculate height based on content - increased for larger fonts
+        const baseHeight = 80;
+        const itemsHeight = items.length * 6;
+        const ktvExtra = isKtv ? 20 : 0;
+        return baseHeight + itemsHeight + ktvExtra + 15;
       })()}mm;
             margin: 0;
             padding: 0;
@@ -532,6 +525,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            filter: contrast(200%) !important;
           }
           html, body {
             margin: 0 !important;
@@ -564,12 +558,14 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             width: ${PAPER_WIDTH_MM}mm !important;
             max-width: ${PAPER_WIDTH_MM}mm !important;
             margin: 0 !important;
-            padding: 2mm !important;
+            padding: 1mm 0.5mm !important;
             background: white !important;
             box-shadow: none !important;
             border: none !important;
-            color: black !important;
+            color: #000000 !important;
+            font-weight: bold !important;
             page-break-after: always !important;
+            filter: contrast(200%) !important;
           }
         }
         @media screen {
