@@ -11,7 +11,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
   // Adjust font sizes based on paper width - larger for better print visibility
   const isWide = PAPER_WIDTH_MM >= 80;
   const fontSize = {
-    title: isWide ? "18px" : "16px",
+    title: isWide ? "18px" : "20px",
     header: isWide ? "14px" : "12px",
     item: isWide ? "13px" : "11px",
     itemQty: isWide ? "14px" : "12px",
@@ -200,7 +200,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
     return (
       <div
         className="thermal-receipt"
-        style={{ padding: "20px", textAlign: "center" }}
+        style={{ padding: "5px", textAlign: "center" }}
       >
         <p>No order data available</p>
       </div>
@@ -222,7 +222,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
           fontSize: "9px",
           lineHeight: "1.2",
           backgroundColor: "white",
-          color: "black",
+          color: "#000000",
         }}
       >
         {/* Header */}
@@ -230,7 +230,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
           <h2
             style={{
               fontSize: fontSize.title,
-              fontWeight: "bold",
+              fontWeight: "900",
               marginBottom: "1mm",
               marginTop: "0",
               textTransform: "uppercase",
@@ -251,7 +251,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
               style={{
                 margin: "1px 0",
                 fontSize: fontSize.header,
-                fontWeight: "bold",
+                fontWeight: "900",
               }}
             >
               {isKtv
@@ -291,7 +291,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: fontSize.header,
-                fontWeight: "bold",
+                fontWeight: "900",
               }}
             >
               <span style={{ flex: "1", textAlign: "left" }}>Item</span>
@@ -331,7 +331,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                       width: "18px",
                       textAlign: "center",
                       fontSize: fontSize.itemQty,
-                      fontWeight: "bold",
+                      fontWeight: "900",
                     }}
                   >
                     {item.quantity || 1}
@@ -374,7 +374,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
               }}
             >
               <span>Room Service</span>
-              <span style={{ fontWeight: "bold" }}>
+              <span style={{ fontWeight: "900" }}>
                 {getRoomCharges().toLocaleString()}
               </span>
             </div>
@@ -398,7 +398,7 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
               }}
             >
               <span>Vocalist</span>
-              <span style={{ fontWeight: "bold" }}>
+              <span style={{ fontWeight: "    900" }}>
                 {getVocalistCharges().toLocaleString()}
               </span>
             </div>
@@ -436,7 +436,9 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
               }}
             >
               <span>Discount</span>
-              <span>-{getDiscount().toLocaleString()}</span>
+              <span style={{ fontWeight: "900" }}>
+                -{getDiscount().toLocaleString()}
+              </span>
             </div>
           )}
 
