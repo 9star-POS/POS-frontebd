@@ -334,12 +334,12 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
       };
 
       // Only include quantity if requiresPreparation is false
-      if (!requireCooking && quantity && quantity.trim() !== "") {
-        const qty = Number(quantity);
-        if (!isNaN(qty) && qty >= 0) {
-          requestBody.quantity = qty;
-        }
-      }
+      // if (!requireCooking && quantity && quantity.trim() !== "") {
+      //   const qty = Number(quantity);
+      //   if (!isNaN(qty) && qty >= 0) {
+      //     requestBody.quantity = qty;
+      //   }
+      // }
 
       // Include category and subcategory if provided
       const chosenCategory = newCategory && newCategory.trim();

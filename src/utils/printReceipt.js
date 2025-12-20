@@ -13,15 +13,15 @@ export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
   const paperWidth = parseInt(paperSize) || 57;
 
   // Calculate estimated receipt height based on content
-  // Base height for header, footer, summary sections
-  const baseHeight = 60; // mm for header, summary, footer
-  // Height per item (approximately 4mm per item)
+  // Base height for header, footer, summary sections (increased for better visibility)
+  const baseHeight = 90; // mm for header, summary, footer
+  // Height per item (approximately 7mm per item for larger fonts)
   const itemCount = order?.orderItems?.length || 0;
-  const itemsHeight = itemCount * 4;
+  const itemsHeight = itemCount * 7;
   // Add extra for KTV charges if applicable
-  const ktvExtra = isKtv ? 15 : 0;
-  // Calculate total height with some padding
-  const estimatedHeight = baseHeight + itemsHeight + ktvExtra + 10; // 10mm extra padding
+  const ktvExtra = isKtv ? 25 : 0;
+  // Calculate total height with generous padding to ensure total is visible
+  const estimatedHeight = baseHeight + itemsHeight + ktvExtra + 30; // 30mm extra padding
 
   // Remove any existing print container and styles
   const existingContainer = document.getElementById(
@@ -37,26 +37,32 @@ export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
     existingStyles.remove();
   }
 
-  // Inject thermal paper print styles
+  // Inject thermal paper print styles - Continuous Roll (No Page Breaks)
   const styleElement = document.createElement("style");
   styleElement.id = "thermal-receipt-print-styles";
   styleElement.textContent = `
     @media print {
       @page {
-        size: ${paperWidth}mm ${estimatedHeight}mm;
+        size: ${paperWidth}mm auto;
         margin: 0;
         padding: 0;
       }
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        page-break-inside: avoid !important;
+        page-break-before: avoid !important;
+        page-break-after: avoid !important;
+        break-inside: avoid !important;
+        break-before: avoid !important;
+        break-after: avoid !important;
       }
       html, body {
         margin: 0 !important;
         padding: 0 !important;
         width: ${paperWidth}mm !important;
-        height: ${estimatedHeight}mm !important;
-        overflow: hidden !important;
+        height: auto !important;
+        overflow: visible !important;
       }
       body > *:not(#thermal-receipt-print-container) {
         display: none !important;
@@ -68,17 +74,23 @@ export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
         top: 0 !important;
         width: ${paperWidth}mm !important;
         height: auto !important;
-        max-height: ${estimatedHeight}mm !important;
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
         z-index: 99999 !important;
-        overflow: hidden !important;
-        page-break-after: always !important;
+        overflow: visible !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       .thermal-receipt-container {
-        page-break-after: always !important;
+        width: ${paperWidth}mm !important;
+        height: auto !important;
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .thermal-receipt-page {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
     }
   `;

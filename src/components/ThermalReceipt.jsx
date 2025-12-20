@@ -11,12 +11,12 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
   // Adjust font sizes based on paper width - larger for better print visibility
   const isWide = PAPER_WIDTH_MM >= 80;
   const fontSize = {
-    title: isWide ? "22px" : "20px",
-    header: isWide ? "16px" : "14px",
-    item: isWide ? "16px" : "14px",
-    summary: isWide ? "15px" : "13px",
-    total: isWide ? "18px" : "16px",
-    footer: isWide ? "14px" : "12px",
+    title: isWide ? "26px" : "24px",
+    header: isWide ? "20px" : "18px",
+    item: isWide ? "20px" : "18px",
+    summary: isWide ? "19px" : "17px",
+    total: isWide ? "22px" : "20px",
+    footer: isWide ? "18px" : "16px",
   };
 
   const formatDate = (dateString) => {
@@ -215,9 +215,10 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
         style={{
           width: `${PAPER_WIDTH_MM}mm`,
           maxWidth: `${PAPER_WIDTH_MM}mm`,
-          fontFamily: "'Courier New', monospace",
-          fontSize: "9px",
-          lineHeight: "1.2",
+          fontFamily: "'Pyidaungsu', 'Arial', sans-serif",
+          fontSize: "12px",
+          lineHeight: "1.3",
+          fontWeight: "bold",
           backgroundColor: "white",
           color: "#000000",
         }}
@@ -499,17 +500,11 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
     <div className="thermal-receipt-container thermal-receipt">
       {renderThermalReceipt()}
 
-      {/* Print Styles for 57mm Thermal Paper */}
+      {/* Print Styles for 57mm Thermal Paper - Continuous Roll (No Page Breaks) */}
       <style>{`
         @media print {
           @page {
-            size: ${PAPER_WIDTH_MM}mm ${(() => {
-        // Calculate height based on content - increased for larger fonts
-        const baseHeight = 80;
-        const itemsHeight = items.length * 6;
-        const ktvExtra = isKtv ? 20 : 0;
-        return baseHeight + itemsHeight + ktvExtra + 15;
-      })()}mm;
+            size: ${PAPER_WIDTH_MM}mm auto;
             margin: 0;
             padding: 0;
           }
@@ -517,12 +512,19 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             filter: contrast(200%) !important;
+            page-break-inside: avoid !important;
+            page-break-before: avoid !important;
+            page-break-after: avoid !important;
+            break-inside: avoid !important;
+            break-before: avoid !important;
+            break-after: avoid !important;
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             width: ${PAPER_WIDTH_MM}mm !important;
-            overflow: hidden !important;
+            height: auto !important;
+            overflow: visible !important;
           }
           body > *:not(#thermal-receipt-print-container) {
             display: none !important;
@@ -533,21 +535,25 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             left: 0 !important;
             top: 0 !important;
             width: ${PAPER_WIDTH_MM}mm !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
             z-index: 99999 !important;
-            overflow: hidden !important;
-            page-break-after: always !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .thermal-receipt-container {
             width: ${PAPER_WIDTH_MM}mm !important;
-            page-break-after: always !important;
+            height: auto !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .thermal-receipt-page {
             width: ${PAPER_WIDTH_MM}mm !important;
             max-width: ${PAPER_WIDTH_MM}mm !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 1mm 0.5mm !important;
             background: white !important;
@@ -555,8 +561,9 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
             border: none !important;
             color: #000000 !important;
             font-weight: bold !important;
-            page-break-after: always !important;
             filter: contrast(200%) !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
         @media screen {
