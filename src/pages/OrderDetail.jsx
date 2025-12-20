@@ -8,12 +8,14 @@ import {
   CreditCard,
   Receipt,
   Edit,
+  Printer,
 } from "lucide-react";
 import { canEdit } from "../utils/getUserRole";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useDispatch } from "react-redux";
 import { selectRoom } from "../redux/ktvReceiptSlice";
 import { selectTable } from "../redux/receiptSlice";
+import printReceipt from "../utils/printReceipt";
 
 function OrderDetail() {
   const { id } = useParams();
@@ -110,6 +112,30 @@ function OrderDetail() {
     }
   };
 
+  // Handle print receipt
+  const handlePrintReceipt = () => {
+    if (!order) return;
+
+    const orderForPrint = {
+      ...order,
+      tableService: order.tableService || { tableNumber: order.tableNumber },
+      tableNumber: order.tableService?.tableNumber || order.tableNumber,
+      roomService: order.roomService || null,
+      roomNumber: order.roomService?.roomNumber || null,
+      orderItems:
+        order.orderItems?.map((item) => ({
+          stockName: item.stockName,
+          name: item.stockName,
+          price: item.price,
+          quantity: item.quantity || 1,
+          _id: item._id,
+        })) || [],
+    };
+
+    const paperSize = localStorage.getItem("receipt-paper-size") || "57mm";
+    printReceipt(orderForPrint, isKtvOrder(), paperSize);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -178,13 +204,13 @@ function OrderDetail() {
               >
                 {order.status.toUpperCase()}
               </span>
-              {/* <button
-                onClick={handleEditOrder}
-                className="bg-white text-primary px-4 py-2 rounded-full font-semibold text-sm border-2 border-primary hover:bg-primary hover:text-white transition-colors duration-200 flex items-center gap-2"
+              <button
+                onClick={handlePrintReceipt}
+                className="bg-white text-primary px-4 py-2 rounded-full font-semibold text-sm border-2 border-white hover:bg-blue-50 transition-colors duration-200 flex items-center gap-2"
               >
-                <Edit size={16} />
-                Edit Order
-              </button> */}
+                <Printer size={16} />
+                Print Receipt
+              </button>
             </div>
           </div>
         </div>

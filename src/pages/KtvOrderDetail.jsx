@@ -10,8 +10,10 @@ import {
   Mic,
   DoorOpen,
   Users,
+  Printer,
 } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
+import printReceipt from "../utils/printReceipt";
 
 function KtvOrderDetail() {
   const { id } = useParams();
@@ -94,6 +96,28 @@ function KtvOrderDetail() {
     }
   };
 
+  // Handle print receipt
+  const handlePrintReceipt = () => {
+    if (!order) return;
+
+    const orderForPrint = {
+      ...order,
+      roomService: order.roomService || { roomNumber: "N/A" },
+      roomNumber: order.roomService?.roomNumber || "N/A",
+      orderItems:
+        order.orderItems?.map((item) => ({
+          stockName: item.stockName,
+          name: item.stockName,
+          price: item.price,
+          quantity: item.quantity || 1,
+          _id: item._id,
+        })) || [],
+    };
+
+    const paperSize = localStorage.getItem("receipt-paper-size") || "57mm";
+    printReceipt(orderForPrint, true, paperSize);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -151,7 +175,7 @@ function KtvOrderDetail() {
               <h1 className="text-3xl font-bold mb-2">KTV Order Details</h1>
               <p className="text-white">Order ID: {order._id}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <span
                 className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(
                   order.status
@@ -159,6 +183,13 @@ function KtvOrderDetail() {
               >
                 {order.status.toUpperCase()}
               </span>
+              <button
+                onClick={handlePrintReceipt}
+                className="bg-white text-primary px-4 py-2 rounded-full font-semibold text-sm border-2 border-white hover:bg-blue-50 transition-colors duration-200 flex items-center gap-2"
+              >
+                <Printer size={16} />
+                Print Receipt
+              </button>
             </div>
           </div>
         </div>
