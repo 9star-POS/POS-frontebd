@@ -228,6 +228,20 @@ const ktvReceiptSlice = createSlice({
         state.roomDetails[room].status = status;
       }
     },
+    setRoomNote(state, action) {
+      const { room, note } = action.payload;
+      if (!room) return;
+      if (!state.receipts[room]) {
+        state.receipts[room] = {
+          items: [],
+          orderType: "KTV",
+          vocalists: [],
+          roomService: null,
+          note: "",
+        };
+      }
+      state.receipts[room].note = note || "";
+    },
   },
 });
 
@@ -251,6 +265,7 @@ export const {
   setItemsForRoom,
   setRoomDetails,
   setRoomStatus,
+  setRoomNote,
 } = ktvReceiptSlice.actions;
 
 export default ktvReceiptSlice.reducer;

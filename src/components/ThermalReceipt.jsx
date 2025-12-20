@@ -368,6 +368,17 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                 {getRoomCharges().toLocaleString()}
               </span>
             </div>
+            {order?.note && (
+              <div
+                style={{
+                  fontSize: fontSize.footer,
+                  marginTop: "1mm",
+                  fontStyle: "italic",
+                }}
+              >
+                Note: {order.note}
+              </div>
+            )}
           </div>
         )}
 
@@ -387,8 +398,8 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
                 fontSize: fontSize.summary,
               }}
             >
-              <span>Vocalist</span>
-              <span style={{ fontWeight: "    900" }}>
+              <span>Vocalist x {order?.vocalist?.length || 0}</span>
+              <span style={{ fontWeight: "900" }}>
                 {getVocalistCharges().toLocaleString()}
               </span>
             </div>

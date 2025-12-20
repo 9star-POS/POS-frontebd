@@ -17,6 +17,7 @@ import {
   setOrderIdForRoom,
   setRoomDetails,
   setRoomStatus,
+  setRoomNote,
 } from "./../../redux/ktvReceiptSlice";
 import { useNavigate } from "react-router-dom";
 import box from "./../../assets/box.png";
@@ -677,6 +678,7 @@ function Receipt({ onClose }) {
           paymentMethod: "cash",
           createdAt: res?.data?.createdAt || new Date().toISOString(),
           updatedAt: res?.data?.updatedAt || new Date().toISOString(),
+          note: receipts[selectedRoom]?.note || "",
         };
 
         // Print receipt
@@ -1253,11 +1255,27 @@ function Receipt({ onClose }) {
                 )}
 
                 {calculateRoomCharges() > 0 && (
-                  <div className="flex justify-between items-center">
-                    <p className="text-gray-600">Room Charges</p>
-                    <p className="font-medium text-gray-600">
-                      {calculateRoomCharges().toLocaleString()} MMK
-                    </p>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <p className="text-gray-600">Room Charges</p>
+                      <p className="font-medium text-gray-600">
+                        {calculateRoomCharges().toLocaleString()} MMK
+                      </p>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Add note..."
+                      value={receipts[selectedRoom]?.note || ""}
+                      onChange={(e) =>
+                        dispatch(
+                          setRoomNote({
+                            room: selectedRoom,
+                            note: e.target.value,
+                          })
+                        )
+                      }
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-primary"
+                    />
                   </div>
                 )}
 
