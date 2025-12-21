@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
 
 // This component takes salesData as props
 const SalesReportPDF = ({ salesData }) => {
-  console.log(salesData.dishesSold);
+  // console.log(salesData.dishesSold);
   return (
     <Document>
       <Page size="A4" style={styles.page}>

@@ -27,7 +27,7 @@ const TablePage = () => {
   const fetchTables = useCallback(async () => {
     setLoading(true);
     const res = await getAllTables();
-    console.log("tables", res);
+    // console.log("tables", res);
 
     if (res?.success && Array.isArray(res.data)) {
       // const activeTables = res.filter(
@@ -44,7 +44,7 @@ const TablePage = () => {
   const fetchArchivedTables = useCallback(async () => {
     setLoading(true);
     const res = await getDeletedTables();
-    console.log("archived tables", res);
+    // console.log("archived tables", res);
 
     if (res?.success && Array.isArray(res.data)) {
       setTables(res.data);
@@ -63,7 +63,7 @@ const TablePage = () => {
     }
   }, [viewMode, fetchTables, fetchArchivedTables]);
 
-  console.log(tables);
+  // console.log(tables);
 
   const handleTableSelect = (tableNumber, isArchived) => {
     if (isArchived) {
@@ -102,7 +102,7 @@ const TablePage = () => {
         fetchArchivedTables();
       }
     } catch (error) {
-      console.error("Error restoring table:", error);
+      // console.error("Error restoring table:", error);
     } finally {
       setRestoringTableId(null);
     }

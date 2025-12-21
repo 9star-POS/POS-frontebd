@@ -31,7 +31,7 @@ function OrderDetail() {
       const res = await getRestaurantOrderById(id);
       if (res?.success) {
         setOrder(res.data);
-        console.log("order", order);
+        // console.log("order", order);
       } else {
         setError(res.message || "Failed to load order");
       }

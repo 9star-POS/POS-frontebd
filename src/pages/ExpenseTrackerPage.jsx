@@ -75,7 +75,7 @@ const ExpenseTrackerPage = () => {
     try {
       const appliedFilters = overrideFilters ?? filters;
       const response = await getExpenses(appliedFilters);
-      console.log("Expenses Response:", response);
+      // console.log("Expenses Response:", response);
       if (response?.success) {
         const expensesData = response.data || [];
         // Filter out deleted expenses

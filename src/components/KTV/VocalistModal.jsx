@@ -16,13 +16,13 @@ import getKtvOrders from "../../api/Order/getKtvOrders";
 const VocalistModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
-  console.log(selectedRoom);
+  // console.log(selectedRoom);
   const orderIdFromRedux = useSelector(
     (state) => state.ktvReceipts.orderIds?.[selectedRoom] || null
   );
   const [orderId, setOrderId] = useState(orderIdFromRedux);
 
-  console.log(orderId);
+  // console.log(orderId);
   const existingVocalists = useSelector(
     (state) => state.ktvReceipts.receipts[selectedRoom]?.vocalists || []
   );
@@ -81,7 +81,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
         }
       }
     } catch (error) {
-      console.error("Failed to fetch current order:", error);
+      // console.error("Failed to fetch current order:", error);
     }
   };
 

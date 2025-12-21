@@ -41,7 +41,7 @@ export const NotificationProvider = ({ children }) => {
 
     // Connection event handlers
     socket.on("connect", () => {
-      console.log("Socket.IO connected");
+      // console.log("Socket.IO connected");
       setIsConnected(true);
       // Only show toast on initial connection, not on every page navigation
       if (isInitialConnectionRef.current) {
@@ -51,18 +51,18 @@ export const NotificationProvider = ({ children }) => {
     });
 
     socket.on("disconnect", () => {
-      console.log("Socket.IO disconnected");
+      // console.log("Socket.IO disconnected");
       setIsConnected(false);
     });
 
     socket.on("connect_error", (error) => {
-      console.error("Socket.IO connection error:", error);
+      // console.error("Socket.IO connection error:", error);
       setIsConnected(false);
     });
 
     // Listen for "new-notification" event
     socket.on("new-notification", (data) => {
-      console.log("data", data);
+      // console.log("data", data);
       try {
         const notification = {
           id: data.notificationId || Date.now() + Math.random(),
@@ -84,7 +84,7 @@ export const NotificationProvider = ({ children }) => {
           duration: 5000,
         });
       } catch (error) {
-        console.error("Error processing notification:", error);
+        // console.error("Error processing notification:", error);
       }
     });
 

@@ -188,7 +188,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         setImageError(data?.message || "Failed to delete image");
       }
     } catch (error) {
-      console.error("Error deleting image:", error);
+      // console.error("Error deleting image:", error);
       setImageError(error.response?.data?.message || "Failed to delete image");
     } finally {
       setDeletingImageId(null);
@@ -227,7 +227,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         setImageError(data?.message || "Failed to add image");
       }
     } catch (error) {
-      console.error("Error adding image:", error);
+      // console.error("Error adding image:", error);
       setImageError(error.response?.data?.message || "Failed to add image");
     } finally {
       setImageLoading(false);
@@ -280,7 +280,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         setQuantityError(data?.message || "Failed to update quantity");
       }
     } catch (error) {
-      console.error("Error updating quantity:", error);
+      // console.error("Error updating quantity:", error);
       setQuantityError(
         error.response?.data?.message || "Failed to update quantity"
       );
@@ -361,7 +361,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         setDataError(data?.message || "Failed to update menu item");
       }
     } catch (error) {
-      console.error("Error updating menu:", error);
+      // console.error("Error updating menu:", error);
       const errorData = error.response?.data;
       const statusCode = error.response?.status;
 

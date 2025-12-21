@@ -101,7 +101,7 @@ const SalesReportPage = () => {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
       });
-      console.log("Sales Report Response:", response);
+      // console.log("Sales Report Response:", response);
       if (response?.success) {
         setReportData(response.data);
         toast.success("Report generated successfully");

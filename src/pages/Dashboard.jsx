@@ -48,7 +48,7 @@ function Dashboard() {
 
   const getReportData = async () => {
     const res = await getReport(dataFromCalendar);
-    console.log(res);
+    // console.log(res);
     setSaleData(res.data);
     setOrderCount(res.data.ordersCount);
     setTotalRevenue(res.data.totalRevenue);

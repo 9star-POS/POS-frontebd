@@ -336,7 +336,7 @@ const DebtPage = () => {
         manualDate: manualDateUTC,
       });
 
-      console.log("Debt Data:", response);
+      // console.log("Debt Data:", response);
 
       if (response?.success) {
         handleCloseModal();
@@ -550,7 +550,7 @@ const DebtPage = () => {
         manualDate: manualDateUTC,
       });
 
-      console.log("Updated Debt Data:", response);
+      // console.log("Updated Debt Data:", response);
 
       if (response?.success) {
         handleCloseEditModal();
@@ -830,38 +830,40 @@ const DebtPage = () => {
                                     <Edit size={18} className="lg:w-5 lg:h-5" />
                                   </button>
                                 )}
-                                <button
-                                  onClick={() => handleStatusChange(debt)}
-                                  disabled={updatingDebtId === debt._id}
-                                  className={`px-3 py-3 rounded-md text-sm justify-center font-semibold transition-all flex items-center gap-1 ${
-                                    debt.status === "paid"
-                                      ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                                      : "bg-green-100 text-green-800 hover:bg-green-200"
-                                  } ${
-                                    updatingDebtId === debt._id
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
-                                  title={
-                                    debt.status === "paid"
-                                      ? "Mark as Unpaid"
-                                      : "Mark as Paid"
-                                  }
-                                >
-                                  {updatingDebtId === debt._id ? (
-                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                  ) : debt.status === "paid" ? (
-                                    <XCircle
-                                      size={18}
-                                      className="lg:w-5 lg:h-5"
-                                    />
-                                  ) : (
-                                    <CheckCircle
-                                      size={18}
-                                      className="lg:w-5 lg:h-5"
-                                    />
-                                  )}
-                                </button>
+                                {canEdit() && (
+                                  <button
+                                    onClick={() => handleStatusChange(debt)}
+                                    disabled={updatingDebtId === debt._id}
+                                    className={`px-3 py-3 rounded-md text-sm justify-center font-semibold transition-all flex items-center gap-1 ${
+                                      debt.status === "paid"
+                                        ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                        : "bg-green-100 text-green-800 hover:bg-green-200"
+                                    } ${
+                                      updatingDebtId === debt._id
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                    }`}
+                                    title={
+                                      debt.status === "paid"
+                                        ? "Mark as Unpaid"
+                                        : "Mark as Paid"
+                                    }
+                                  >
+                                    {updatingDebtId === debt._id ? (
+                                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                    ) : debt.status === "paid" ? (
+                                      <XCircle
+                                        size={18}
+                                        className="lg:w-5 lg:h-5"
+                                      />
+                                    ) : (
+                                      <CheckCircle
+                                        size={18}
+                                        className="lg:w-5 lg:h-5"
+                                      />
+                                    )}
+                                  </button>
+                                )}
                                 {canEdit() && (
                                   <button
                                     onClick={() => handleDeleteClick(debt)}
@@ -931,29 +933,33 @@ const DebtPage = () => {
                               Edit
                             </button>
                           )}
-                          <button
-                            onClick={() => handleStatusChange(debt)}
-                            disabled={updatingDebtId === debt._id}
-                            className={`flex-1 px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
-                              debt.status === "paid"
-                                ? "text-yellow-600 border border-yellow-600 hover:bg-yellow-600 hover:text-white"
-                                : "text-green-600 border border-green-600 hover:bg-green-600 hover:text-white"
-                            }`}
-                          >
-                            {updatingDebtId === debt._id ? (
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                            ) : debt.status === "paid" ? (
-                              <>
-                                <XCircle size={16} />
-                                <span className="hidden sm:inline">Unpaid</span>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle size={16} />
-                                <span className="hidden sm:inline">Paid</span>
-                              </>
-                            )}
-                          </button>
+                          {canEdit() && (
+                            <button
+                              onClick={() => handleStatusChange(debt)}
+                              disabled={updatingDebtId === debt._id}
+                              className={`flex-1 px-3 py-2 rounded-md transition-colors flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                                debt.status === "paid"
+                                  ? "text-yellow-600 border border-yellow-600 hover:bg-yellow-600 hover:text-white"
+                                  : "text-green-600 border border-green-600 hover:bg-green-600 hover:text-white"
+                              }`}
+                            >
+                              {updatingDebtId === debt._id ? (
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              ) : debt.status === "paid" ? (
+                                <>
+                                  <XCircle size={16} />
+                                  <span className="hidden sm:inline">
+                                    Unpaid
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle size={16} />
+                                  <span className="hidden sm:inline">Paid</span>
+                                </>
+                              )}
+                            </button>
+                          )}
                           {canEdit() && (
                             <button
                               onClick={() => handleDeleteClick(debt)}

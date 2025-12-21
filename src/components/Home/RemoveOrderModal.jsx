@@ -58,7 +58,7 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
         toast.error("Failed to fetch order");
       }
     } catch (error) {
-      console.error("Error fetching order:", error);
+      // console.error("Error fetching order:", error);
       toast.error("Failed to fetch order");
     } finally {
       setLoading(false);
@@ -104,10 +104,16 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
           let remainingToRemove = quantityToRemove;
           let orderItemIndex = 0;
 
-          while (remainingToRemove > 0 && orderItemIndex < item.orderItemIds.length) {
+          while (
+            remainingToRemove > 0 &&
+            orderItemIndex < item.orderItemIds.length
+          ) {
             const orderItem = item.orderItemIds[orderItemIndex];
-            const removeFromThisItem = Math.min(remainingToRemove, orderItem.quantity);
-            
+            const removeFromThisItem = Math.min(
+              remainingToRemove,
+              orderItem.quantity
+            );
+
             // Add entries for each quantity to remove from this orderItem
             for (let i = 0; i < removeFromThisItem; i++) {
               itemsToRemove.push({
@@ -115,7 +121,7 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
                 quantity: 1,
               });
             }
-            
+
             remainingToRemove -= removeFromThisItem;
             orderItemIndex++;
           }
@@ -140,7 +146,7 @@ const RemoveOrderModal = ({ isOpen, onClose, orderId, onOrderUpdated }) => {
         toast.error("Failed to remove order items");
       }
     } catch (error) {
-      console.error("Error removing order items:", error);
+      // console.error("Error removing order items:", error);
       toast.error("Failed to remove order items");
     } finally {
       setUpdating(false);

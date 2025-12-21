@@ -47,7 +47,7 @@ function Receipt({ onClose }) {
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
-      console.log("selectedTable", selectedTable);
+      // console.log("selectedTable", selectedTable);
       if (!selectedTable) {
         setRemoteOrder(null);
         setOrderId(null);
@@ -55,7 +55,7 @@ function Receipt({ onClose }) {
       }
       setIsLoadingRemote(true);
       const res = await getRestaurantOrders();
-      console.log(res);
+      // console.log(res);
       if (res?.success && Array.isArray(res.data)) {
         const forTable = res.data.filter((o) => {
           const tableNum = o.tableNumber || o.tableService?.tableNumber;
@@ -273,7 +273,7 @@ function Receipt({ onClose }) {
       //   return;
       // }
 
-      console.log("itemsToRemove", itemsToRemove);
+      // console.log("itemsToRemove", itemsToRemove);
 
       const res = await removeOrderItems(orderId, itemsToRemove);
 
@@ -347,7 +347,7 @@ function Receipt({ onClose }) {
         }
       }
     } catch (error) {
-      console.error("Error updating order:", error);
+      // console.error("Error updating order:", error);
     } finally {
       setIsUpdatingOrder(false);
     }
@@ -512,7 +512,7 @@ function Receipt({ onClose }) {
               status: "inactive",
             });
           } catch (error) {
-            console.error("Failed to reset table status:", error);
+            // console.error("Failed to reset table status:", error);
           }
         }
         if (selectedTable) {
@@ -652,7 +652,7 @@ function Receipt({ onClose }) {
               status: "active",
             });
           } catch (error) {
-            console.error("Failed to update table status:", error);
+            // console.error("Failed to update table status:", error);
           }
         }
 
@@ -737,7 +737,7 @@ function Receipt({ onClose }) {
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
           <div className="flex items-center gap-3">
-            <select
+            {/* <select
               value={paperSize}
               onChange={(e) => {
                 const val = e.target.value;
@@ -749,9 +749,9 @@ function Receipt({ onClose }) {
               <option value="57mm">57mm Thermal</option>
               <option value="58mm">58mm Thermal</option>
               <option value="80mm">80mm Thermal</option>
-            </select>
+            </select> */}
             <button
-              className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              className="lg:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
               onClick={onClose}
             >
               Save
@@ -759,7 +759,7 @@ function Receipt({ onClose }) {
             {hasLocalItems && (
               <button
                 onClick={() => setIsSplitOpen(true)}
-                className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+                className="bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
               >
                 Split Order
               </button>
@@ -952,12 +952,12 @@ function Receipt({ onClose }) {
                       </button>
                     )}
                   </div>
-                  <button
+                  {/* <button
                     onClick={() => setIsSplitOpen(true)}
                     className="flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                   >
                     Split Order
-                  </button>
+                  </button> */}
                   {orderId && getUserRole() !== "restaurant-waiter" && (
                     <button
                       // onClick={handleCheckout}

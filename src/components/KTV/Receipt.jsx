@@ -42,7 +42,7 @@ function Receipt({ onClose }) {
   const navigate = useNavigate();
   const userRole = getUserRole();
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
-  console.log("selectedRoom", selectedRoom);
+  // console.log("selectedRoom", selectedRoom);
   const receipts = useSelector((state) => state.ktvReceipts.receipts);
   const roomDetails = useSelector((state) => state.ktvReceipts.roomDetails);
   const selectedRoomDetails = selectedRoom
@@ -77,7 +77,7 @@ function Receipt({ onClose }) {
       }
       setIsLoadingRemote(true);
       const res = await getKtvOrders();
-      console.log(res);
+      // console.log(res);
       if (res?.success && Array.isArray(res.data)) {
         // Only show active orders (not completed or cancelled)
         const forTable = res.data.filter(
@@ -180,7 +180,7 @@ function Receipt({ onClose }) {
       // Only fetch if we have a room, no active order, and no roomServiceId yet
       if (!selectedRoom || orderId || roomServiceId) return;
       const res = await getRoomService(selectedRoom);
-      console.log("room service id", res);
+      // console.log("room service id", res);
       if (res?.success && res?.data?._id) {
         setRoomServiceId(res.data._id);
         // Initialize room service in state only if no order exists
@@ -197,7 +197,7 @@ function Receipt({ onClose }) {
     };
     fetchRoomService();
   }, [selectedRoom, orderId, roomServiceId]);
-  console.log("room service id", roomServiceId);
+  // console.log("room service id", roomServiceId);
 
   const handleRemoveItem = (itemName) => {
     dispatch(removeItemFromRoomReceipt({ room: selectedRoom, itemName }));
@@ -281,7 +281,7 @@ function Receipt({ onClose }) {
         toast.warning("No active order to remove items from");
       }
     } catch (error) {
-      console.error("Error fetching order data:", error);
+      // console.error("Error fetching order data:", error);
       toast.error("Failed to fetch order data");
     } finally {
       setIsLoadingRemoveModal(false);
@@ -365,7 +365,7 @@ function Receipt({ onClose }) {
         })
       );
 
-      console.log("itemsToRemove", itemsToRemove);
+      // console.log("itemsToRemove", itemsToRemove);
 
       const res = await removeKtvOrderItems(orderId, itemsToRemove);
 
@@ -439,7 +439,7 @@ function Receipt({ onClose }) {
         }
       }
     } catch (error) {
-      console.error("Error updating order:", error);
+      // console.error("Error updating order:", error);
     } finally {
       setIsUpdatingOrder(false);
     }
@@ -692,7 +692,7 @@ function Receipt({ onClose }) {
           try {
             await updateRoomStatus(roomServiceId, "inactive");
           } catch (error) {
-            console.error("Failed to reset room status:", error);
+            // console.error("Failed to reset room status:", error);
           }
         }
         if (selectedRoom) {
@@ -704,7 +704,7 @@ function Receipt({ onClose }) {
         toast.error(res?.message || "Failed to complete checkout");
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       // toast.error("An error occurred during checkout");
     }
   };
@@ -826,7 +826,7 @@ function Receipt({ onClose }) {
           try {
             await updateRoomStatus(newRoomServiceId, "active");
           } catch (error) {
-            console.error("Failed to update room status", error);
+            // console.error("Failed to update room status", error);
           }
         }
         if (newOrderId && selectedRoom) {
@@ -840,7 +840,7 @@ function Receipt({ onClose }) {
               selectedRoomId,
               "active"
             );
-            console.log(statusResponse);
+            // console.log(statusResponse);
             if (statusResponse?.success) {
               dispatch(
                 setRoomStatus({
@@ -859,7 +859,7 @@ function Receipt({ onClose }) {
               toast.info(statusResponse.message);
             }
           } catch (error) {
-            console.error("Failed to update room status", error);
+            // console.error("Failed to update room status", error);
           }
         }
 
@@ -967,7 +967,7 @@ function Receipt({ onClose }) {
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
           <div className="flex items-center gap-3">
-            <select
+            {/* <select
               value={paperSize}
               onChange={(e) => {
                 const val = e.target.value;
@@ -979,9 +979,9 @@ function Receipt({ onClose }) {
               <option value="57mm">57mm Thermal</option>
               <option value="58mm">58mm Thermal</option>
               <option value="80mm">80mm Thermal</option>
-            </select>
+            </select> */}
             <button
-              className="md:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              className="lg:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
               onClick={onClose}
             >
               Save
@@ -989,7 +989,7 @@ function Receipt({ onClose }) {
             {hasLocalItems && (
               <button
                 onClick={() => setIsSplitOpen(true)}
-                className="hidden md:block bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+                className="bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
               >
                 Split Order
               </button>
@@ -1236,7 +1236,7 @@ function Receipt({ onClose }) {
               )}
             </div>
 
-            <div className="sticky bottom-[-100px] md:bottom-[0] pb-2 bg-white border-t pt-3">
+            <div className="sticky bottom-[-150px] lg:bottom-[0] pb-2 bg-white border-t pt-3">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Subtotal</p>
@@ -1354,23 +1354,13 @@ function Receipt({ onClose }) {
                 </div>
               </div>
 
-              {/* <div className="flex gap-3 pb-5">
-                <button
-                  onClick={onClose}
-                  className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                >
-                  Order More
-                </button>
-                <button
-                  onClick={handlePayment}
-                  className="flex-1 bg-primary text-white font-semibold py-4 rounded-full border border-primary hover:bg-primary/90 transition-colors"
-                >
-                  Payment
-                </button>
-              </div> */}
               {(hasLocalItems || roomServiceId || orderId) && (
                 <div className="flex flex-col gap-3 ">
-                  <div className="flex flex-row gap-3">
+                  <div
+                    className={`flex gap-3 ${
+                      userRole === "ktv-waiter" ? "flex-col" : "flex-row"
+                    }`}
+                  >
                     <button
                       onClick={sendKitchen}
                       className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
@@ -1398,14 +1388,14 @@ function Receipt({ onClose }) {
                       </button>
                     )}
                   </div>
-                  {hasLocalItems && (
+                  {/* {hasLocalItems && (
                     <button
                       onClick={() => setIsSplitOpen(true)}
                       className=" flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                     >
                       Split Order
                     </button>
-                  )}
+                  )} */}
                   {orderId && userRole !== "ktv-waiter" && (
                     <button
                       // onClick={handleCheckout}

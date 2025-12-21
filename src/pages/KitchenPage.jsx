@@ -214,22 +214,22 @@ const KitchenPage = () => {
 
     // Listen for "new-restaurant-order" event
     socket.on("new-restaurant-order", (data) => {
-      console.log("New restaurant order received:", data);
+      // console.log("New restaurant order received:", data);
       fetchOrders(true);
     });
 
     socket.on("new-ktv-order", (data) => {
-      console.log("New KTV order received:", data);
+      // console.log("New KTV order received:", data);
       fetchOrders(true);
     });
 
     socket.on("restaurant-order-updated", (data) => {
-      console.log("Restaurant order updated:", data);
+      // console.log("Restaurant order updated:", data);
       fetchOrders(true);
     });
 
     socket.on("ktv-order-updated", (data) => {
-      console.log("KTV order updated:", data);
+      // console.log("KTV order updated:", data);
       fetchOrders(true);
     });
 

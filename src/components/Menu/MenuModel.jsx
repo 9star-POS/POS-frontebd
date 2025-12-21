@@ -64,7 +64,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
       const file = new File([blob], "default-menu.jpg", { type: blob.type });
       return file;
     } catch (error) {
-      console.error("Error loading default image:", error);
+      // console.error("Error loading default image:", error);
       return null;
     }
   };
@@ -155,7 +155,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
         setError(data?.message || "Failed to create menu item");
       }
     } catch (error) {
-      console.error("Error creating menu item:", error);
+      // console.error("Error creating menu item:", error);
 
       // Handle different error scenarios
       if (error.response) {

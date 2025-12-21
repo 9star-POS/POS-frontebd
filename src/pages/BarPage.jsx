@@ -61,7 +61,7 @@ const BarPage = () => {
       // Add item to updating set to show loading state
       setUpdatingItems((prev) => new Set([...prev, item.id]));
 
-      console.log(`Updating item ${item.orderItemId} to status: ${newStatus}`);
+      // console.log(`Updating item ${item.orderItemId} to status: ${newStatus}`);
 
       // Call the actual API to update item status
       const response = await updateKitchenItemStatus(
@@ -130,7 +130,7 @@ const BarPage = () => {
               // Don't show error to user as the main status update succeeded
             }
           } catch (notificationError) {
-            console.error("Error sending notification:", notificationError);
+            // console.error("Error sending notification:", notificationError);
             // Don't show error to user as the main status update succeeded
           }
         }
@@ -141,7 +141,7 @@ const BarPage = () => {
         setError(response.message || "Failed to update item status");
       }
     } catch (error) {
-      console.error("Error updating item status:", error);
+      // console.error("Error updating item status:", error);
       setError("Failed to update item status. Please try again.");
     } finally {
       // Remove item from updating set
@@ -171,7 +171,7 @@ const BarPage = () => {
       }
     } catch (err) {
       setError(err.message || "Failed to fetch bar orders");
-      console.error("Error fetching orders:", err);
+      // console.error("Error fetching orders:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);

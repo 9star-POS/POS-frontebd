@@ -43,7 +43,7 @@ function EnterID() {
       confirmPassword,
     };
     const res = await handleSignUp(data);
-    console.log("res", res);
+    // console.log("res", res);
     if (res.statusCode === 201) {
       const user = {
         name: res.data.user.shopName,

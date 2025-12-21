@@ -11,13 +11,13 @@ const CategoryModal = ({ isOpen, onClose }) => {
 
   const handleCreate = async () => {
     if (id) {
-      console.log(categoryName);
+      // console.log(categoryName);
       const data = {
         categories: categoryName,
         id: id,
       };
       const res = await pushCategories(data);
-      console.log("push", res);
+      // console.log("push", res);
       if (res?.success) {
         onClose();
       }
@@ -26,7 +26,7 @@ const CategoryModal = ({ isOpen, onClose }) => {
         categoryName: categoryName,
       };
       const res = await addCategories(data);
-      console.log(res);
+      // console.log(res);
       if (res?.success) {
         onClose();
       }

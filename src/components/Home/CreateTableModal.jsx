@@ -43,7 +43,7 @@ const CreateTableModal = ({ isOpen, onClose, onSuccess }) => {
 
     setLoading(true);
     const response = await createTable({ tableNumber: trimmedTableNumber });
-    console.log("response", response);
+    // console.log("response", response);
 
     if (response.success) {
       setLoading(false);

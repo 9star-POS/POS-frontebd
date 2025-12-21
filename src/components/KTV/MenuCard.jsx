@@ -41,9 +41,15 @@ const KtvMenuCard = ({ menu }) => {
     }
   };
 
+  const isSelected = quantity > 0;
+
   return (
     <div
-      className="w-auto lg:w-[200px] overflow-hidden border border-gray-200 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all duration-300"
+      className={`w-auto lg:w-[200px] overflow-hidden rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 ${
+        isSelected
+          ? "border-2 border-primary bg-primary/10"
+          : "border border-gray-200"
+      }`}
       onClick={handleIncrement}
     >
       <div className="hidden lg:block">
