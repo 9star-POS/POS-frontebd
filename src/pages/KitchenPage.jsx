@@ -17,6 +17,43 @@ const KitchenPage = () => {
   const [updatingItems, setUpdatingItems] = useState(new Set()); // Track items being updated
   const socketRef = useRef(null);
 
+  // Play notification sound when new orders arrive
+  const playNotificationSound = () => {
+    console.log("Playing notification sound");
+    try {
+      // Use bracket notation to avoid TypeScript errors for webkitAudioContext
+      const AudioContextClass =
+        window.AudioContext || window["webkitAudioContext"];
+      if (!AudioContextClass) {
+        console.warn("AudioContext not supported in this browser");
+        return;
+      }
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Set a pleasant notification tone (800 Hz)
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+
+      // Fade in and out for a pleasant sound
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(
+        0.3,
+        audioContext.currentTime + 0.1
+      );
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+    }
+  };
+
   // Transform flat API data into simple list structure
   const transformKitchenData = (apiData) => {
     if (!Array.isArray(apiData)) return [];
@@ -215,20 +252,24 @@ const KitchenPage = () => {
     // Listen for "new-restaurant-order" event
     socket.on("new-restaurant-order", (data) => {
       // console.log("New restaurant order received:", data);
+      playNotificationSound();
       fetchOrders(true);
     });
 
     socket.on("new-ktv-order", (data) => {
       // console.log("New KTV order received:", data);
+      playNotificationSound();
       fetchOrders(true);
     });
 
     socket.on("restaurant-order-updated", (data) => {
+      playNotificationSound();
       // console.log("Restaurant order updated:", data);
       fetchOrders(true);
     });
 
     socket.on("ktv-order-updated", (data) => {
+      playNotificationSound();
       // console.log("KTV order updated:", data);
       fetchOrders(true);
     });

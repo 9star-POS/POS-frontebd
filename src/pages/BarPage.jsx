@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RefreshCw, Wine, AlertCircle } from "lucide-react";
+import { io } from "socket.io-client";
 import getBarOrders from "../api/Kitchen/getBarOrders";
 import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
 import createNotification from "../api/notification/createNotification";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
+import { canEdit } from "../utils/getUserRole";
 
 const BarPage = () => {
   const [allOrders, setAllOrders] = useState([]); // Store all orders for stats calculation
@@ -13,6 +15,44 @@ const BarPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState("pending"); // "pending", "ready"
   const [updatingItems, setUpdatingItems] = useState(new Set()); // Track items being updated
+  const socketRef = useRef(null);
+
+  // Play notification sound when new orders arrive
+  const playNotificationSound = () => {
+    console.log("Playing notification sound");
+    try {
+      // Use bracket notation to avoid TypeScript errors for webkitAudioContext
+      const AudioContextClass =
+        window.AudioContext || window["webkitAudioContext"];
+      if (!AudioContextClass) {
+        console.warn("AudioContext not supported in this browser");
+        return;
+      }
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Set a pleasant notification tone (800 Hz)
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+
+      // Fade in and out for a pleasant sound
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(
+        0.3,
+        audioContext.currentTime + 0.1
+      );
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+    }
+  };
 
   // Transform flat API data into simple list structure
   const transformBarData = (apiData) => {
@@ -180,14 +220,66 @@ const BarPage = () => {
 
   useEffect(() => {
     fetchOrders();
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchOrders(true);
-    }, 30000);
-
-    return () => clearInterval(interval);
   }, []); // Only fetch on mount, filtering is done client-side
+
+  // WebSocket connection for real-time bar orders
+  useEffect(() => {
+    // Connect to Socket.IO server
+    const socket = io.connect(
+      import.meta.env.VITE_APP_API || import.meta.env.VITE_API_URL,
+      {
+        transports: ["websocket"],
+        secure: true,
+      }
+    );
+
+    socketRef.current = socket;
+
+    // Connection event handlers
+    socket.on("connect", () => {
+      console.log("Bar Socket.IO connected");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Bar Socket.IO disconnected");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Bar Socket.IO connection error:", error);
+    });
+
+    // Listen for "new-restaurant-order" event
+    socket.on("new-restaurant-order", (data) => {
+      // console.log("New restaurant order received:", data);
+      playNotificationSound();
+      fetchOrders(true);
+    });
+
+    socket.on("new-ktv-order", (data) => {
+      // console.log("New KTV order received:", data);
+      playNotificationSound();
+      fetchOrders(true);
+    });
+
+    socket.on("restaurant-order-updated", (data) => {
+      playNotificationSound();
+      // console.log("Restaurant order updated:", data);
+      fetchOrders(true);
+    });
+
+    socket.on("ktv-order-updated", (data) => {
+      playNotificationSound();
+      // console.log("KTV order updated:", data);
+      fetchOrders(true);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []); // Empty dependency array - only run once on mount
 
   const getTotalItems = () => {
     return allOrders.length;
@@ -343,40 +435,42 @@ const BarPage = () => {
               >
                 <div className="flex items-start gap-4">
                   {/* Ready Checkbox with Label */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={item.kitchenStatus === "ready"}
-                        onChange={() => handleItemStatusToggle(item)}
-                        disabled={updatingItems.has(item.id)}
-                        className={`w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 ${
-                          updatingItems.has(item.id)
-                            ? "opacity-50 cursor-not-allowed"
-                            : "cursor-pointer"
-                        }`}
-                        title={
-                          updatingItems.has(item.id)
-                            ? "Updating..."
-                            : item.kitchenStatus === "ready"
-                            ? "Mark as pending"
-                            : "Mark as ready"
-                        }
-                      />
-                      {updatingItems.has(item.id) && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
+                  {canEdit() && (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={item.kitchenStatus === "ready"}
+                          onChange={() => handleItemStatusToggle(item)}
+                          disabled={updatingItems.has(item.id)}
+                          className={`w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 ${
+                            updatingItems.has(item.id)
+                              ? "opacity-50 cursor-not-allowed"
+                              : "cursor-pointer"
+                          }`}
+                          title={
+                            updatingItems.has(item.id)
+                              ? "Updating..."
+                              : item.kitchenStatus === "ready"
+                              ? "Mark as pending"
+                              : "Mark as ready"
+                          }
+                        />
+                        {updatingItems.has(item.id) && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500 text-center">
+                        {updatingItems.has(item.id)
+                          ? "Updating..."
+                          : item.kitchenStatus === "ready"
+                          ? "Ready"
+                          : "Prepare"}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500 text-center">
-                      {updatingItems.has(item.id)
-                        ? "Updating..."
-                        : item.kitchenStatus === "ready"
-                        ? "Ready"
-                        : "Prepare"}
-                    </span>
-                  </div>
+                  )}
 
                   {/* Item Info */}
                   <div className="flex-1 min-w-0">
