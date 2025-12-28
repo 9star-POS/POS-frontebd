@@ -3,6 +3,53 @@ import ReactDOM from "react-dom/client";
 import ThermalReceipt from "../components/ThermalReceipt";
 
 /**
+ * Combines duplicate items in orderItems by summing quantities and amounts
+ * @param {Array} orderItems - Array of order items
+ * @returns {Array} Combined order items
+ */
+const combineDuplicateItems = (orderItems) => {
+  if (!Array.isArray(orderItems) || orderItems.length === 0) {
+    return [];
+  }
+
+  const grouped = new Map();
+
+  orderItems.forEach((item) => {
+    // Use stockId as primary key, fallback to name
+    const key =
+      item?.stockId?._id ||
+      item?.stockId ||
+      item?._id ||
+      item?.stockName ||
+      item?.name ||
+      "";
+
+    if (!key) return;
+
+    if (grouped.has(key)) {
+      const existing = grouped.get(key);
+      // Sum quantities
+      existing.quantity = (existing.quantity || 0) + (item.quantity || 1);
+      // Keep the price (should be same for same item)
+      existing.price = item.price || existing.price || 0;
+    } else {
+      // Create new entry
+      grouped.set(key, {
+        ...item,
+        stockName: item.stockName || item.name || "Item",
+        name: item.stockName || item.name || "Item",
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        _id: item._id || item?.stockId?._id || item?.stockId || key,
+        stockId: item.stockId || item._id || key,
+      });
+    }
+  });
+
+  return Array.from(grouped.values());
+};
+
+/**
  * Prints a thermal receipt for the given order
  * @param {Object} order - The order object to print
  * @param {boolean} isKtv - Whether this is a KTV order (default: false)
@@ -12,11 +59,18 @@ export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
   // Get paper width from size string
   const paperWidth = parseInt(paperSize) || 57;
 
+  // Combine duplicate items before printing
+  const combinedOrderItems = combineDuplicateItems(order?.orderItems || []);
+  const orderWithCombinedItems = {
+    ...order,
+    orderItems: combinedOrderItems,
+  };
+
   // Calculate estimated receipt height based on content
   // Base height for header, footer, summary sections (increased for better visibility)
   const baseHeight = 90; // mm for header, summary, footer
   // Height per item (approximately 7mm per item for larger fonts)
-  const itemCount = order?.orderItems?.length || 0;
+  const itemCount = combinedOrderItems.length;
   const itemsHeight = itemCount * 7;
   // Add extra for KTV charges if applicable
   const ktvExtra = isKtv ? 25 : 0;
@@ -115,7 +169,13 @@ export const printReceipt = (order, isKtv = false, paperSize = "57mm") => {
 
   // Create a React root and render the receipt
   const root = ReactDOM.createRoot(printContainer);
-  root.render(React.createElement(ThermalReceipt, { order, isKtv, paperSize }));
+  root.render(
+    React.createElement(ThermalReceipt, {
+      order: orderWithCombinedItems,
+      isKtv,
+      paperSize,
+    })
+  );
 
   // Wait for the component to render, then trigger print
   // Use requestAnimationFrame to ensure DOM is ready

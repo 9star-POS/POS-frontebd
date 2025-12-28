@@ -52,10 +52,46 @@ const ThermalReceipt = ({ order, isKtv = false, paperSize = "57mm" }) => {
   };
 
   const getOrderItems = () => {
-    if (order?.orderItems) {
-      return order.orderItems;
+    if (!order?.orderItems || !Array.isArray(order.orderItems)) {
+      return [];
     }
-    return [];
+
+    // Combine duplicate items by summing quantities and amounts
+    const grouped = new Map();
+
+    order.orderItems.forEach((item) => {
+      // Use stockId as primary key, fallback to name
+      const key =
+        item?.stockId?._id ||
+        item?.stockId ||
+        item?._id ||
+        item?.stockName ||
+        item?.name ||
+        "";
+
+      if (!key) return;
+
+      if (grouped.has(key)) {
+        const existing = grouped.get(key);
+        // Sum quantities
+        existing.quantity = (existing.quantity || 0) + (item.quantity || 1);
+        // Keep the price (should be same for same item)
+        existing.price = item.price || existing.price || 0;
+      } else {
+        // Create new entry
+        grouped.set(key, {
+          ...item,
+          stockName: item.stockName || item.name || "Item",
+          name: item.stockName || item.name || "Item",
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          _id: item._id || item?.stockId?._id || item?.stockId || key,
+          stockId: item.stockId || item._id || key,
+        });
+      }
+    });
+
+    return Array.from(grouped.values());
   };
 
   const getSubtotal = () => {

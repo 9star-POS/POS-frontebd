@@ -434,19 +434,6 @@ function Receipt({ onClose }) {
       return;
     }
 
-    // const orderData = {
-    //   table: selectedTable,
-    //   orderType: receipts[selectedTable].orderType,
-    //   orders: receipts[selectedTable].items.map((item) => ({
-    //     dishName: item.name,
-    //     price: item.price,
-    //     quantity: item.quantity || 1,
-    //   })),
-    //   totalPrice: calculateSubtotal(),
-    //   finalPrice: calculateTotal(),
-    //   tax: taxRate / 100,
-    // };
-
     setIsCalculatorOpen(true);
   };
 
