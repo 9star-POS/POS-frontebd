@@ -97,6 +97,68 @@ function OrderDetail() {
     return order && order.roomService && order.roomService.roomNumber;
   };
 
+  // Combine duplicate items by summing quantities and amounts
+  const getCombinedOrderItems = () => {
+    if (!order?.orderItems || !Array.isArray(order.orderItems)) {
+      return [];
+    }
+
+    const grouped = new Map();
+
+    order.orderItems.forEach((item) => {
+      // Use stockId as primary key, fallback to name
+      const key =
+        item?.stockId?._id ||
+        item?.stockId ||
+        item?._id ||
+        item?.stockName ||
+        "";
+
+      if (!key) return;
+
+      if (grouped.has(key)) {
+        const existing = grouped.get(key);
+        // Sum quantities
+        existing.quantity = (existing.quantity || 0) + (item.quantity || 1);
+        // Keep the price (should be same for same item)
+        existing.price = item.price || existing.price || 0;
+        // Combine notes if they exist
+        if (item.notes && existing.notes) {
+          existing.notes = `${existing.notes}, ${item.notes}`;
+        } else if (item.notes) {
+          existing.notes = item.notes;
+        }
+        // Keep the most recent kitchen status or combine them
+        if (
+          item.kitchenStatus &&
+          existing.kitchenStatus !== item.kitchenStatus
+        ) {
+          // If statuses differ, keep the one that's not "pending" or use the latest
+          if (item.kitchenStatus === "ready") {
+            existing.kitchenStatus = "ready";
+          } else if (
+            existing.kitchenStatus !== "ready" &&
+            item.kitchenStatus === "preparing"
+          ) {
+            existing.kitchenStatus = "preparing";
+          }
+        }
+      } else {
+        // Create new entry
+        grouped.set(key, {
+          ...item,
+          stockName: item.stockName || "Item",
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          _id: item._id || item?.stockId?._id || item?.stockId || key,
+          stockId: item.stockId || item._id || key,
+        });
+      }
+    });
+
+    return Array.from(grouped.values());
+  };
+
   // Handle edit order (both restaurant and KTV)
   const handleEditOrder = () => {
     if (isKtvOrder()) {
@@ -291,51 +353,56 @@ function OrderDetail() {
                 </tr>
               </thead>
               <tbody>
-                {order.orderItems && order.orderItems.length > 0 ? (
-                  order.orderItems.map((item, index) => (
-                    <tr
-                      key={item._id}
-                      className="border-t border-gray-200 hover:bg-gray-50"
-                    >
-                      <td className="p-4">
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {item.stockName}
-                          </p>
-                          {item.notes && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              Note: {item.notes}
+                {(() => {
+                  const combinedItems = getCombinedOrderItems();
+                  return combinedItems.length > 0 ? (
+                    combinedItems.map((item, index) => (
+                      <tr
+                        key={
+                          item._id || item.stockId?._id || item.stockId || index
+                        }
+                        className="border-t border-gray-200 hover:bg-gray-50"
+                      >
+                        <td className="p-4">
+                          <div>
+                            <p className="font-semibold text-gray-800">
+                              {item.stockName}
                             </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4 text-center text-gray-700">
-                        x{item.quantity}
-                      </td>
-                      <td className="p-4 text-right text-gray-700">
-                        {item.price.toLocaleString()} MMK
-                      </td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`font-semibold capitalize ${getKitchenStatusColor(
-                            item.kitchenStatus
-                          )}`}
-                        >
-                          {item.kitchenStatus}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right font-semibold text-gray-800">
-                        {(item.price * item.quantity).toLocaleString()} MMK
+                            {item.notes && (
+                              <p className="text-sm text-gray-500 mt-1">
+                                Note: {item.notes}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 text-center text-gray-700">
+                          x{item.quantity}
+                        </td>
+                        <td className="p-4 text-right text-gray-700">
+                          {item.price.toLocaleString()} MMK
+                        </td>
+                        <td className="p-4 text-center">
+                          <span
+                            className={`font-semibold capitalize ${getKitchenStatusColor(
+                              item.kitchenStatus
+                            )}`}
+                          >
+                            {item.kitchenStatus}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right font-semibold text-gray-800">
+                          {(item.price * item.quantity).toLocaleString()} MMK
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="p-4 text-center text-gray-500">
+                        No items in this order
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="p-4 text-center text-gray-500">
-                      No items in this order
-                    </td>
-                  </tr>
-                )}
+                  );
+                })()}
               </tbody>
             </table>
           </div>
