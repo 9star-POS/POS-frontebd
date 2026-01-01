@@ -16,10 +16,47 @@ const BarPage = () => {
   const [statusFilter, setStatusFilter] = useState("pending"); // "pending", "ready"
   const [updatingItems, setUpdatingItems] = useState(new Set()); // Track items being updated
   const socketRef = useRef(null);
+  const audioRef = useRef(null);
+
+  // Custom notification sound file path (same as NotificationContext)
+  const customSoundPath = "/soung.wav";
+
+  // Initialize audio element for custom sound
+  useEffect(() => {
+    if (customSoundPath) {
+      const audio = new Audio(customSoundPath);
+      audio.preload = "auto";
+      audio.volume = 0.7; // Set volume (0.0 to 1.0)
+      audioRef.current = audio;
+    }
+  }, []);
 
   // Play notification sound when new orders arrive
   const playNotificationSound = () => {
-    console.log("Playing notification sound");
+    try {
+      // Try to play custom sound file first
+      if (audioRef.current && customSoundPath) {
+        // Reset audio to start from beginning
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch((error) => {
+          console.warn("Error playing custom notification sound:", error);
+          // Fall back to generated sound if custom sound fails
+          playGeneratedSound();
+        });
+        return;
+      }
+
+      // Fall back to generated sound if no custom sound is configured
+      playGeneratedSound();
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+      // Fall back to generated sound on error
+      playGeneratedSound();
+    }
+  };
+
+  // Play generated notification sound (fallback)
+  const playGeneratedSound = () => {
     try {
       // Use bracket notation to avoid TypeScript errors for webkitAudioContext
       const AudioContextClass =
@@ -50,7 +87,7 @@ const BarPage = () => {
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
-      console.error("Error playing notification sound:", error);
+      console.error("Error playing generated notification sound:", error);
     }
   };
 
