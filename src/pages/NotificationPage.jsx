@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import {
   Bell,
   X,
@@ -21,69 +21,6 @@ const NotificationPage = () => {
     deleteNotification,
     clearAll,
   } = useNotifications();
-
-  const previousNotificationsRef = useRef(new Set());
-
-  // Play notification sound when new orders arrive
-  const playNotificationSound = () => {
-    console.log("Playing notification sound");
-    try {
-      // Use bracket notation to avoid TypeScript errors for webkitAudioContext
-      const AudioContextClass =
-        window.AudioContext || window["webkitAudioContext"];
-      if (!AudioContextClass) {
-        console.warn("AudioContext not supported in this browser");
-        return;
-      }
-      const audioContext = new AudioContextClass();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Set a pleasant notification tone (800 Hz)
-      oscillator.frequency.value = 800;
-      oscillator.type = "sine";
-
-      // Fade in and out for a pleasant sound
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(
-        0.3,
-        audioContext.currentTime + 0.1
-      );
-      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch (error) {
-      console.error("Error playing notification sound:", error);
-    }
-  };
-
-  // Play sound when new notifications arrive
-  useEffect(() => {
-    if (notifications.length === 0) {
-      previousNotificationsRef.current.clear();
-      return;
-    }
-
-    // Get current notification IDs
-    const currentNotificationIds = new Set(notifications.map((n) => n.id));
-
-    // Find new notifications (not in previous set)
-    const newNotifications = notifications.filter(
-      (n) => !previousNotificationsRef.current.has(n.id)
-    );
-
-    // Play sound for new notifications
-    if (newNotifications.length > 0) {
-      playNotificationSound();
-    }
-
-    // Update the ref with current notification IDs
-    previousNotificationsRef.current = currentNotificationIds;
-  }, [notifications]);
 
   const getNotificationIcon = (orderItemStatus) => {
     switch (orderItemStatus) {

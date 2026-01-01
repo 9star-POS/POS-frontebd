@@ -26,6 +26,83 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef(null);
   const isInitialConnectionRef = useRef(true);
+  const audioRef = useRef(null);
+
+  // Custom notification sound file path
+  // Place your custom sound file in the public folder and update this path
+  // Supported formats: .mp3, .wav, .ogg, .m4a
+  // Example: "/notification.mp3" or "/sounds/notification.wav"
+  const customSoundPath = "/soung.wav"; // Change this to your custom sound file path
+
+  // Initialize audio element for custom sound
+  useEffect(() => {
+    if (customSoundPath) {
+      const audio = new Audio(customSoundPath);
+      audio.preload = "auto";
+      audio.volume = 0.7; // Set volume (0.0 to 1.0)
+      audioRef.current = audio;
+    }
+  }, []);
+
+  // Play notification sound when new notifications arrive
+  const playNotificationSound = () => {
+    try {
+      // Try to play custom sound file first
+      if (audioRef.current && customSoundPath) {
+        // Reset audio to start from beginning
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch((error) => {
+          console.warn("Error playing custom notification sound:", error);
+          // Fall back to generated sound if custom sound fails
+          playGeneratedSound();
+        });
+        return;
+      }
+
+      // Fall back to generated sound if no custom sound is configured
+      playGeneratedSound();
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+      // Fall back to generated sound on error
+      playGeneratedSound();
+    }
+  };
+
+  // Play generated notification sound (fallback)
+  const playGeneratedSound = () => {
+    try {
+      // Use bracket notation to avoid TypeScript errors for webkitAudioContext
+      const AudioContextClass =
+        window.AudioContext || window["webkitAudioContext"];
+      if (!AudioContextClass) {
+        console.warn("AudioContext not supported in this browser");
+        return;
+      }
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Set a pleasant notification tone (800 Hz)
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+
+      // Fade in and out for a pleasant sound
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(
+        0.3,
+        audioContext.currentTime + 0.1
+      );
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.error("Error playing generated notification sound:", error);
+    }
+  };
 
   useEffect(() => {
     // Connect to Socket.IO server
@@ -78,6 +155,9 @@ export const NotificationProvider = ({ children }) => {
         if (!notification.read) {
           setUnreadCount((prev) => prev + 1);
         }
+
+        // Play notification sound
+        playNotificationSound();
 
         // Show toast notification
         toast.info(notification.message, {
