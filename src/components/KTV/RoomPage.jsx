@@ -88,6 +88,13 @@ const RoomPage = () => {
 
   const handleEditClick = (e, room) => {
     e.stopPropagation(); // Prevent room selection when clicking edit
+
+    // Prevent editing if room status is active
+    if (room.status === "active") {
+      toast.error("Cannot edit room while it is active");
+      return;
+    }
+
     setEditingRoom(room);
     setEditRoom({
       roomNumber: room.roomNumber,
@@ -97,6 +104,15 @@ const RoomPage = () => {
   };
 
   const handleUpdateRoom = async () => {
+    // Prevent updating if room status is active
+    if (editingRoom?.status === "active") {
+      toast.error("Cannot update room while it is active");
+      setIsEditModalOpen(false);
+      setEditRoom({ roomNumber: "", hourlyRate: "" });
+      setEditingRoom(null);
+      return;
+    }
+
     if (!editRoom.roomNumber.trim()) {
       toast.error("Please enter room number");
       return;
@@ -182,12 +198,17 @@ const RoomPage = () => {
                   </button>
                   <button
                     onClick={(e) => handleEditClick(e, room)}
-                    className={`absolute top-2 right-2 p-1.5 rounded-md hover:bg-opacity-20 transition-colors ${
+                    disabled={room.status === "active"}
+                    className={`absolute top-2 right-2 p-1.5 rounded-md transition-colors ${
                       room.status === "active"
-                        ? "bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
-                        : "bg-primary bg-opacity-10 hover:bg-opacity-20 text-primary"
+                        ? "bg-white bg-opacity-20 text-white opacity-50 cursor-not-allowed"
+                        : "bg-primary bg-opacity-10 hover:bg-opacity-20 text-primary hover:bg-opacity-20"
                     }`}
-                    title="Edit room"
+                    title={
+                      room.status === "active"
+                        ? "Cannot edit active room"
+                        : "Edit room"
+                    }
                   >
                     <Edit3 size={16} />
                   </button>
@@ -319,6 +340,13 @@ const RoomPage = () => {
 
             {/* Form */}
             <div className="p-5 space-y-4">
+              {editingRoom?.status === "active" && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ This room is currently active and cannot be edited.
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Room Number <span className="text-red-500">*</span>
@@ -331,7 +359,7 @@ const RoomPage = () => {
                   }
                   placeholder="Enter room number"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
-                  disabled={isUpdating}
+                  disabled={isUpdating || editingRoom?.status === "active"}
                 />
               </div>
 
@@ -348,7 +376,7 @@ const RoomPage = () => {
                   placeholder="Enter hourly rate"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
                   min="0"
-                  disabled={isUpdating}
+                  disabled={isUpdating || editingRoom?.status === "active"}
                 />
               </div>
             </div>
@@ -372,12 +400,14 @@ const RoomPage = () => {
                   disabled={
                     isUpdating ||
                     !editRoom.roomNumber.trim() ||
-                    !editRoom.hourlyRate
+                    !editRoom.hourlyRate ||
+                    editingRoom?.status === "active"
                   }
                   className={`flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
                     isUpdating ||
                     !editRoom.roomNumber.trim() ||
-                    !editRoom.hourlyRate
+                    !editRoom.hourlyRate ||
+                    editingRoom?.status === "active"
                       ? "bg-gray-300 cursor-not-allowed"
                       : "bg-primary hover:bg-primary/90"
                   }`}
