@@ -321,7 +321,9 @@ function Receipt({ onClose }) {
       if (res?.success && Array.isArray(res.data)) {
         // Filter out the current room
         const filteredRooms = res.data.filter(
-          (room) => String(room.roomNumber) !== String(selectedRoom)
+          (room) =>
+            String(room.roomNumber) !== String(selectedRoom) &&
+            room.status === "inactive"
         );
         setAvailableRooms(filteredRooms);
       } else {
@@ -1082,10 +1084,6 @@ function Receipt({ onClose }) {
             </div>
 
             <div className="flex-1 overflow-y-auto mb-5 space-y-4">
-              {console.log(
-                "receipts[selectedRoom].items",
-                receipts[selectedRoom].items
-              )}
               {receipts[selectedRoom].items.map((item, index) => (
                 <div
                   key={index}
@@ -1434,14 +1432,7 @@ function Receipt({ onClose }) {
                       </button>
                     )}
                   </div>
-                  {/* {hasLocalItems && (
-                    <button
-                      onClick={() => setIsSplitOpen(true)}
-                      className=" flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                    >
-                      Split Order
-                    </button>
-                  )} */}
+
                   {orderId && userRole !== "ktv-waiter" && (
                     <button
                       // onClick={handleCheckout}
