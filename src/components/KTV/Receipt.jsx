@@ -1057,7 +1057,7 @@ function Receipt({ onClose }) {
                     </p>
                   )}
                 </div>
-                {orderId && (
+                {/* {orderId && (
                   <button
                     onClick={handleOpenRoomChange}
                     className="text-primary hover:text-primary/80 text-xs font-semibold px-3 py-1 border border-primary rounded-md hover:bg-primary/10 transition-colors"
@@ -1065,7 +1065,7 @@ function Receipt({ onClose }) {
                   >
                     Change Room
                   </button>
-                )}
+                )} */}
               </div>
               <div className="text-right">
                 <p className="text-gray-500 text-sm">
