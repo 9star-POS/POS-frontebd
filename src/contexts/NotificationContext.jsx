@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { io } from "socket.io-client";
 import { toast } from "sonner";
+import { isWaiter } from "../utils/getUserRole";
 
 const NotificationContext = createContext();
 
@@ -45,7 +46,13 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   // Play notification sound when new notifications arrive
+  // Only plays sound for ktv-waiter and restaurant-waiter roles
   const playNotificationSound = () => {
+    // Check if user is a waiter before playing sound
+    if (!isWaiter()) {
+      return;
+    }
+
     try {
       // Try to play custom sound file first
       if (audioRef.current && customSoundPath) {

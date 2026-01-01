@@ -6,7 +6,7 @@ import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
 import createNotification from "../api/notification/createNotification";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
-import { canEdit } from "../utils/getUserRole";
+import { canEdit, isKitchen } from "../utils/getUserRole";
 
 const KitchenPage = () => {
   const [allOrders, setAllOrders] = useState([]); // Store all orders for stats calculation
@@ -32,7 +32,13 @@ const KitchenPage = () => {
   }, []);
 
   // Play notification sound when new orders arrive
+  // Only plays sound for kitchen role
   const playNotificationSound = () => {
+    // Check if user is kitchen staff before playing sound
+    if (!isKitchen()) {
+      return;
+    }
+
     try {
       // Try to play custom sound file first
       if (audioRef.current && customSoundPath) {

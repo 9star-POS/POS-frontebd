@@ -31,3 +31,28 @@ export const canEdit = () => {
   return !isCashier();
 };
 
+/**
+ * Check if the current user is a waiter (ktv-waiter or restaurant-waiter)
+ * @returns {boolean} True if user is a waiter, false otherwise
+ */
+export const isWaiter = () => {
+  const role = getUserRole();
+  return role === "ktv-waiter" || role === "restaurant-waiter";
+};
+
+/**
+ * Check if the current user is a kitchen staff
+ * @returns {boolean} True if user is kitchen, false otherwise
+ */
+export const isKitchen = () => {
+  return getUserRole() === "kitchen";
+};
+
+/**
+ * Check if the current user is a bar counter staff
+ * @returns {boolean} True if user is bar-counter, false otherwise
+ */
+export const isBarCounter = () => {
+  return getUserRole() === "bar-counter";
+};
+

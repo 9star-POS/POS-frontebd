@@ -6,7 +6,7 @@ import updateKitchenItemStatus from "../api/Kitchen/updateKitchenItemStatus";
 import createNotification from "../api/notification/createNotification";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
-import { canEdit } from "../utils/getUserRole";
+import { canEdit, isBarCounter } from "../utils/getUserRole";
 
 const BarPage = () => {
   const [allOrders, setAllOrders] = useState([]); // Store all orders for stats calculation
@@ -32,7 +32,13 @@ const BarPage = () => {
   }, []);
 
   // Play notification sound when new orders arrive
+  // Only plays sound for bar-counter role
   const playNotificationSound = () => {
+    // Check if user is bar counter staff before playing sound
+    if (!isBarCounter()) {
+      return;
+    }
+
     try {
       // Try to play custom sound file first
       if (audioRef.current && customSoundPath) {
