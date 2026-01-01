@@ -13,8 +13,11 @@ const ktvReceiptSlice = createSlice({
       state.selectedRoom = action.payload;
     },
     setOrderIdForRoom(state, action) {
+      console.log("setOrderIdForRoom action", action);
+      // console.log("state.orderIds", state.orderIds);
       const { room, orderId } = action.payload;
-      state.orderIds[room] = orderId;
+      // console.log("setting orderId for room", typeof room, orderId);
+      // state.orderIds[room] = orderId;
     },
     removeRoom(state, action) {
       const roomToRemove = action.payload;

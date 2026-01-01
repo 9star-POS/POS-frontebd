@@ -18,6 +18,7 @@ import {
   setRoomDetails,
   setRoomStatus,
   setRoomNote,
+  selectRoom,
 } from "./../../redux/ktvReceiptSlice";
 import { useNavigate } from "react-router-dom";
 import box from "./../../assets/box.png";
@@ -28,10 +29,12 @@ import { toast } from "sonner";
 import getKtvOrders from "../../api/Order/getKtvOrders";
 import sendKtvOrder from "../../api/KTV/sendKtvOrder";
 import getRoomService from "../../api/KTV/getRoomService";
+import getAllRooms from "../../api/KTV/getAllRooms";
 import finalizeKtvOrder from "../../api/KTV/finalizeKtvOrder";
 import updateKtvOrder from "../../api/KTV/updateKtvOrder";
 import updateRoomStatus from "../../api/KTV/updateRoomStatus";
 import removeKtvOrderItems from "../../api/KTV/removeKtvOrderItems";
+import changeKtvOrderRoom from "../../api/KTV/changeKtvOrderRoom";
 import TimestampFormatter from "../Orders/TimestampFormatter";
 import SplitOrderModal from "./SplitOrderModal";
 import printReceipt from "../../utils/printReceipt";
@@ -65,9 +68,14 @@ function Receipt({ onClose }) {
   const [orderItemsForRemove, setOrderItemsForRemove] = useState([]);
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [isLoadingRemoveModal, setIsLoadingRemoveModal] = useState(false);
+  const [isRoomChangeOpen, setIsRoomChangeOpen] = useState(false);
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [isChangingRoom, setIsChangingRoom] = useState(false);
   const [paperSize, setPaperSize] = useState(
     () => localStorage.getItem("receipt-paper-size") || "57mm"
   );
+  // console.log("receipts", receipts);
   useEffect(() => {
     const fetchOrdersForTable = async () => {
       if (!selectedRoom) {
@@ -77,7 +85,7 @@ function Receipt({ onClose }) {
       }
       setIsLoadingRemote(true);
       const res = await getKtvOrders();
-      // console.log(res);
+      console.log(res);
       if (res?.success && Array.isArray(res.data)) {
         // Only show active orders (not completed or cancelled)
         const forTable = res.data.filter(
@@ -88,6 +96,8 @@ function Receipt({ onClose }) {
               o.status === "ongoing" ||
               o.status === "in_progress")
         );
+
+        console.log("forTable", forTable);
         // Pick the latest active order by createdAt
         const pickLatest = (list) =>
           list
@@ -95,10 +105,14 @@ function Receipt({ onClose }) {
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
           null;
         const chosen = pickLatest(forTable);
+        console.log("chosen", chosen);
         setRemoteOrder(chosen || null);
+        console.log("remoteOrder", remoteOrder);
         const chosenOrderId = chosen?._id || null;
+        console.log("chosenOrderId", chosenOrderId);
         setOrderId(chosenOrderId);
         if (chosenOrderId && selectedRoom) {
+          console.log("setting orderId for room", selectedRoom, chosenOrderId);
           dispatch(
             setOrderIdForRoom({ room: selectedRoom, orderId: chosenOrderId })
           );
@@ -127,6 +141,7 @@ function Receipt({ onClose }) {
             }
           });
           const mappedItems = Array.from(grouped.values());
+          console.log("mappedItems", mappedItems);
           dispatch(setItemsForRoom({ room: selectedRoom, items: mappedItems }));
           if (chosen?.roomService) {
             setRoomServiceId(chosen.roomService.roomServiceId);
@@ -291,6 +306,85 @@ function Receipt({ onClose }) {
   const handleCloseRemoveOrder = () => {
     setIsRemoveOrderOpen(false);
     setOrderItemsForRemove([]);
+  };
+
+  // Handle room change modal
+  const handleOpenRoomChange = async () => {
+    if (!orderId) {
+      toast.warning("No active order to change room");
+      return;
+    }
+    setIsLoadingRooms(true);
+    setIsRoomChangeOpen(true);
+    try {
+      const res = await getAllRooms();
+      if (res?.success && Array.isArray(res.data)) {
+        // Filter out the current room
+        const filteredRooms = res.data.filter(
+          (room) => String(room.roomNumber) !== String(selectedRoom)
+        );
+        setAvailableRooms(filteredRooms);
+      } else {
+        toast.error("Failed to load available rooms");
+        setIsRoomChangeOpen(false);
+      }
+    } catch (error) {
+      toast.error("Failed to load available rooms");
+      setIsRoomChangeOpen(false);
+    } finally {
+      setIsLoadingRooms(false);
+    }
+  };
+
+  const handleCloseRoomChange = () => {
+    setIsRoomChangeOpen(false);
+    setAvailableRooms([]);
+  };
+
+  const handleChangeRoom = async (newRoomServiceId, newRoomNumber) => {
+    if (!orderId) {
+      toast.error("No active order to change room");
+      return;
+    }
+
+    // Store the original room's roomServiceId before changing
+    const originalRoomServiceId =
+      roomServiceId || remoteOrder?.roomService?.roomServiceId;
+
+    setIsChangingRoom(true);
+    try {
+      const res = await changeKtvOrderRoom(orderId, newRoomServiceId);
+      if (res?.success) {
+        // Update room statuses: original room to inactive, new room to active
+        try {
+          // Set original room to inactive
+          if (originalRoomServiceId) {
+            await updateRoomStatus(originalRoomServiceId, "inactive");
+          }
+          // Set new room to active
+          await updateRoomStatus(newRoomServiceId, "active");
+        } catch (statusError) {
+          console.error("Error updating room statuses:", statusError);
+          // Don't fail the entire operation if status update fails
+        }
+
+        toast.success(`Room changed to Room ${newRoomNumber} successfully`);
+
+        // Update Redux state - select the new room
+        dispatch(selectRoom(newRoomNumber));
+
+        handleCloseRoomChange();
+
+        // Redirect to /ktv page
+        navigate("/ktv");
+      } else {
+        toast.error(res?.message || "Failed to change room");
+      }
+    } catch (error) {
+      toast.error("An error occurred while changing room");
+    } finally {
+      setIsChangingRoom(false);
+    }
   };
 
   const handleDecrementInModal = (index) => {
@@ -909,77 +1003,12 @@ function Receipt({ onClose }) {
     }
   };
 
-  // const handleCheckout = async () => {
-  //   if (!orderId) {
-  //     toast.error("No active order to checkout");
-  //     return;
-  //   }
-
-  //   // Prepare vocalist service times array
-  //   const vocalistServiceTimes = [];
-  //   if (selectedRoom && receipts[selectedRoom]?.vocalists) {
-  //     receipts[selectedRoom].vocalists.forEach((v) => {
-  //       vocalistServiceTimes.push(Number(v.serviceTime) || 0);
-  //     });
-  //   }
-
-  //   // Prepare room service time
-  //   const roomServiceTime =
-  //     selectedRoom && receipts[selectedRoom]?.roomService
-  //       ? Number(receipts[selectedRoom].roomService.serviceTime) || 0
-  //       : 0;
-
-  //   const payload = {
-  //     vocalistServiceTimes,
-  //     roomServiceTime,
-  //     roomCharges: calculateRoomCharges(),
-  //     vocalistCharges: calculateVocalistCharges(),
-  //     subTotal: calculateSubtotal(),
-  //     tax: calculateTax(),
-  //     discount: 0,
-  //     total: calculateTotal(),
-  //     status: "completed",
-  //     paymentMethod: "cash",
-  //   };
-
-  //   try {
-  //     const res = await finalizeKtvOrder(orderId, payload);
-  //     console.log(res);
-  //     if (res?.status === "success" || res?.code === 200) {
-  //       toast.success("KTV order checkout completed successfully");
-  //       setRemoteOrder(res?.data || null);
-  //       setOrderId(null);
-  //       if (selectedRoom) {
-  //         dispatch(removeRoom(selectedRoom));
-  //       }
-  //       if (onClose) onClose();
-  //     } else {
-  //       toast.error(res?.message || "Failed to complete checkout");
-  //     }
-  //   } catch (_) {
-  //     toast.error("An error occurred during checkout");
-  //   }
-  // };
-
   return (
     <div className="text-black h-screen px-3 pt-0">
       <div className="pt-2 h-full">
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
           <div className="flex items-center gap-3">
-            {/* <select
-              value={paperSize}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPaperSize(val);
-                localStorage.setItem("receipt-paper-size", val);
-              }}
-              className="border border-primary/40 text-primary bg-white rounded-md px-2 py-1 text-sm"
-            >
-              <option value="57mm">57mm Thermal</option>
-              <option value="58mm">58mm Thermal</option>
-              <option value="80mm">80mm Thermal</option>
-            </select> */}
             <button
               className="lg:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
               onClick={onClose}
@@ -1014,15 +1043,28 @@ function Receipt({ onClose }) {
         {selectedRoom && (hasLocalData || remoteOrder) && (
           <div className="flex flex-col h-[calc(100vh-10rem)]">
             <div className="flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-lg">
-              <div>
-                <p className="text-gray-800 font-medium">Room {selectedRoom}</p>
-                {(remoteOrder?.createdAt || localCreationTime) && (
-                  <p className="text-gray-500 text-sm">
-                    Started:{" "}
-                    <TimestampFormatter
-                      timestamp={remoteOrder?.createdAt || localCreationTime}
-                    />
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-gray-800 font-medium">
+                    Room {selectedRoom}
                   </p>
+                  {(remoteOrder?.createdAt || localCreationTime) && (
+                    <p className="text-gray-500 text-sm">
+                      Started:{" "}
+                      <TimestampFormatter
+                        timestamp={remoteOrder?.createdAt || localCreationTime}
+                      />
+                    </p>
+                  )}
+                </div>
+                {orderId && (
+                  <button
+                    onClick={handleOpenRoomChange}
+                    className="text-primary hover:text-primary/80 text-xs font-semibold px-3 py-1 border border-primary rounded-md hover:bg-primary/10 transition-colors"
+                    title="Change Room"
+                  >
+                    Change Room
+                  </button>
                 )}
               </div>
               <div className="text-right">
@@ -1040,6 +1082,10 @@ function Receipt({ onClose }) {
             </div>
 
             <div className="flex-1 overflow-y-auto mb-5 space-y-4">
+              {console.log(
+                "receipts[selectedRoom].items",
+                receipts[selectedRoom].items
+              )}
               {receipts[selectedRoom].items.map((item, index) => (
                 <div
                   key={index}
@@ -1523,6 +1569,90 @@ function Receipt({ onClose }) {
                   ) : (
                     "Save Changes"
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Room Modal */}
+      {isRoomChangeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Change Room</h3>
+              <button
+                onClick={handleCloseRoomChange}
+                className="text-gray-500 hover:text-gray-700"
+                disabled={isChangingRoom}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Rooms List */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {isLoadingRooms ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-gray-500 mt-4">Loading rooms...</p>
+                </div>
+              ) : availableRooms.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No available rooms
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Select a room to move this order to:
+                  </p>
+                  {availableRooms.map((room) => (
+                    <button
+                      key={room._id}
+                      onClick={() =>
+                        handleChangeRoom(room._id, room.roomNumber)
+                      }
+                      disabled={isChangingRoom}
+                      className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                        isChangingRoom
+                          ? "bg-gray-100 border-gray-200 cursor-not-allowed"
+                          : "bg-white border-gray-200 hover:border-primary hover:bg-primary/5 cursor-pointer"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            Room {room.roomNumber}
+                          </p>
+                          {room.status && (
+                            <p className="text-sm text-gray-500 capitalize">
+                              Status: {room.status}
+                            </p>
+                          )}
+                        </div>
+                        {room.hourlyRate && (
+                          <p className="text-sm text-gray-600">
+                            {room.hourlyRate.toLocaleString()} MMK/hr
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t bg-gray-50">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseRoomChange}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+                  disabled={isChangingRoom}
+                >
+                  Cancel
                 </button>
               </div>
             </div>
