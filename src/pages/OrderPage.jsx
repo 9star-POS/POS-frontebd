@@ -25,6 +25,7 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("restaurant"); // "restaurant" or "ktv"
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all"); // "all", "none", "cash", "kpay", "wavepay", "foc"
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
   // Initialize filters from sessionStorage or default to today
@@ -157,9 +158,17 @@ const OrdersPage = () => {
     if (res?.success) {
       setLoading(false);
       // Filter to show only completed orders
-      const completedOrders = res.data.filter(
+      let completedOrders = res.data.filter(
         (order) => order.status === "completed"
       );
+
+      // Apply payment method filter
+      if (paymentMethodFilter !== "all") {
+        completedOrders = completedOrders.filter(
+          (order) => order.paymentMethod === paymentMethodFilter
+        );
+      }
+
       setOrders(completedOrders || []);
     } else {
       setLoading(false);
@@ -181,15 +190,20 @@ const OrdersPage = () => {
   const handleResetFilters = () => {
     const resetFilters = { startDate: today, endDate: today };
     setFilters(resetFilters);
+    setPaymentMethodFilter("all");
     // Save to sessionStorage (clears when browser closes)
     sessionStorage.setItem("orderPageDateRange", JSON.stringify(resetFilters));
     getOrders(resetFilters);
   };
 
+  const handlePaymentMethodFilterChange = (method) => {
+    setPaymentMethodFilter(method);
+  };
+
   useEffect(() => {
     getOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  }, [activeTab, paymentMethodFilter]);
 
   useEffect(() => {
     getOrders(filters);
@@ -198,7 +212,9 @@ const OrdersPage = () => {
 
   const currentFilters = filters;
   const showResetButton =
-    currentFilters.startDate !== today || currentFilters.endDate !== today;
+    currentFilters.startDate !== today ||
+    currentFilters.endDate !== today ||
+    paymentMethodFilter !== "all";
 
   return (
     <div className="p-5 h-[calc(100vh-90px)]">
@@ -213,6 +229,22 @@ const OrdersPage = () => {
               defaultStartDate={today}
               defaultEndDate={today}
             />
+            <div className="flex flex-col gap-1">
+              <select
+                value={paymentMethodFilter}
+                onChange={(e) =>
+                  handlePaymentMethodFilterChange(e.target.value)
+                }
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white text-sm"
+              >
+                <option value="all">All Methods</option>
+                <option value="none">None</option>
+                <option value="cash">Cash</option>
+                <option value="kpay">KPay</option>
+                <option value="wavepay">WavePay</option>
+                <option value="foc">FOC</option>
+              </select>
+            </div>
             {showResetButton && (
               <button
                 className="border border-gray-300 px-4 py-2 rounded-md transition-all hover:bg-gray-100"

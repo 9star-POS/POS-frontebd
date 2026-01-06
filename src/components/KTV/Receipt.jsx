@@ -75,7 +75,13 @@ function Receipt({ onClose }) {
   const [paperSize, setPaperSize] = useState(
     () => localStorage.getItem("receipt-paper-size") || "57mm"
   );
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   // console.log("receipts", receipts);
+  // Reset payment method when room changes
+  useEffect(() => {
+    setPaymentMethod("cash"); // Reset to default payment method
+  }, [selectedRoom]);
+
   useEffect(() => {
     const fetchOrdersForTable = async () => {
       if (!selectedRoom) {
@@ -736,7 +742,7 @@ function Receipt({ onClose }) {
       discount: calculateDiscount(),
       total: calculateTotal(),
       status: "completed",
-      paymentMethod: "cash", // Can be extended to support other payment methods
+      paymentMethod: paymentMethod,
     };
 
     try {
@@ -771,7 +777,7 @@ function Receipt({ onClose }) {
           serviceFee: res?.data?.serviceFee || calculateServiceFee(),
           discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
-          paymentMethod: "cash",
+          paymentMethod: res?.data?.paymentMethod || paymentMethod,
           createdAt: res?.data?.createdAt || new Date().toISOString(),
           updatedAt: res?.data?.updatedAt || new Date().toISOString(),
           note: receipts[selectedRoom]?.note || "",
@@ -1434,13 +1440,32 @@ function Receipt({ onClose }) {
                   </div>
 
                   {orderId && userRole !== "ktv-waiter" && (
-                    <button
-                      // onClick={handleCheckout}
-                      onClick={handlePayment}
-                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                    >
-                      Checkout
-                    </button>
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Payment Method
+                        </label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
+                          required
+                        >
+                          <option value="none">None</option>
+                          <option value="cash">Cash</option>
+                          <option value="kpay">KPay</option>
+                          <option value="wavepay">WavePay</option>
+                          <option value="foc">FOC</option>
+                        </select>
+                      </div>
+                      <button
+                        // onClick={handleCheckout}
+                        onClick={handlePayment}
+                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                      >
+                        Checkout
+                      </button>
+                    </>
                   )}
                 </div>
               )}

@@ -44,6 +44,7 @@ function Receipt({ onClose }) {
   const [paperSize, setPaperSize] = useState(
     () => localStorage.getItem("receipt-paper-size") || "57mm"
   );
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -124,9 +125,10 @@ function Receipt({ onClose }) {
     fetchOrdersForTable();
   }, [selectedTable]);
 
-  // Reset tableServiceId when table changes
+  // Reset tableServiceId and payment method when table changes
   useEffect(() => {
     setTableServiceId(null);
+    setPaymentMethod("cash"); // Reset to default payment method
   }, [selectedTable]);
 
   // Fetch table service ID when table is selected and no order exists
@@ -449,10 +451,13 @@ function Receipt({ onClose }) {
       serviceFee: (serviceFee / 100) * calculateSubtotal(),
       discount: calculateDiscount(),
       total: calculateTotal(),
+      paymentMethod: paymentMethod,
     };
+    // console.log("payload", payload);
     try {
       const res = await checkoutOrder({ id: orderId, data: payload });
       if (res?.success) {
+        console.log("res", res);
         toast.success("Checkout completed successfully");
         setIsCalculatorOpen(false);
 
@@ -480,7 +485,7 @@ function Receipt({ onClose }) {
             res?.data?.serviceFee || calculateServiceFee(calculateSubtotal()),
           discount: res?.data?.discount || calculateDiscount(),
           total: res?.data?.total || calculateTotal(),
-          paymentMethod: "cash",
+          paymentMethod: res?.data?.paymentMethod || paymentMethod,
           createdAt: res?.data?.createdAt || new Date().toISOString(),
           updatedAt: res?.data?.updatedAt || new Date().toISOString(),
         };
@@ -682,41 +687,6 @@ function Receipt({ onClose }) {
       }
     }
   };
-
-  // const handleCheckout = async () => {
-  //   if (!orderId) return;
-  //   const payload = {
-  //     status: "completed",
-  //     subTotal: calculateSubtotal(),
-  //     tax: taxRate,
-  //     discount: calculateDiscount(),
-  //     total: calculateTotal(),
-  //   };
-  //   try {
-  //     const res = await checkoutOrder({ id: orderId, data: payload });
-  //     if (res?.status === "success" || res?.code === 200) {
-  //       toast.success("Checkout completed successfully");
-  //       setRemoteOrder(res?.data || null);
-  //       setOrderId(null);
-  //       if (selectedTable) {
-  //         dispatch(removeTable(selectedTable));
-  //       }
-  //       if (tableServiceId) {
-  //         try {
-  //           await updateTableStatus({
-  //             tableServiceId,
-  //             status: "inactive",
-  //           });
-  //         } catch (error) {
-  //           console.error("Failed to reset table status:", error);
-  //         }
-  //       }
-  //       if (onClose) onClose();
-  //     }
-  //   } catch (_) {
-  //     // error handled in API layer
-  //   }
-  // };
 
   return (
     <div className="text-black h-screen px-3 pt-0">
@@ -946,13 +916,32 @@ function Receipt({ onClose }) {
                     Split Order
                   </button> */}
                   {orderId && getUserRole() !== "restaurant-waiter" && (
-                    <button
-                      // onClick={handleCheckout}
-                      onClick={handlePayment}
-                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                    >
-                      Checkout
-                    </button>
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Payment Method
+                        </label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
+                          required
+                        >
+                          <option value="none">None</option>
+                          <option value="cash">Cash</option>
+                          <option value="kpay">KPay</option>
+                          <option value="wavepay">WavePay</option>
+                          <option value="foc">FOC</option>
+                        </select>
+                      </div>
+                      <button
+                        // onClick={handleCheckout}
+                        onClick={handlePayment}
+                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                      >
+                        Checkout
+                      </button>
+                    </>
                   )}
                 </div>
               )}

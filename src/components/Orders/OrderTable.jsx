@@ -92,7 +92,10 @@ function OrderTable({
             <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
               Total Price
             </th>
-            <th className="hidden sm:block px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+            <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+              Payment Method
+            </th>
+            <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
               Action
             </th>
           </tr>
@@ -173,7 +176,30 @@ function OrderTable({
                   : "Pending"}{" "}
                 {order.total != null && "MMK"}
               </td>
-              <td className="hidden sm:block px-2 lg:px-6 py-4 whitespace-nowrap ">
+              <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
+                <span
+                  className={`px-2 py-1 rounded text-xs font-medium ${
+                    order.paymentMethod === "cash"
+                      ? "bg-green-100 text-green-800"
+                      : order.paymentMethod === "kpay"
+                      ? "bg-blue-100 text-blue-800"
+                      : order.paymentMethod === "wavepay"
+                      ? "bg-purple-100 text-purple-800"
+                      : order.paymentMethod === "foc"
+                      ? "bg-orange-100 text-orange-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {order.paymentMethod
+                    ? order.paymentMethod === "wavepay"
+                      ? "WavePay"
+                      : order.paymentMethod === "foc"
+                      ? "FOC"
+                      : order.paymentMethod.toUpperCase()
+                    : "N/A"}
+                </span>
+              </td>
+              <td className="px-2 lg:px-6 py-4 whitespace-nowrap ">
                 <div className="flex space-x-4 items-center">
                   <button
                     className="text-blue-500 font-bold hover:text-blue-700"
