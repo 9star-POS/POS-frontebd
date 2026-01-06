@@ -7,7 +7,7 @@ import createRoom from "../../api/KTV/createRoom";
 import updateRoom from "../../api/KTV/updateRoom";
 import { toast } from "sonner";
 import Loading from "../Loading";
-import { Plus, X, Edit3 } from "lucide-react";
+import { Plus, X, Edit3, RefreshCw } from "lucide-react";
 
 const RoomPage = () => {
   const Navigate = useNavigate();
@@ -28,21 +28,30 @@ const RoomPage = () => {
     hourlyRate: "",
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchRooms();
   }, []);
 
-  const fetchRooms = async () => {
-    setLoading(true);
+  const fetchRooms = async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     const res = await getAllRooms();
     if (res?.success && Array.isArray(res.data)) {
       setRooms(res.data);
+      if (isRefresh) {
+        toast.success("Rooms refreshed successfully");
+      }
     } else {
       setRooms([]);
       toast.error("Failed to load rooms");
     }
     setLoading(false);
+    setIsRefreshing(false);
   };
 
   const handleTableSelect = (room) => {
@@ -154,13 +163,29 @@ const RoomPage = () => {
       <div className="w-full px-5">
         <div className="flex justify-between items-center mb-2">
           <h2 className="sub-header">Rooms</h2>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-          >
-            <Plus size={20} />
-            Create Room
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchRooms(true)}
+              disabled={isRefreshing}
+              className={`bg-white text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2 ${
+                isRefreshing ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              title="Refresh rooms"
+            >
+              <RefreshCw
+                size={20}
+                className={isRefreshing ? "animate-spin" : ""}
+              />
+              Refresh
+            </button>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+            >
+              <Plus size={20} />
+              Create Room
+            </button>
+          </div>
         </div>
 
         {rooms.length === 0 ? (
