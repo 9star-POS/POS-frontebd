@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import Calendar from "../components/Calender";
 import getSaleReport from "../api/report/getSaleReport";
 import getStockAnalytics from "../api/report/getStockAnalytics";
+import getPaymentMethodReport from "../api/report/getPaymentMethodReport";
 import { ArrowUpDown } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SalesSummaryPDF from "../components/Home/pdf/SalesSummaryPDF";
@@ -12,10 +13,13 @@ import StockAnalyticsPDF from "../components/Home/pdf/StockAnalyticsPDF";
 const SalesReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [paymentMethodLoading, setPaymentMethodLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [activeTab, setActiveTab] = useState("sales"); // "sales" or "analytics"
+  const [paymentMethodData, setPaymentMethodData] = useState(null);
+  const [activeTab, setActiveTab] = useState("sales"); // "sales", "analytics", or "paymentMethod"
   const [analyticsFilter, setAnalyticsFilter] = useState("all"); // all, restaurant, ktv
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all"); // all, restaurant, ktv
   const [sortConfig, setSortConfig] = useState({
     key: "totalQuantity",
     direction: "descending",
@@ -145,11 +149,42 @@ const SalesReportPage = () => {
     }
   };
 
+  const fetchPaymentMethodReport = async () => {
+    if (!startDate || !endDate) {
+      toast.error("Please select a date range");
+      return;
+    }
+
+    setPaymentMethodLoading(true);
+    try {
+      const formattedStartDate = format(new Date(startDate), "yyyy-MM-dd");
+      const formattedEndDate = format(new Date(endDate), "yyyy-MM-dd");
+
+      const response = await getPaymentMethodReport({
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      });
+      if (response?.success) {
+        setPaymentMethodData(response.data);
+        toast.success("Payment method report generated successfully");
+      } else {
+        toast.error("Failed to generate payment method report");
+      }
+    } catch (error) {
+      toast.error("Error fetching payment method report");
+      console.error("Error fetching payment method report:", error);
+    } finally {
+      setPaymentMethodLoading(false);
+    }
+  };
+
   const generateReport = () => {
     if (activeTab === "sales") {
       fetchReport();
-    } else {
+    } else if (activeTab === "analytics") {
       fetchAnalytics();
+    } else if (activeTab === "paymentMethod") {
+      fetchPaymentMethodReport();
     }
   };
 
@@ -258,7 +293,7 @@ const SalesReportPage = () => {
           <div>
             <p className="text-xs md:text-sm text-gray-500">Total Amount</p>
             <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
-              {(totalAmount / 1000).toFixed(2)}K KS
+              {Number(totalAmount).toLocaleString()} MMK
             </p>
           </div>
         </div>
@@ -294,7 +329,7 @@ const SalesReportPage = () => {
             Total Revenue
           </h3>
           <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
-            {(data?.totalRevenue / 1000).toFixed(2) || "0.00"}K KS
+            {Number(data?.totalRevenue || 0).toLocaleString()} MMK
           </p>
           <p className="text-xs md:text-sm text-gray-500">Revenue generated</p>
         </div>
@@ -377,9 +412,23 @@ const SalesReportPage = () => {
           <button
             onClick={generateReport}
             className="bg-primary text-white px-4 md:px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold text-sm md:text-base"
-            disabled={activeTab === "sales" ? loading : analyticsLoading}
+            disabled={
+              activeTab === "sales"
+                ? loading
+                : activeTab === "analytics"
+                ? analyticsLoading
+                : paymentMethodLoading
+            }
           >
-            {(activeTab === "sales" ? loading : analyticsLoading)
+            {activeTab === "sales"
+              ? loading
+                ? "Loading..."
+                : "Generate Report"
+              : activeTab === "analytics"
+              ? analyticsLoading
+                ? "Loading..."
+                : "Generate Report"
+              : paymentMethodLoading
               ? "Loading..."
               : "Generate Report"}
           </button>
@@ -407,6 +456,16 @@ const SalesReportPage = () => {
           onClick={() => setActiveTab("analytics")}
         >
           Stock Analytics
+        </button>
+        <button
+          className={`px-4 md:px-6 py-2 md:py-3 font-semibold transition-all text-sm md:text-base whitespace-nowrap ${
+            activeTab === "paymentMethod"
+              ? "text-primary border-b-2 border-primary"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("paymentMethod")}
+        >
+          Payment Method
         </button>
       </div>
 
@@ -564,7 +623,8 @@ const SalesReportPage = () => {
                           </td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-primary">
-                              {(item.totalRevenue / 1000).toFixed(2)}K KS
+                              {Number(item.totalRevenue || 0).toLocaleString()}{" "}
+                              MMK
                             </div>
                           </td>
                           {analyticsFilter !== "ktv" && (
@@ -605,7 +665,8 @@ const SalesReportPage = () => {
                         </h3>
                         <div className="text-right">
                           <p className="text-lg font-bold text-primary">
-                            {(item.totalRevenue / 1000).toFixed(2)}K KS
+                            {Number(item.totalRevenue || 0).toLocaleString()}{" "}
+                            MMK
                           </p>
                         </div>
                       </div>
@@ -658,6 +719,202 @@ const SalesReportPage = () => {
           {analyticsLoading && (
             <div className="text-center py-10">
               <p className="text-gray-500">Loading analytics data...</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Payment Method Report Tab Content */}
+      {activeTab === "paymentMethod" && (
+        <>
+          {paymentMethodData && (
+            <div>
+              <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "restaurant", label: "Restaurant" },
+                  { key: "ktv", label: "KTV" },
+                ].map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => setPaymentMethodFilter(option.key)}
+                    className={`px-3 md:px-4 py-2 rounded-lg border font-semibold transition-all text-sm md:text-base ${
+                      paymentMethodFilter === option.key
+                        ? "bg-primary text-white border-primary"
+                        : "border-gray-300 text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+                {paymentMethodData.byPaymentMethod?.map((item, index) => {
+                  // Filter out payment methods with no data for the selected filter
+                  if (paymentMethodFilter === "restaurant") {
+                    if ((item.restaurantOrders?.orderCount || 0) === 0) {
+                      return null;
+                    }
+                  }
+                  if (paymentMethodFilter === "ktv") {
+                    if ((item.ktvOrders?.orderCount || 0) === 0) {
+                      return null;
+                    }
+                  }
+                  const getPaymentMethodLabel = () => {
+                    if (item.paymentMethod === "wavepay") return "WavePay";
+                    if (item.paymentMethod === "foc") return "FOC";
+                    if (item.paymentMethod === "none") return "None";
+                    return item.paymentMethod.toUpperCase();
+                  };
+
+                  const getPaymentMethodColor = () => {
+                    if (item.paymentMethod === "cash")
+                      return "border-green-500";
+                    if (item.paymentMethod === "kpay") return "border-blue-500";
+                    if (item.paymentMethod === "wavepay")
+                      return "border-purple-500";
+                    if (item.paymentMethod === "foc")
+                      return "border-orange-500";
+                    return "border-primary";
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className={`border-l-4 ${getPaymentMethodColor()} bg-white rounded-lg shadow-md p-3 md:p-4`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-base md:text-lg font-semibold">
+                          {getPaymentMethodLabel()}
+                        </h3>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            item.paymentMethod === "cash"
+                              ? "bg-green-100 text-green-800"
+                              : item.paymentMethod === "kpay"
+                              ? "bg-blue-100 text-blue-800"
+                              : item.paymentMethod === "wavepay"
+                              ? "bg-purple-100 text-purple-800"
+                              : item.paymentMethod === "foc"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {getPaymentMethodLabel()}
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {/* Restaurant Orders */}
+                        {(paymentMethodFilter === "all" ||
+                          paymentMethodFilter === "restaurant") && (
+                          <div className="border-b border-gray-200 pb-2">
+                            <p className="text-xs md:text-sm text-gray-500 mb-1">
+                              Restaurant Orders
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-xs text-gray-400">Orders</p>
+                                <p className="text-lg md:text-xl font-futura">
+                                  {item.restaurantOrders?.orderCount || 0}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400">Total</p>
+                                <p className="text-lg md:text-xl font-futura text-primary">
+                                  {Number(
+                                    item.restaurantOrders?.total || 0
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* KTV Orders */}
+                        {(paymentMethodFilter === "all" ||
+                          paymentMethodFilter === "ktv") && (
+                          <div className="border-b border-gray-200 pb-2">
+                            <p className="text-xs md:text-sm text-gray-500 mb-1">
+                              KTV Orders
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-xs text-gray-400">Orders</p>
+                                <p className="text-lg md:text-xl font-futura">
+                                  {item.ktvOrders?.orderCount || 0}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400">Total</p>
+                                <p className="text-lg md:text-xl font-futura text-primary">
+                                  {Number(
+                                    item.ktvOrders?.total || 0
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Combined Total - Show when filter is "all" or show filtered total */}
+                        <div>
+                          <p className="text-xs md:text-sm text-gray-500 mb-1">
+                            {paymentMethodFilter === "all"
+                              ? "Combined Total"
+                              : paymentMethodFilter === "restaurant"
+                              ? "Restaurant Total"
+                              : "KTV Total"}
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-xs text-gray-400">Orders</p>
+                              <p className="text-lg md:text-xl font-futura font-bold">
+                                {paymentMethodFilter === "all"
+                                  ? item.combined?.orderCount || 0
+                                  : paymentMethodFilter === "restaurant"
+                                  ? item.restaurantOrders?.orderCount || 0
+                                  : item.ktvOrders?.orderCount || 0}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Total</p>
+                              <p className="text-lg md:text-xl font-futura font-bold text-primary">
+                                {Number(
+                                  paymentMethodFilter === "all"
+                                    ? item.combined?.total || 0
+                                    : paymentMethodFilter === "restaurant"
+                                    ? item.restaurantOrders?.total || 0
+                                    : item.ktvOrders?.total || 0
+                                ).toLocaleString()}{" "}
+                                MMK
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!paymentMethodData && !paymentMethodLoading && (
+            <div className="text-center py-10">
+              <p className="text-gray-500">
+                No payment method report data available. Please select a date
+                range and generate a report.
+              </p>
+            </div>
+          )}
+
+          {paymentMethodLoading && (
+            <div className="text-center py-10">
+              <p className="text-gray-500">Loading payment method report...</p>
             </div>
           )}
         </>

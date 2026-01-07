@@ -927,11 +927,9 @@ function Receipt({ onClose }) {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
                           required
                         >
-                          <option value="none">None</option>
                           <option value="cash">Cash</option>
                           <option value="kpay">KPay</option>
                           <option value="wavepay">WavePay</option>
-                          <option value="foc">FOC</option>
                         </select>
                       </div>
                       <button
