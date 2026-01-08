@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Plus, Minus, Trash2, X } from "lucide-react";
+import { Plus, Minus, Trash2, X, Printer } from "lucide-react";
 import {
   removeItemFromRoomReceipt,
   incrementRoomItemQuantity,
@@ -90,18 +90,15 @@ function Receipt({ onClose }) {
         return;
       }
       setIsLoadingRemote(true);
-      const res = await getKtvOrders();
+      // Use query parameters to filter by status and roomNumber
+      const res = await getKtvOrders({
+        status: "pending",
+        roomNumber: selectedRoom,
+      });
       console.log(res);
       if (res?.success && Array.isArray(res.data)) {
-        // Only show active orders (not completed or cancelled)
-        const forTable = res.data.filter(
-          (o) =>
-            String(o.roomService.roomNumber) === String(selectedRoom) &&
-            o?.isDeleted === false &&
-            (o.status === "pending" ||
-              o.status === "ongoing" ||
-              o.status === "in_progress")
-        );
+        // Filter out deleted orders (API should handle status and roomNumber)
+        const forTable = res.data.filter((o) => o?.isDeleted === false);
 
         console.log("forTable", forTable);
         // Pick the latest active order by createdAt
@@ -123,6 +120,7 @@ function Receipt({ onClose }) {
             setOrderIdForRoom({ room: selectedRoom, orderId: chosenOrderId })
           );
         }
+        // Handle order items separately (can be null or empty)
         if (chosen?.orderItems?.length) {
           // Group duplicate items (same stock) and sum quantities
           const grouped = new Map();
@@ -149,27 +147,23 @@ function Receipt({ onClose }) {
           const mappedItems = Array.from(grouped.values());
           console.log("mappedItems", mappedItems);
           dispatch(setItemsForRoom({ room: selectedRoom, items: mappedItems }));
-          if (chosen?.roomService) {
-            setRoomServiceId(chosen.roomService.roomServiceId);
-            dispatch(
-              setRoomServiceForRoom({
-                room: selectedRoom,
-                hourlyRate: chosen?.roomService?.hourlyRate || 0,
-                serviceTime: chosen?.roomServiceTime || 0,
-              })
-            );
-          }
-          if (Array.isArray(chosen?.vocalist)) {
-            dispatch(
-              setVocalistsForRoom({
-                room: selectedRoom,
-                vocalists: chosen.vocalist,
-              })
-            );
-          }
         } else {
-          // No active order - clear all Redux state for this room
+          // Clear items if no orderItems
           dispatch(setItemsForRoom({ room: selectedRoom, items: [] }));
+        }
+
+        // Handle room service separately (can exist without orderItems)
+        if (chosen?.roomService) {
+          setRoomServiceId(chosen.roomService.roomServiceId);
+          dispatch(
+            setRoomServiceForRoom({
+              room: selectedRoom,
+              hourlyRate: chosen?.roomService?.hourlyRate || 0,
+              serviceTime: chosen?.roomServiceTime || 0,
+            })
+          );
+        } else {
+          // Clear room service if not present
           dispatch(
             setRoomServiceForRoom({
               room: selectedRoom,
@@ -177,8 +171,34 @@ function Receipt({ onClose }) {
               serviceTime: 0,
             })
           );
-          dispatch(setVocalistsForRoom({ room: selectedRoom, vocalists: [] }));
           setRoomServiceId(null);
+        }
+
+        // Handle vocalists separately (can exist without orderItems)
+        if (Array.isArray(chosen?.vocalist) && chosen.vocalist.length > 0) {
+          console.log("Setting vocalists from API:", chosen.vocalist);
+          // Map vocalists to ensure serviceTime is a number (handle null)
+          const mappedVocalists = chosen.vocalist.map((v) => ({
+            ...v,
+            serviceTime:
+              v.serviceTime !== null && v.serviceTime !== undefined
+                ? Number(v.serviceTime)
+                : 0,
+          }));
+          dispatch(
+            setVocalistsForRoom({
+              room: selectedRoom,
+              vocalists: mappedVocalists,
+            })
+          );
+        } else {
+          // Only clear vocalists if there's no order at all, not if orderItems is null
+          // This allows vocalists to persist even when orderItems is null
+          if (!chosen) {
+            dispatch(
+              setVocalistsForRoom({ room: selectedRoom, vocalists: [] })
+            );
+          }
         }
       } else {
         setRemoteOrder(null);
@@ -241,16 +261,14 @@ function Receipt({ onClose }) {
     // Refetch order data to ensure we have the latest orderItemIds
     setIsLoadingRemoveModal(true);
     try {
-      const res = await getKtvOrders();
+      // Use query parameters to filter by status and roomNumber
+      const res = await getKtvOrders({
+        status: "pending",
+        roomNumber: selectedRoom,
+      });
       if (res?.success && Array.isArray(res.data)) {
-        const forTable = res.data.filter(
-          (o) =>
-            String(o.roomService.roomNumber) === String(selectedRoom) &&
-            o?.isDeleted === false &&
-            (o.status === "pending" ||
-              o.status === "ongoing" ||
-              o.status === "in_progress")
-        );
+        // Filter out deleted orders (API should handle status and roomNumber)
+        const forTable = res.data.filter((o) => o?.isDeleted === false);
         const pickLatest = (list) =>
           list
             .slice()
@@ -512,15 +530,14 @@ function Receipt({ onClose }) {
         }
 
         // Refetch orders to sync
-        const refreshRes = await getKtvOrders();
+        const refreshRes = await getKtvOrders({
+          status: "pending",
+          roomNumber: selectedRoom,
+        });
         if (refreshRes?.success && Array.isArray(refreshRes.data)) {
+          // Filter out deleted orders (API should handle status and roomNumber)
           const forTable = refreshRes.data.filter(
-            (o) =>
-              String(o.roomService.roomNumber) === String(selectedRoom) &&
-              o?.isDeleted === false &&
-              (o.status === "pending" ||
-                o.status === "ongoing" ||
-                o.status === "in_progress")
+            (o) => o?.isDeleted === false
           );
           const pickLatest = (list) =>
             list
@@ -535,6 +552,34 @@ function Receipt({ onClose }) {
             if (chosen._id && selectedRoom) {
               dispatch(
                 setOrderIdForRoom({ room: selectedRoom, orderId: chosen._id })
+              );
+            }
+            // Sync vocalists from API response
+            if (Array.isArray(chosen?.vocalist) && chosen.vocalist.length > 0) {
+              // Map vocalists to ensure serviceTime is a number (handle null)
+              const mappedVocalists = chosen.vocalist.map((v) => ({
+                ...v,
+                serviceTime:
+                  v.serviceTime !== null && v.serviceTime !== undefined
+                    ? Number(v.serviceTime)
+                    : 0,
+              }));
+              dispatch(
+                setVocalistsForRoom({
+                  room: selectedRoom,
+                  vocalists: mappedVocalists,
+                })
+              );
+            }
+            // Sync room service from API response
+            if (chosen?.roomService) {
+              setRoomServiceId(chosen.roomService.roomServiceId);
+              dispatch(
+                setRoomServiceForRoom({
+                  room: selectedRoom,
+                  hourlyRate: chosen?.roomService?.hourlyRate || 0,
+                  serviceTime: chosen?.roomServiceTime || 0,
+                })
               );
             }
           }
@@ -789,7 +834,7 @@ function Receipt({ onClose }) {
 
         setRemoteOrder(res?.data || null);
         setOrderId(null);
-        navigate("/ktv");
+        window.location.href = "/ktv";
         if (roomServiceId) {
           try {
             await updateRoomStatus(roomServiceId, "inactive");
@@ -809,6 +854,68 @@ function Receipt({ onClose }) {
       // console.log(error);
       // toast.error("An error occurred during checkout");
     }
+  };
+
+  const handlePrintPreview = () => {
+    // Check if there's data to print
+    if (
+      !selectedRoom ||
+      (!hasLocalItems && !hasLocalRoomService && !hasLocalVocalists)
+    ) {
+      toast.warning("No items to print");
+      return;
+    }
+
+    // Prepare order data for printing from current state (without checkout)
+    const orderForPrint = {
+      _id: orderId || `temp-${Date.now()}`,
+      roomService: remoteOrder?.roomService || {
+        roomServiceId: roomServiceId,
+        roomNumber: selectedRoom,
+        hourlyRate:
+          receipts[selectedRoom]?.roomService?.hourlyRate ||
+          remoteOrder?.roomService?.hourlyRate ||
+          0,
+        serviceStartedAt:
+          remoteOrder?.roomService?.serviceStartedAt ||
+          new Date().toISOString(),
+        serviceEndedAt: remoteOrder?.roomService?.serviceEndedAt || null,
+      },
+      roomNumber: selectedRoom,
+      roomServiceTime:
+        receipts[selectedRoom]?.roomService?.serviceTime ||
+        remoteOrder?.roomServiceTime ||
+        0,
+      roomCharges: calculateRoomCharges(),
+      vocalistCharges: calculateVocalistCharges(),
+      orderItems:
+        receipts[selectedRoom]?.items?.map((item) => ({
+          stockName: item.name,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity || 1,
+          _id: item._id || item.stockId,
+          stockId: item.stockId,
+        })) ||
+        remoteOrder?.orderItems ||
+        [],
+      vocalist:
+        receipts[selectedRoom]?.vocalists || remoteOrder?.vocalist || [],
+      subTotal: calculateSubtotal(),
+      tax: calculateTax(),
+      serviceFee: calculateServiceFee(),
+      discount: calculateDiscount(),
+      total: calculateTotal(),
+      paymentMethod: paymentMethod || "none",
+      status: remoteOrder?.status || "pending",
+      createdAt: remoteOrder?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      note: receipts[selectedRoom]?.note || "",
+    };
+
+    // Print receipt
+    const paperSize = localStorage.getItem("receipt-paper-size") || "57mm";
+    printReceipt(orderForPrint, true, paperSize);
   };
 
   const sendKitchen = async () => {
@@ -1199,7 +1306,7 @@ function Receipt({ onClose }) {
                   </p>
                 </div>
               )}
-
+              {/* {console.log("vocalists", receipts[selectedRoom]?.vocalists)} */}
               {(receipts[selectedRoom]?.vocalists?.length > 0 ||
                 (Array.isArray(remoteOrder?.vocalist) &&
                   remoteOrder.vocalist.length > 0)) && (
@@ -1210,77 +1317,82 @@ function Receipt({ onClose }) {
                       receipts[selectedRoom]?.vocalists ||
                       remoteOrder?.vocalist ||
                       []
-                    ).map((v, idx) => (
-                      <div
-                        key={v?._id || idx}
-                        className="flex justify-between items-center"
-                      >
-                        <div className="flex-1">
-                          <p className="text-gray-800">
-                            {v?.vocalistName || "Vocalist"}
-                          </p>
-                          <p className="text-sm text-gray-500 flex items-center gap-2">
-                            <span>
-                              {Number(v?.hourlyRate || 0).toLocaleString()}{" "}
-                              MMK/hr ·
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <button
-                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                onClick={() =>
-                                  dispatch(
-                                    decrementVocalistServiceTime({
-                                      room: selectedRoom,
-                                      vocalistId: v?.vocalistId,
-                                    })
-                                  )
-                                }
-                              >
-                                <Minus size={14} />
-                              </button>
-                              <span className="min-w-[40px] text-center">
-                                {Number(v?.serviceTime || 0)} hr
-                              </span>
-                              <button
-                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                onClick={() =>
-                                  dispatch(
-                                    incrementVocalistServiceTime({
-                                      room: selectedRoom,
-                                      vocalistId: v?.vocalistId,
-                                    })
-                                  )
-                                }
-                              >
-                                <Plus size={14} />
-                              </button>
-                            </span>
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium min-w-[80px] text-right">
-                            {(
-                              Number(v?.hourlyRate || 0) *
-                              Number(v?.serviceTime || 0)
-                            ).toLocaleString()}{" "}
-                            MMK
-                          </p>
-                          <button
-                            className="p-1 rounded-md hover:bg-red-100 text-red-500"
-                            onClick={() =>
-                              dispatch(
-                                removeVocalistFromRoom({
-                                  room: selectedRoom,
-                                  vocalistId: v?.vocalistId,
-                                })
-                              )
-                            }
+                    ).map(
+                      (v, idx) => (
+                        console.log("vocalist", v),
+                        (
+                          <div
+                            key={v?._id || idx}
+                            className="flex justify-between items-center"
                           >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                            <div className="flex-1">
+                              <p className="text-gray-800">
+                                {v?.vocalistName || "Vocalist"}
+                              </p>
+                              <p className="text-sm text-gray-500 flex items-center gap-2">
+                                <span>
+                                  {Number(v?.hourlyRate || 0).toLocaleString()}{" "}
+                                  MMK/hr ·
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <button
+                                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                                    onClick={() =>
+                                      dispatch(
+                                        decrementVocalistServiceTime({
+                                          room: selectedRoom,
+                                          vocalistId: v?.vocalistId,
+                                        })
+                                      )
+                                    }
+                                  >
+                                    <Minus size={14} />
+                                  </button>
+                                  <span className="min-w-[40px] text-center">
+                                    {Number(v?.serviceTime || 0)} hr
+                                  </span>
+                                  <button
+                                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                                    onClick={() =>
+                                      dispatch(
+                                        incrementVocalistServiceTime({
+                                          room: selectedRoom,
+                                          vocalistId: v?.vocalistId,
+                                        })
+                                      )
+                                    }
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+                                </span>
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium min-w-[80px] text-right">
+                                {(
+                                  Number(v?.hourlyRate || 0) *
+                                  Number(v?.serviceTime || 0)
+                                ).toLocaleString()}{" "}
+                                MMK
+                              </p>
+                              <button
+                                className="p-1 rounded-md hover:bg-red-100 text-red-500"
+                                onClick={() =>
+                                  dispatch(
+                                    removeVocalistFromRoom({
+                                      room: selectedRoom,
+                                      vocalistId: v?.vocalistId,
+                                    })
+                                  )
+                                }
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -1437,6 +1549,20 @@ function Receipt({ onClose }) {
                         )}
                       </button>
                     )}
+                    {/* <button
+                      onClick={handlePrintPreview}
+                      disabled={
+                        !selectedRoom ||
+                        (!hasLocalItems &&
+                          !hasLocalRoomService &&
+                          !hasLocalVocalists)
+                      }
+                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Print preview without checkout"
+                    >
+                      <Printer size={18} />
+                      Print Preview
+                    </button> */}
                   </div>
 
                   {orderId && userRole !== "ktv-waiter" && (
@@ -1456,13 +1582,29 @@ function Receipt({ onClose }) {
                           <option value="wavepay">WavePay</option>
                         </select>
                       </div>
-                      <button
-                        // onClick={handleCheckout}
-                        onClick={handlePayment}
-                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                      >
-                        Checkout
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handlePrintPreview}
+                          disabled={
+                            !selectedRoom ||
+                            (!hasLocalItems &&
+                              !hasLocalRoomService &&
+                              !hasLocalVocalists)
+                          }
+                          className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Print preview without checkout"
+                        >
+                          <Printer size={18} />
+                          Print Preview
+                        </button>
+                        <button
+                          // onClick={handleCheckout}
+                          onClick={handlePayment}
+                          className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                        >
+                          Checkout
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>

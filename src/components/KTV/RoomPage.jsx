@@ -5,9 +5,10 @@ import { useState, useEffect } from "react";
 import getAllRooms from "../../api/KTV/getAllRooms";
 import createRoom from "../../api/KTV/createRoom";
 import updateRoom from "../../api/KTV/updateRoom";
+import deleteRoom from "../../api/KTV/deleteRoom";
 import { toast } from "sonner";
 import Loading from "../Loading";
-import { Plus, X, Edit3, RefreshCw } from "lucide-react";
+import { Plus, X, Edit3, RefreshCw, Trash2 } from "lucide-react";
 
 const RoomPage = () => {
   const Navigate = useNavigate();
@@ -29,6 +30,9 @@ const RoomPage = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchRooms();
@@ -150,6 +154,43 @@ const RoomPage = () => {
     setIsUpdating(false);
   };
 
+  const handleDeleteClick = (e, room) => {
+    e.stopPropagation(); // Prevent room selection when clicking delete
+
+    // Prevent deletion if room status is active
+    if (room.status === "active") {
+      toast.error("Cannot delete room while it is active");
+      return;
+    }
+
+    setRoomToDelete(room);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!roomToDelete) return;
+
+    // Prevent deletion if room status is active
+    if (roomToDelete.status === "active") {
+      toast.error("Cannot delete room while it is active");
+      setIsDeleteModalOpen(false);
+      setRoomToDelete(null);
+      return;
+    }
+
+    setIsDeleting(true);
+    const res = await deleteRoom(roomToDelete._id);
+    if (res?.success) {
+      toast.success(res?.message || "Room deleted successfully");
+      setIsDeleteModalOpen(false);
+      setRoomToDelete(null);
+      fetchRooms(); // Refresh the list
+    } else {
+      toast.error(res?.message || "Failed to delete room");
+    }
+    setIsDeleting(false);
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
@@ -221,22 +262,40 @@ const RoomPage = () => {
                       </span>
                     </div>
                   </button>
-                  <button
-                    onClick={(e) => handleEditClick(e, room)}
-                    disabled={room.status === "active"}
-                    className={`absolute top-2 right-2 p-1.5 rounded-md transition-colors ${
-                      room.status === "active"
-                        ? "bg-white bg-opacity-20 text-white opacity-50 cursor-not-allowed"
-                        : "bg-primary bg-opacity-10 hover:bg-opacity-20 text-primary hover:bg-opacity-20"
-                    }`}
-                    title={
-                      room.status === "active"
-                        ? "Cannot edit active room"
-                        : "Edit room"
-                    }
-                  >
-                    <Edit3 size={16} />
-                  </button>
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      onClick={(e) => handleEditClick(e, room)}
+                      disabled={room.status === "active"}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        room.status === "active"
+                          ? "bg-white bg-opacity-20 text-white opacity-50 cursor-not-allowed"
+                          : "bg-primary bg-opacity-10 hover:bg-opacity-20 text-primary hover:bg-opacity-20"
+                      }`}
+                      title={
+                        room.status === "active"
+                          ? "Cannot edit active room"
+                          : "Edit room"
+                      }
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteClick(e, room)}
+                      disabled={room.status === "active"}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        room.status === "active"
+                          ? "bg-white bg-opacity-20 text-white opacity-50 cursor-not-allowed"
+                          : "bg-red-500 bg-opacity-10 hover:bg-opacity-20 text-red-500 hover:bg-opacity-20"
+                      }`}
+                      title={
+                        room.status === "active"
+                          ? "Cannot delete active room"
+                          : "Delete room"
+                      }
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -446,6 +505,83 @@ const RoomPage = () => {
                     <>
                       <Edit3 size={18} />
                       Update
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Room Confirmation Modal */}
+      {isDeleteModalOpen && roomToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold text-red-600">Delete Room</h3>
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setRoomToDelete(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                disabled={isDeleting}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5">
+              {roomToDelete.status === "active" && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ This room is currently active and cannot be deleted.
+                  </p>
+                </div>
+              )}
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">
+                  Room {roomToDelete.roomNumber}
+                </span>
+                ? This action cannot be undone.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setRoomToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteRoom}
+                  disabled={isDeleting || roomToDelete.status === "active"}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
+                    isDeleting || roomToDelete.status === "active"
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-red-500 hover:bg-red-600"
+                  }`}
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Delete
                     </>
                   )}
                 </button>
