@@ -32,7 +32,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
   const [quantity, setQuantity] = useState(menu.quantity?.toString() || "");
   const [addQuantity, setAddQuantity] = useState("0"); // Quantity to add
   const [requireCooking, setRequireCooking] = useState(
-    menu.requiresPreparation || false
+    menu.requiresPreparation || false,
   );
   const [quantityLoading, setQuantityLoading] = useState(false);
   const [quantityError, setQuantityError] = useState("");
@@ -78,7 +78,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
         const res = await getItems();
         if (res?.success) {
           const filteredMenus = res.data.filter(
-            (menuItem) => menuItem.type === itemType
+            (menuItem) => menuItem.type === itemType,
           );
           const subcats = [
             ...new Set(filteredMenus.map((menuItem) => menuItem.subCategory)),
@@ -244,7 +244,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
 
       if (quantityChange === 0) {
         setQuantityError(
-          "Please enter a quantity change (positive to add, negative to decrease)"
+          "Please enter a quantity change (positive to add, negative to decrease)",
         );
         setQuantityLoading(false);
         return;
@@ -255,7 +255,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
 
       if (newTotal < 0) {
         setQuantityError(
-          `Cannot decrease quantity below 0. Current: ${currentQty}, Attempted change: ${quantityChange}`
+          `Cannot decrease quantity below 0. Current: ${currentQty}, Attempted change: ${quantityChange}`,
         );
         setQuantityLoading(false);
         return;
@@ -267,7 +267,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
 
       const res = await axios.patch(
         `api/v1/stock/quantity/${menu._id}`,
-        requestBody
+        requestBody,
       );
 
       const data = res?.data;
@@ -282,7 +282,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
     } catch (error) {
       // console.error("Error updating quantity:", error);
       setQuantityError(
-        error.response?.data?.message || "Failed to update quantity"
+        error.response?.data?.message || "Failed to update quantity",
       );
     } finally {
       setQuantityLoading(false);
@@ -367,7 +367,8 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
 
       if (statusCode === 400) {
         setDataError(
-          errorData?.message || "Invalid input data. Please check your entries."
+          errorData?.message ||
+            "Invalid input data. Please check your entries.",
         );
       } else if (statusCode === 401) {
         setDataError("You are not authorized to perform this action.");
@@ -380,7 +381,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
       } else {
         setDataError(
           errorData?.message ||
-            `Error ${statusCode}: Failed to update menu item`
+            `Error ${statusCode}: Failed to update menu item`,
         );
       }
     } finally {
@@ -761,7 +762,6 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                     <option value="">Select Category</option>
                     <option value="food">Food</option>
                     <option value="drink">Drink</option>
-                    <option value="other">Other</option>
                   </select>
                 </div>
                 <div ref={subcategoryInputRef}>
@@ -792,7 +792,7 @@ const EditMenuModel = ({ isOpen, onClose, menu, refreshMenu }) => {
                               .filter((subcat) =>
                                 subcat
                                   .toLowerCase()
-                                  .includes(subcategory.toLowerCase())
+                                  .includes(subcategory.toLowerCase()),
                               )
                               .map((subcat, idx) => (
                                 <button

@@ -166,7 +166,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
         if (statusCode === 400) {
           setError(
             errorData?.message ||
-              "Invalid input data. Please check your entries."
+              "Invalid input data. Please check your entries.",
           );
         } else if (statusCode === 401) {
           setError("You are not authorized to perform this action.");
@@ -177,7 +177,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
         } else {
           setError(
             errorData?.message ||
-              `Error ${statusCode}: Failed to create menu item`
+              `Error ${statusCode}: Failed to create menu item`,
           );
         }
       } else if (error.request) {
@@ -276,7 +276,6 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
                 <option value="">Select Category</option>
                 <option value="food">Food</option>
                 <option value="drink">Drink</option>
-                <option value="other">Other</option>
               </select>
             </div>
             <div className="mb-4" ref={subcategoryInputRef}>
@@ -307,7 +306,7 @@ const MenuModel = ({ isOpen, onClose, subcategories, menuType }) => {
                           .filter((subcat) =>
                             subcat
                               .toLowerCase()
-                              .includes(subcategory.toLowerCase())
+                              .includes(subcategory.toLowerCase()),
                           )
                           .map((subcat, idx) => (
                             <button

@@ -610,8 +610,8 @@ const SalesReportPage = () => {
                 <div className="inline-flex rounded-full bg-gray-100 p-1 mb-4">
                   {[
                     { key: "all", label: "All" },
-                    { key: "food", label: "Food" },
-                    { key: "drink", label: "Drink" },
+                    { key: "food", label: "Kitchen" },
+                    { key: "drink", label: "Bar" },
                   ].map((option) => (
                     <button
                       key={option.key}
