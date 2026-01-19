@@ -5,6 +5,7 @@ import Calendar from "../components/Calender";
 import getSaleReport from "../api/report/getSaleReport";
 import getStockAnalytics from "../api/report/getStockAnalytics";
 import getPaymentMethodReport from "../api/report/getPaymentMethodReport";
+import getVocalistReport from "../api/report/getVocalistReport";
 import { ArrowUpDown } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SalesSummaryPDF from "../components/Home/pdf/SalesSummaryPDF";
@@ -14,10 +15,12 @@ const SalesReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [paymentMethodLoading, setPaymentMethodLoading] = useState(false);
+  const [vocalistLoading, setVocalistLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [paymentMethodData, setPaymentMethodData] = useState(null);
-  const [activeTab, setActiveTab] = useState("sales"); // "sales", "analytics", or "paymentMethod"
+  const [vocalistData, setVocalistData] = useState(null);
+  const [activeTab, setActiveTab] = useState("sales"); // "sales", "analytics", "paymentMethod", or "vocalist"
   const [analyticsFilter, setAnalyticsFilter] = useState("all"); // all, restaurant, ktv
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all"); // all, restaurant, ktv
   const [sortConfig, setSortConfig] = useState({
@@ -178,6 +181,35 @@ const SalesReportPage = () => {
     }
   };
 
+  const fetchVocalistReport = async () => {
+    if (!startDate || !endDate) {
+      toast.error("Please select a date range");
+      return;
+    }
+
+    setVocalistLoading(true);
+    try {
+      const formattedStartDate = format(new Date(startDate), "yyyy-MM-dd");
+      const formattedEndDate = format(new Date(endDate), "yyyy-MM-dd");
+
+      const response = await getVocalistReport({
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      });
+      if (response?.success) {
+        setVocalistData(response.data);
+        toast.success("Vocalist report generated successfully");
+      } else {
+        toast.error("Failed to generate vocalist report");
+      }
+    } catch (error) {
+      toast.error("Error fetching vocalist report");
+      console.error("Error fetching vocalist report:", error);
+    } finally {
+      setVocalistLoading(false);
+    }
+  };
+
   const generateReport = () => {
     if (activeTab === "sales") {
       fetchReport();
@@ -185,6 +217,8 @@ const SalesReportPage = () => {
       fetchAnalytics();
     } else if (activeTab === "paymentMethod") {
       fetchPaymentMethodReport();
+    } else if (activeTab === "vocalist") {
+      fetchVocalistReport();
     }
   };
 
@@ -417,7 +451,9 @@ const SalesReportPage = () => {
                 ? loading
                 : activeTab === "analytics"
                 ? analyticsLoading
-                : paymentMethodLoading
+                : activeTab === "paymentMethod"
+                ? paymentMethodLoading
+                : vocalistLoading
             }
           >
             {activeTab === "sales"
@@ -428,7 +464,11 @@ const SalesReportPage = () => {
               ? analyticsLoading
                 ? "Loading..."
                 : "Generate Report"
-              : paymentMethodLoading
+              : activeTab === "paymentMethod"
+              ? paymentMethodLoading
+                ? "Loading..."
+                : "Generate Report"
+              : vocalistLoading
               ? "Loading..."
               : "Generate Report"}
           </button>
@@ -466,6 +506,16 @@ const SalesReportPage = () => {
           onClick={() => setActiveTab("paymentMethod")}
         >
           Payment Method
+        </button>
+        <button
+          className={`px-4 md:px-6 py-2 md:py-3 font-semibold transition-all text-sm md:text-base whitespace-nowrap ${
+            activeTab === "vocalist"
+              ? "text-primary border-b-2 border-primary"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("vocalist")}
+        >
+          Vocalist Report
         </button>
       </div>
 
@@ -915,6 +965,223 @@ const SalesReportPage = () => {
           {paymentMethodLoading && (
             <div className="text-center py-10">
               <p className="text-gray-500">Loading payment method report...</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Vocalist Report Tab Content */}
+      {activeTab === "vocalist" && (
+        <>
+          {vocalistData && (
+            <div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+                <div className="border-l-4 border-primary bg-white rounded-lg shadow-md p-3 md:p-4">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Total Vocalists
+                  </h3>
+                  <p className="text-2xl md:text-[36px] font-futura">
+                    {vocalistData?.summary?.totalUniqueVocalists || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-500">
+                    Unique vocalists
+                  </p>
+                </div>
+                <div className="border-l-4 border-blue-500 bg-white rounded-lg shadow-md p-3 md:p-4">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Service Hours
+                  </h3>
+                  <p className="text-2xl md:text-[36px] font-futura">
+                    {vocalistData?.summary?.totalServiceTime || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-500">
+                    Total hours
+                  </p>
+                </div>
+                <div className="border-l-4 border-green-500 bg-white rounded-lg shadow-md p-3 md:p-4">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Total Orders
+                  </h3>
+                  <p className="text-2xl md:text-[36px] font-futura">
+                    {vocalistData?.summary?.totalOrders || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-500">
+                    Orders served
+                  </p>
+                </div>
+                <div className="border-l-4 border-purple-500 bg-white rounded-lg shadow-md p-3 md:p-4">
+                  <h3 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">
+                    Total Earnings
+                  </h3>
+                  <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
+                    {Number(
+                      vocalistData?.summary?.totalEarnings || 0
+                    ).toLocaleString()}{" "}
+                    MMK
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-500">
+                    Total earnings
+                  </p>
+                </div>
+              </div>
+
+              {/* Vocalists Table */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[calc(100vh-470px)]">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Vocalist Name
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          onClick={() => requestSort("totalServiceTime")}
+                        >
+                          <div className="flex items-center">
+                            Service Hours
+                            <ArrowUpDown size={14} className="ml-1" />
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          onClick={() => requestSort("totalOrders")}
+                        >
+                          <div className="flex items-center">
+                            Orders
+                            <ArrowUpDown size={14} className="ml-1" />
+                          </div>
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Hourly Rate
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          onClick={() => requestSort("totalEarnings")}
+                        >
+                          <div className="flex items-center">
+                            Total Earnings
+                            <ArrowUpDown size={14} className="ml-1" />
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {sortData(vocalistData?.vocalists || []).map(
+                        (vocalist) => (
+                          <tr
+                            key={vocalist.vocalistId}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">
+                                {vocalist.vocalistName}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {vocalist.totalServiceTime}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {vocalist.totalOrders}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold text-blue-600">
+                                {Number(
+                                  vocalist.hourlyRate || 0
+                                ).toLocaleString()}{" "}
+                                MMK
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold text-primary">
+                                {Number(
+                                  vocalist.totalEarnings || 0
+                                ).toLocaleString()}{" "}
+                                MMK
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 p-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                  {sortData(vocalistData?.vocalists || []).map((vocalist) => (
+                    <div
+                      key={vocalist.vocalistId}
+                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-base font-semibold text-gray-900 flex-1 min-w-0 pr-2">
+                          {vocalist.vocalistName}
+                        </h3>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-primary">
+                            {Number(
+                              vocalist.totalEarnings || 0
+                            ).toLocaleString()}{" "}
+                            MMK
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-500 mb-1">Service Hours</p>
+                          <p className="font-semibold text-gray-900">
+                            {vocalist.totalServiceTime}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Orders</p>
+                          <p className="font-semibold text-gray-900">
+                            {vocalist.totalOrders}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Hourly Rate</p>
+                          <p className="font-semibold text-blue-600">
+                            {Number(vocalist.hourlyRate || 0).toLocaleString()}{" "}
+                            MMK
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!vocalistData && !vocalistLoading && (
+            <div className="text-center py-10">
+              <p className="text-gray-500">
+                No vocalist report data available. Please select a date range
+                and generate a report.
+              </p>
+            </div>
+          )}
+
+          {vocalistLoading && (
+            <div className="text-center py-10">
+              <p className="text-gray-500">Loading vocalist report data...</p>
             </div>
           )}
         </>

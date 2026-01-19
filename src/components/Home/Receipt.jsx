@@ -45,6 +45,52 @@ function Receipt({ onClose }) {
     () => localStorage.getItem("receipt-paper-size") || "57mm"
   );
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [partialPayments, setPartialPayments] = useState([]);
+  const [usePartialPayment, setUsePartialPayment] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
+  // Handler for opening checkout modal
+  const handleCheckoutClick = () => {
+    setIsCheckoutModalOpen(true);
+  };
+
+  // Handler for closing checkout modal
+  const handleCloseCheckoutModal = () => {
+    setIsCheckoutModalOpen(false);
+  };
+
+  // Helper functions for partial payments
+  const addPartialPayment = (method, amount) => {
+    setPartialPayments([
+      ...partialPayments,
+      { method, amount: Number(amount) },
+    ]);
+  };
+
+  const removePartialPayment = (index) => {
+    setPartialPayments(partialPayments.filter((_, i) => i !== index));
+  };
+
+  const updatePartialPayment = (index, field, value) => {
+    const updated = [...partialPayments];
+    updated[index] = {
+      ...updated[index],
+      [field]: field === "amount" ? Number(value) : value,
+    };
+    setPartialPayments(updated);
+  };
+
+  const getTotalPaidAmount = () => {
+    return partialPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
+  const getRemainingAmount = () => {
+    return calculateTotal() - getTotalPaidAmount();
+  };
+
+  const isPaymentComplete = () => {
+    return Math.abs(getTotalPaidAmount() - calculateTotal()) < 0.01; // Allow for floating point precision
+  };
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -55,29 +101,19 @@ function Receipt({ onClose }) {
         return;
       }
       setIsLoadingRemote(true);
-      const res = await getRestaurantOrders();
+      const res = await getRestaurantOrders({
+        status: "pending",
+        tableNumber: selectedTable,
+      });
       // console.log(res);
       if (res?.success && Array.isArray(res.data)) {
-        const forTable = res.data.filter((o) => {
-          const tableNum = o.tableNumber || o.tableService?.tableNumber;
-          return (
-            Number(tableNum) === Number(selectedTable) && o?.isDeleted === false
-          );
-        });
-        // Show pending or in_progress orders, pick latest by createdAt
+        // Show pending orders, pick latest by createdAt
         const pick = (list) =>
           list
             .slice()
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
           null;
-        // Filter for active orders (pending, in_progress, or ongoing)
-        const activeOrders = forTable.filter(
-          (o) =>
-            o.status === "pending" ||
-            o.status === "in_progress" ||
-            o.status === "ongoing"
-        );
-        const chosen = pick(activeOrders);
+        const chosen = pick(res.data);
         setRemoteOrder(chosen || null);
         setOrderId(chosen?._id || null);
         // Extract tableServiceId from order response if available
@@ -129,6 +165,8 @@ function Receipt({ onClose }) {
   useEffect(() => {
     setTableServiceId(null);
     setPaymentMethod("cash"); // Reset to default payment method
+    setPartialPayments([]); // Reset partial payments
+    setUsePartialPayment(false); // Reset partial payment toggle
   }, [selectedTable]);
 
   // Fetch table service ID when table is selected and no order exists
@@ -444,14 +482,31 @@ function Receipt({ onClose }) {
       toast.error("No active order to checkout");
       return;
     }
+
+    // Validate partial payments if enabled
+    if (usePartialPayment && !isPaymentComplete()) {
+      toast.error(
+        `Payment incomplete. Total: ${calculateTotal()} MMK, Paid: ${getTotalPaidAmount()} MMK, Remaining: ${getRemainingAmount()} MMK`
+      );
+      return;
+    }
     const payload = {
       status: "completed",
       subTotal: calculateSubtotal(),
       tax: (taxRate / 100) * calculateSubtotal(),
-      serviceFee: (serviceFee / 100) * calculateSubtotal(),
       discount: calculateDiscount(),
       total: calculateTotal(),
-      paymentMethod: paymentMethod,
+      paymentMethods: usePartialPayment
+        ? partialPayments.map((payment) => ({
+            paymentMethod: payment.method,
+            paidAmount: payment.amount,
+          }))
+        : [
+            {
+              paymentMethod: paymentMethod,
+              paidAmount: calculateTotal(),
+            },
+          ],
     };
     // console.log("payload", payload);
     try {
@@ -802,147 +857,30 @@ function Receipt({ onClose }) {
             </div>
 
             <div className="sticky bottom-[-100px] md:bottom-[0] pb-2 bg-white border-t">
-              <div className="space-y-3 my-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-gray-600">Subtotal</p>
-                  <p className="font-medium">
-                    {calculateSubtotal().toLocaleString()} MMK
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-600">Gov Tax</p>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={taxRate === 0 ? "" : taxRate}
-                        onChange={handleTaxChange}
-                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
-                        min="0"
-                        max="100"
-                      />
-                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                        %
-                      </span>
-                    </div>
-                  </div>
-                  <p className="font-medium text-gray-600">
-                    {calculateTax(calculateSubtotal()).toLocaleString()} MMK
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-600">Service Fee</p>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={serviceFee === 0 ? "" : serviceFee}
-                        onChange={handleServiceFeeChange}
-                        className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
-                        min="0"
-                        max="100"
-                      />
-                      <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                        %
-                      </span>
-                    </div>
-                  </div>
-                  <p className="font-medium text-gray-600">
-                    {calculateServiceFee(calculateSubtotal()).toLocaleString()}{" "}
-                    MMK
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <p className="text-gray-600">Discount</p>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={discountAmount === 0 ? "" : discountAmount}
-                      onChange={handleDiscountChange}
-                      className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium"
-                      placeholder="0"
-                    />
-                    <span className="text-gray-600 text-sm">MMK</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-3 border-t">
-                  <p className="font-bold text-lg">Total</p>
-                  <p className="font-bold text-lg text-primary">
-                    {calculateTotal().toLocaleString()} MMK
-                  </p>
-                </div>
-              </div>
-
-              {/* <div className="flex gap-3 pb-5">
+              <div className="flex gap-3 pb-5">
                 <button
-                  onClick={onClose}
+                  onClick={sendKitchen}
                   className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                 >
-                  Order More
+                  Send for Preparation
                 </button>
-                <button
-                  onClick={handlePayment}
-                  className="flex-1 bg-primary text-white font-semibold py-4 rounded-full border border-primary hover:bg-primary/90 transition-colors"
-                >
-                  Payment
-                </button>
-              </div> */}
-              {hasLocalItems && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-row gap-3">
-                    <button
-                      onClick={sendKitchen}
-                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                    >
-                      Send for Preparation
-                    </button>
-                    {orderId && (
-                      <button
-                        onClick={handleOpenRemoveOrder}
-                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                      >
-                        Remove Items
-                      </button>
-                    )}
-                  </div>
-                  {/* <button
-                    onClick={() => setIsSplitOpen(true)}
-                    className="flex-1 md:hidden bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                {orderId && (
+                  <button
+                    onClick={handleOpenRemoveOrder}
+                    className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                   >
-                    Split Order
-                  </button> */}
-                  {orderId && getUserRole() !== "restaurant-waiter" && (
-                    <>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
-                          Payment Method
-                        </label>
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
-                          required
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="kpay">KPay</option>
-                          <option value="wavepay">WavePay</option>
-                        </select>
-                      </div>
-                      <button
-                        // onClick={handleCheckout}
-                        onClick={handlePayment}
-                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                      >
-                        Checkout
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
+                    Remove Items
+                  </button>
+                )}
+                {orderId && getUserRole() !== "restaurant-waiter" && (
+                  <button
+                    onClick={handleCheckoutClick}
+                    className="flex-1 bg-primary text-white font-semibold py-4 rounded-full border border-primary hover:bg-primary/90 transition-colors"
+                  >
+                    Checkout
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1059,6 +997,270 @@ function Receipt({ onClose }) {
                   ) : (
                     "Save Changes"
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Modal */}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Checkout</h3>
+              <button
+                onClick={handleCloseCheckoutModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {/* Order Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                <h4 className="font-semibold mb-3">Order Summary</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">
+                      {calculateSubtotal().toLocaleString()} MMK
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Gov Tax:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={taxRate === 0 ? "" : taxRate}
+                          onChange={handleTaxChange}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                          %
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-600">
+                        {calculateTax(calculateSubtotal()).toLocaleString()} MMK
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Service Fee:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={serviceFee === 0 ? "" : serviceFee}
+                          onChange={handleServiceFeeChange}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                          %
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-600">
+                        {calculateServiceFee(
+                          calculateSubtotal()
+                        ).toLocaleString()}{" "}
+                        MMK
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Discount:</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={discountAmount === 0 ? "" : discountAmount}
+                        onChange={handleDiscountChange}
+                        className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium"
+                        placeholder="0"
+                      />
+                      <span className="text-gray-600 text-sm">MMK</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-bold text-lg">Total:</span>
+                    <span className="font-bold text-lg text-primary">
+                      {calculateTotal().toLocaleString()} MMK
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="partialPayment"
+                    checked={usePartialPayment}
+                    onChange={(e) => {
+                      setUsePartialPayment(e.target.checked);
+                      if (!e.target.checked) {
+                        setPartialPayments([]);
+                      }
+                    }}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label
+                    htmlFor="partialPayment"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Enable Partial Payment
+                  </label>
+                </div>
+
+                {!usePartialPayment ? (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">
+                      Payment Method
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
+                      required
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="kpay">KPay</option>
+                      <option value="wavepay">WavePay</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-700">
+                      Payment Breakdown
+                    </div>
+
+                    {/* Payment Summary */}
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Total Amount:</span>
+                        <span className="font-semibold">
+                          {calculateTotal().toLocaleString()} MMK
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Paid Amount:</span>
+                        <span className="font-semibold text-green-600">
+                          {getTotalPaidAmount().toLocaleString()} MMK
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold">
+                        <span>Remaining:</span>
+                        <span
+                          className={
+                            getRemainingAmount() > 0
+                              ? "text-red-600"
+                              : "text-green-600"
+                          }
+                        >
+                          {getRemainingAmount().toLocaleString()} MMK
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Payment Methods List */}
+                    <div className="space-y-2">
+                      {partialPayments.map((payment, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <select
+                            value={payment.method}
+                            onChange={(e) =>
+                              updatePartialPayment(
+                                index,
+                                "method",
+                                e.target.value
+                              )
+                            }
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary"
+                          >
+                            <option value="cash">Cash</option>
+                            <option value="kpay">KPay</option>
+                            <option value="wavepay">WavePay</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={payment.amount}
+                            onChange={(e) =>
+                              updatePartialPayment(
+                                index,
+                                "amount",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Amount"
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary"
+                            min="0"
+                            step="0.01"
+                          />
+                          <button
+                            onClick={() => removePartialPayment(index)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Add Payment Button */}
+                    {getRemainingAmount() > 0 && (
+                      <button
+                        onClick={() => addPartialPayment("cash", 0)}
+                        className="w-full py-2 px-3 bg-blue-50 text-blue-600 border border-blue-200 rounded text-sm font-medium hover:bg-blue-100 transition-colors"
+                      >
+                        Add Payment Method
+                      </button>
+                    )}
+
+                    {/* Payment Status */}
+                    <div
+                      className={`p-2 rounded text-sm text-center ${
+                        isPaymentComplete()
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                      }`}
+                    >
+                      {isPaymentComplete()
+                        ? "✓ Payment Complete"
+                        : `⚠ Payment Incomplete - ${getRemainingAmount().toLocaleString()} MMK remaining`}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseCheckoutModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCalculatorConfirm}
+                  disabled={usePartialPayment && !isPaymentComplete()}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    usePartialPayment && !isPaymentComplete()
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
+                >
+                  Complete Checkout
                 </button>
               </div>
             </div>
