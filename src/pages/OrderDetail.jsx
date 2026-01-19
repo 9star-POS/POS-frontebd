@@ -261,7 +261,7 @@ function OrderDetail() {
             <div className="flex items-center gap-3">
               <span
                 className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(
-                  order.status
+                  order.status,
                 )}`}
               >
                 {order.status.toUpperCase()}
@@ -290,22 +290,12 @@ function OrderDetail() {
               {isKtvOrder()
                 ? `Room ${order.roomService.roomNumber}`
                 : order.tableService?.tableNumber
-                ? `Table ${order.tableService.tableNumber}`
-                : order.tableNumber
-                ? `Table ${order.tableNumber}`
-                : "N/A"}
+                  ? `Table ${order.tableService.tableNumber}`
+                  : order.tableNumber
+                    ? `Table ${order.tableNumber}`
+                    : "N/A"}
             </p>
           </div>
-
-          {/* <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <CreditCard className="text-primary" size={24} />
-              <h3 className="font-semibold text-lg">Payment Method</h3>
-            </div>
-            <p className="text-xl font-semibold text-gray-800 capitalize">
-              {order.paymentMethod === "none" ? "Cash" : order.paymentMethod}
-            </p>
-          </div> */}
 
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
@@ -384,7 +374,7 @@ function OrderDetail() {
                         <td className="p-4 text-center">
                           <span
                             className={`font-semibold capitalize ${getKitchenStatusColor(
-                              item.kitchenStatus
+                              item.kitchenStatus,
                             )}`}
                           >
                             {item.kitchenStatus}
@@ -449,6 +439,34 @@ function OrderDetail() {
                   </span>
                 </div>
               )}
+
+              {order.paymentMethods && order.paymentMethods.length > 0 && (
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <div className="text-lg font-semibold text-gray-800 mb-2">
+                    Payment Method:
+                  </div>
+                  <div className="space-y-2">
+                    {order.paymentMethods.map((payment, index) => (
+                      <div
+                        key={payment._id || index}
+                        className="flex justify-between items-center text-base"
+                      >
+                        <span className="text-gray-700 capitalize">
+                          {payment.paymentMethod === "wavepay"
+                            ? "WavePay"
+                            : payment.paymentMethod === "foc"
+                              ? "FOC"
+                              : payment.paymentMethod}
+                        </span>
+                        <span className="font-medium text-gray-800">
+                          {Number(payment.paidAmount).toLocaleString()} MMK
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="border-t-2 border-gray-300 pt-3 mt-3">
                 <div className="flex justify-between text-2xl">
                   <span className="font-bold text-gray-800">Total:</span>

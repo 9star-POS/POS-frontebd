@@ -22,6 +22,7 @@ const SalesReportPage = () => {
   const [vocalistData, setVocalistData] = useState(null);
   const [activeTab, setActiveTab] = useState("sales"); // "sales", "analytics", "paymentMethod", or "vocalist"
   const [analyticsFilter, setAnalyticsFilter] = useState("all"); // all, restaurant, ktv
+  const [categoryFilter, setCategoryFilter] = useState("all"); // all, food, drink
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all"); // all, restaurant, ktv
   const [sortConfig, setSortConfig] = useState({
     key: "totalQuantity",
@@ -232,20 +233,29 @@ const SalesReportPage = () => {
 
   const filteredAnalyticsItems = useMemo(() => {
     if (!analyticsItems.length) return [];
+
+    let filtered = analyticsItems;
+
+    // Apply analytics filter (restaurant/ktv)
     if (analyticsFilter === "restaurant") {
-      return analyticsItems.filter(
-        (item) => (item.restaurantQuantity ?? 0) > 0
-      );
-    }
-    if (analyticsFilter === "ktv") {
-      return analyticsItems.filter(
+      filtered = filtered.filter((item) => (item.restaurantQuantity ?? 0) > 0);
+    } else if (analyticsFilter === "ktv") {
+      filtered = filtered.filter(
         (item) =>
           (item.restaurantQuantity ?? 0) === 0 &&
-          (item.ktvQuantity ?? item.totalQuantity ?? 0) > 0
+          (item.ktvQuantity ?? item.totalQuantity ?? 0) > 0,
       );
     }
-    return analyticsItems;
-  }, [analyticsFilter, analyticsItems]);
+
+    // Apply category filter (food/drink)
+    if (categoryFilter === "food") {
+      filtered = filtered.filter((item) => item.category === "food");
+    } else if (categoryFilter === "drink") {
+      filtered = filtered.filter((item) => item.category === "drink");
+    }
+
+    return filtered;
+  }, [analyticsFilter, categoryFilter, analyticsItems]);
 
   const filteredSummary = useMemo(() => {
     if (!analyticsData) {
@@ -256,11 +266,11 @@ const SalesReportPage = () => {
       if (analyticsData.summary) return analyticsData.summary;
       const totalItemsSold = analyticsItems.reduce(
         (acc, item) => acc + (item.totalQuantity ?? 0),
-        0
+        0,
       );
       const totalRevenue = analyticsItems.reduce(
         (acc, item) => acc + (item.totalRevenue ?? 0),
-        0
+        0,
       );
       return {
         totalUniqueStocks: analyticsItems.length,
@@ -415,7 +425,7 @@ const SalesReportPage = () => {
                 />
               }
               fileName={`sales-report-${formatFileDate(
-                startDate
+                startDate,
               )}-${formatFileDate(endDate)}.pdf`}
               className="bg-white border border-primary text-primary px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors text-sm md:text-base text-center"
             >
@@ -434,7 +444,7 @@ const SalesReportPage = () => {
                 />
               }
               fileName={`stock-analytics-${formatFileDate(
-                startDate
+                startDate,
               )}-${formatFileDate(endDate)}.pdf`}
               className="bg-white border border-primary text-primary px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-prilight transition-colors text-sm md:text-base text-center"
             >
@@ -443,17 +453,17 @@ const SalesReportPage = () => {
               }
             </PDFDownloadLink>
           )}
-          <button
+          {/* <button
             onClick={generateReport}
             className="bg-primary text-white px-4 md:px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold text-sm md:text-base"
             disabled={
               activeTab === "sales"
                 ? loading
                 : activeTab === "analytics"
-                ? analyticsLoading
-                : activeTab === "paymentMethod"
-                ? paymentMethodLoading
-                : vocalistLoading
+                  ? analyticsLoading
+                  : activeTab === "paymentMethod"
+                    ? paymentMethodLoading
+                    : vocalistLoading
             }
           >
             {activeTab === "sales"
@@ -461,17 +471,17 @@ const SalesReportPage = () => {
                 ? "Loading..."
                 : "Generate Report"
               : activeTab === "analytics"
-              ? analyticsLoading
-                ? "Loading..."
-                : "Generate Report"
-              : activeTab === "paymentMethod"
-              ? paymentMethodLoading
-                ? "Loading..."
-                : "Generate Report"
-              : vocalistLoading
-              ? "Loading..."
-              : "Generate Report"}
-          </button>
+                ? analyticsLoading
+                  ? "Loading..."
+                  : "Generate Report"
+                : activeTab === "paymentMethod"
+                  ? paymentMethodLoading
+                    ? "Loading..."
+                    : "Generate Report"
+                  : vocalistLoading
+                    ? "Loading..."
+                    : "Generate Report"}
+          </button> */}
         </div>
       </div>
 
@@ -576,24 +586,46 @@ const SalesReportPage = () => {
         <>
           {analyticsData && (
             <div>
-              <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
-                {[
-                  { key: "all", label: "All" },
-                  { key: "restaurant", label: "Restaurant" },
-                  { key: "ktv", label: "KTV" },
-                ].map((option) => (
-                  <button
-                    key={option.key}
-                    onClick={() => setAnalyticsFilter(option.key)}
-                    className={`px-3 md:px-4 py-2 rounded-lg border font-semibold transition-all text-sm md:text-base ${
-                      analyticsFilter === option.key
-                        ? "bg-primary text-white border-primary"
-                        : "border-gray-300 text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <div className="flex justify-between">
+                <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "restaurant", label: "Restaurant" },
+                    { key: "ktv", label: "KTV" },
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => setAnalyticsFilter(option.key)}
+                      className={`px-3 md:px-4 py-2 rounded-lg border font-semibold transition-all text-sm md:text-base ${
+                        analyticsFilter === option.key
+                          ? "bg-primary text-white border-primary"
+                          : "border-gray-300 text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="inline-flex rounded-full bg-gray-100 p-1 mb-4">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "food", label: "Food" },
+                    { key: "drink", label: "Drink" },
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => setCategoryFilter(option.key)}
+                      className={`px-4 py-2 rounded-full font-semibold transition-all text-sm md:text-base ${
+                        categoryFilter === option.key
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-gray-600 hover:text-gray-800"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <AnalyticsSummaryCard data={filteredSummary} />
@@ -656,6 +688,12 @@ const SalesReportPage = () => {
                             <ArrowUpDown size={14} className="ml-1" />
                           </div>
                         </th>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Remaining Stock
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -694,6 +732,13 @@ const SalesReportPage = () => {
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
                               {item.orderCount}
+                            </div>
+                          </td>
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {item.hasStockInfo && item.remainingStock !== null
+                                ? item.remainingStock.toLocaleString()
+                                : "N/A"}
                             </div>
                           </td>
                         </tr>
@@ -749,6 +794,14 @@ const SalesReportPage = () => {
                             </p>
                           </div>
                         )}
+                        <div>
+                          <p className="text-gray-500 mb-1">Remaining Stock</p>
+                          <p className="font-semibold text-gray-900">
+                            {item.hasStockInfo && item.remainingStock !== null
+                              ? item.remainingStock.toLocaleString()
+                              : "N/A"}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -844,12 +897,12 @@ const SalesReportPage = () => {
                             item.paymentMethod === "cash"
                               ? "bg-green-100 text-green-800"
                               : item.paymentMethod === "kpay"
-                              ? "bg-blue-100 text-blue-800"
-                              : item.paymentMethod === "wavepay"
-                              ? "bg-purple-100 text-purple-800"
-                              : item.paymentMethod === "foc"
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-gray-100 text-gray-800"
+                                ? "bg-blue-100 text-blue-800"
+                                : item.paymentMethod === "wavepay"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : item.paymentMethod === "foc"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {getPaymentMethodLabel()}
@@ -874,7 +927,7 @@ const SalesReportPage = () => {
                                 <p className="text-xs text-gray-400">Total</p>
                                 <p className="text-lg md:text-xl font-futura text-primary">
                                   {Number(
-                                    item.restaurantOrders?.total || 0
+                                    item.restaurantOrders?.total || 0,
                                   ).toLocaleString()}{" "}
                                   MMK
                                 </p>
@@ -901,7 +954,7 @@ const SalesReportPage = () => {
                                 <p className="text-xs text-gray-400">Total</p>
                                 <p className="text-lg md:text-xl font-futura text-primary">
                                   {Number(
-                                    item.ktvOrders?.total || 0
+                                    item.ktvOrders?.total || 0,
                                   ).toLocaleString()}{" "}
                                   MMK
                                 </p>
@@ -916,8 +969,8 @@ const SalesReportPage = () => {
                             {paymentMethodFilter === "all"
                               ? "Combined Total"
                               : paymentMethodFilter === "restaurant"
-                              ? "Restaurant Total"
-                              : "KTV Total"}
+                                ? "Restaurant Total"
+                                : "KTV Total"}
                           </p>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -926,8 +979,8 @@ const SalesReportPage = () => {
                                 {paymentMethodFilter === "all"
                                   ? item.combined?.orderCount || 0
                                   : paymentMethodFilter === "restaurant"
-                                  ? item.restaurantOrders?.orderCount || 0
-                                  : item.ktvOrders?.orderCount || 0}
+                                    ? item.restaurantOrders?.orderCount || 0
+                                    : item.ktvOrders?.orderCount || 0}
                               </p>
                             </div>
                             <div>
@@ -937,8 +990,8 @@ const SalesReportPage = () => {
                                   paymentMethodFilter === "all"
                                     ? item.combined?.total || 0
                                     : paymentMethodFilter === "restaurant"
-                                    ? item.restaurantOrders?.total || 0
-                                    : item.ktvOrders?.total || 0
+                                      ? item.restaurantOrders?.total || 0
+                                      : item.ktvOrders?.total || 0,
                                 ).toLocaleString()}{" "}
                                 MMK
                               </p>
@@ -1016,7 +1069,7 @@ const SalesReportPage = () => {
                   </h3>
                   <p className="text-2xl md:text-[36px] font-futura text-primary break-words">
                     {Number(
-                      vocalistData?.summary?.totalEarnings || 0
+                      vocalistData?.summary?.totalEarnings || 0,
                     ).toLocaleString()}{" "}
                     MMK
                   </p>
@@ -1042,16 +1095,6 @@ const SalesReportPage = () => {
                         <th
                           scope="col"
                           className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                          onClick={() => requestSort("totalServiceTime")}
-                        >
-                          <div className="flex items-center">
-                            Service Hours
-                            <ArrowUpDown size={14} className="ml-1" />
-                          </div>
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                           onClick={() => requestSort("totalOrders")}
                         >
                           <div className="flex items-center">
@@ -1059,6 +1102,17 @@ const SalesReportPage = () => {
                             <ArrowUpDown size={14} className="ml-1" />
                           </div>
                         </th>
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          onClick={() => requestSort("totalServiceTime")}
+                        >
+                          <div className="flex items-center">
+                            Service Hours
+                            <ArrowUpDown size={14} className="ml-1" />
+                          </div>
+                        </th>
+
                         <th
                           scope="col"
                           className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -1091,32 +1145,33 @@ const SalesReportPage = () => {
                             </td>
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
-                                {vocalist.totalServiceTime}
+                                {vocalist.totalOrders}
                               </div>
                             </td>
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
-                                {vocalist.totalOrders}
+                                {vocalist.totalServiceTime}
+                              </div>
+                            </td>
+
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold">
+                                {Number(
+                                  vocalist.hourlyRate || 0,
+                                ).toLocaleString()}{" "}
+                                MMK
                               </div>
                             </td>
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-semibold text-blue-600">
                                 {Number(
-                                  vocalist.hourlyRate || 0
-                                ).toLocaleString()}{" "}
-                                MMK
-                              </div>
-                            </td>
-                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-primary">
-                                {Number(
-                                  vocalist.totalEarnings || 0
+                                  vocalist.totalEarnings || 0,
                                 ).toLocaleString()}{" "}
                                 MMK
                               </div>
                             </td>
                           </tr>
-                        )
+                        ),
                       )}
                     </tbody>
                   </table>
@@ -1136,7 +1191,7 @@ const SalesReportPage = () => {
                         <div className="text-right">
                           <p className="text-lg font-bold text-primary">
                             {Number(
-                              vocalist.totalEarnings || 0
+                              vocalist.totalEarnings || 0,
                             ).toLocaleString()}{" "}
                             MMK
                           </p>

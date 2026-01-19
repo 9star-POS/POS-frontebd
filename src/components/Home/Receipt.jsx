@@ -42,7 +42,7 @@ function Receipt({ onClose }) {
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [tableServiceId, setTableServiceId] = useState(null);
   const [paperSize, setPaperSize] = useState(
-    () => localStorage.getItem("receipt-paper-size") || "57mm"
+    () => localStorage.getItem("receipt-paper-size") || "57mm",
   );
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [partialPayments, setPartialPayments] = useState([]);
@@ -146,7 +146,7 @@ function Receipt({ onClose }) {
           });
           const mappedItems = Array.from(grouped.values());
           dispatch(
-            setItemsForTable({ table: selectedTable, items: mappedItems })
+            setItemsForTable({ table: selectedTable, items: mappedItems }),
           );
         } else {
           // No active order found
@@ -279,7 +279,7 @@ function Receipt({ onClose }) {
             const orderItem = item.orderItemIds[orderItemIndex];
             const removeFromThisItem = Math.min(
               remainingToRemove,
-              orderItem.quantity
+              orderItem.quantity,
             );
 
             // Sum quantities for the same orderItemId
@@ -287,7 +287,7 @@ function Receipt({ onClose }) {
             if (itemsToRemoveMap.has(orderItemId)) {
               itemsToRemoveMap.set(
                 orderItemId,
-                itemsToRemoveMap.get(orderItemId) + removeFromThisItem
+                itemsToRemoveMap.get(orderItemId) + removeFromThisItem,
               );
             } else {
               itemsToRemoveMap.set(orderItemId, removeFromThisItem);
@@ -304,7 +304,7 @@ function Receipt({ onClose }) {
         ([orderItemId, quantity]) => ({
           orderItemId,
           quantity,
-        })
+        }),
       );
 
       // if (itemsToRemove.length === 0) {
@@ -352,7 +352,7 @@ function Receipt({ onClose }) {
             });
             const mappedItems = Array.from(grouped.values());
             dispatch(
-              setItemsForTable({ table: selectedTable, items: mappedItems })
+              setItemsForTable({ table: selectedTable, items: mappedItems }),
             );
           }
         }
@@ -371,13 +371,13 @@ function Receipt({ onClose }) {
             (o) =>
               o.status === "pending" ||
               o.status === "in_progress" ||
-              o.status === "ongoing"
+              o.status === "ongoing",
           );
           const pick = (list) =>
             list
               .slice()
               .sort(
-                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
               )[0] || null;
           const chosen = pick(activeOrders);
           if (chosen) {
@@ -486,7 +486,7 @@ function Receipt({ onClose }) {
     // Validate partial payments if enabled
     if (usePartialPayment && !isPaymentComplete()) {
       toast.error(
-        `Payment incomplete. Total: ${calculateTotal()} MMK, Paid: ${getTotalPaidAmount()} MMK, Remaining: ${getRemainingAmount()} MMK`
+        `Payment incomplete. Total: ${calculateTotal()} MMK, Paid: ${getTotalPaidAmount()} MMK, Remaining: ${getRemainingAmount()} MMK`,
       );
       return;
     }
@@ -551,7 +551,7 @@ function Receipt({ onClose }) {
 
         setRemoteOrder(res?.data || null);
         setOrderId(null);
-        navigate("/");
+        window.location.href = "/";
         if (tableServiceId) {
           try {
             await updateTableStatus({
@@ -571,6 +571,45 @@ function Receipt({ onClose }) {
     } catch (_) {
       // API layer toasts errors
     }
+  };
+
+  const handlePrintPreview = () => {
+    // Check if there's data to print
+    if (!selectedTable || !receipts[selectedTable]?.items?.length) {
+      toast.warning("No items to print");
+      return;
+    }
+
+    // Prepare order data for printing from current state (without checkout)
+    const orderForPrint = {
+      _id: orderId || `temp-${Date.now()}`,
+      tableService: remoteOrder?.tableService || {
+        tableServiceId: tableServiceId,
+        tableNumber: selectedTable,
+      },
+      orderItems:
+        receipts[selectedTable]?.items?.map((item) => ({
+          ...item,
+          stockName: item.stockName || item.name,
+          price: item.price,
+          quantity: item.quantity || 1,
+          _id: item._id,
+        })) || [],
+      subTotal: calculateSubtotal(),
+      tax: calculateTax(),
+      serviceFee: calculateServiceFee(),
+      discount: calculateDiscount(),
+      total: calculateTotal(),
+      status: "pending", // Show as pending since not checked out
+      paymentMethods: null, // No payment methods for preview
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      note: receipts[selectedTable]?.note || "",
+    };
+
+    // Print receipt
+    const paperSize = localStorage.getItem("receipt-paper-size") || "57mm";
+    printReceipt(orderForPrint, false, paperSize);
   };
 
   const sendKitchen = async () => {
@@ -652,7 +691,7 @@ function Receipt({ onClose }) {
             });
             const mappedItems = Array.from(grouped.values());
             dispatch(
-              setItemsForTable({ table: selectedTable, items: mappedItems })
+              setItemsForTable({ table: selectedTable, items: mappedItems }),
             );
           }
         } else {
@@ -736,7 +775,7 @@ function Receipt({ onClose }) {
           });
           const mappedItems = Array.from(grouped.values());
           dispatch(
-            setItemsForTable({ table: selectedTable, items: mappedItems })
+            setItemsForTable({ table: selectedTable, items: mappedItems }),
           );
         }
       }
@@ -857,21 +896,34 @@ function Receipt({ onClose }) {
             </div>
 
             <div className="sticky bottom-[-100px] md:bottom-[0] pb-2 bg-white border-t">
-              <div className="flex gap-3 pb-5">
-                <button
-                  onClick={sendKitchen}
-                  className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
-                >
-                  Send for Preparation
-                </button>
-                {orderId && (
+              <div className="flex flex-col gap-3 pb-2">
+                <div className="flex gap-3">
                   <button
-                    onClick={handleOpenRemoveOrder}
+                    onClick={sendKitchen}
                     className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
                   >
-                    Remove Items
+                    Send for Preparation
                   </button>
-                )}
+                  {orderId && (
+                    <button
+                      onClick={handleOpenRemoveOrder}
+                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      Remove Items
+                    </button>
+                  )}
+                  <button
+                    onClick={handlePrintPreview}
+                    disabled={
+                      !selectedTable || !receipts[selectedTable]?.items?.length
+                    }
+                    className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Print preview without checkout"
+                  >
+                    Print Preview
+                  </button>
+                </div>
+
                 {orderId && getUserRole() !== "restaurant-waiter" && (
                   <button
                     onClick={handleCheckoutClick}
@@ -1034,7 +1086,7 @@ function Receipt({ onClose }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Gov Tax:</span>
                     <div className="flex items-center gap-2">
-                      <div className="relative">
+                      <div className="flex gap-2 items-center">
                         <input
                           type="text"
                           value={taxRate === 0 ? "" : taxRate}
@@ -1043,9 +1095,7 @@ function Receipt({ onClose }) {
                           min="0"
                           max="100"
                         />
-                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                          %
-                        </span>
+                        <span className="text-gray-500">%</span>
                       </div>
                       <span className="font-medium text-gray-600">
                         {calculateTax(calculateSubtotal()).toLocaleString()} MMK
@@ -1055,7 +1105,7 @@ function Receipt({ onClose }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Service Fee:</span>
                     <div className="flex items-center gap-2">
-                      <div className="relative">
+                      <div className="flex gap-2 items-center">
                         <input
                           type="text"
                           value={serviceFee === 0 ? "" : serviceFee}
@@ -1064,13 +1114,11 @@ function Receipt({ onClose }) {
                           min="0"
                           max="100"
                         />
-                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                          %
-                        </span>
+                        <span className="text-gray-500">%</span>
                       </div>
                       <span className="font-medium text-gray-600">
                         {calculateServiceFee(
-                          calculateSubtotal()
+                          calculateSubtotal(),
                         ).toLocaleString()}{" "}
                         MMK
                       </span>
@@ -1181,7 +1229,7 @@ function Receipt({ onClose }) {
                               updatePartialPayment(
                                 index,
                                 "method",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary"
@@ -1197,7 +1245,7 @@ function Receipt({ onClose }) {
                               updatePartialPayment(
                                 index,
                                 "amount",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             placeholder="Amount"
@@ -1219,7 +1267,7 @@ function Receipt({ onClose }) {
                     {getRemainingAmount() > 0 && (
                       <button
                         onClick={() => addPartialPayment("cash", 0)}
-                        className="w-full py-2 px-3 bg-blue-50 text-blue-600 border border-blue-200 rounded text-sm font-medium hover:bg-blue-100 transition-colors"
+                        className="w-full py-2 px-3 border border-gray-200 rounded text-sm font-medium hover:bg-blue-100 transition-colors"
                       >
                         Add Payment Method
                       </button>

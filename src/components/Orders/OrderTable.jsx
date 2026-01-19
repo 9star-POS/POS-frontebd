@@ -92,7 +92,7 @@ function OrderTable({
             <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
               Total Price
             </th>
-            <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+            <th className="hidden lg:block px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
               Payment Method
             </th>
             <th className="px-2 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
@@ -114,7 +114,7 @@ function OrderTable({
                   if (selectedOrders.includes(order._id)) {
                     // If already selected, remove from the selection
                     setselectedOrders(
-                      selectedOrders.filter((id) => id !== order._id)
+                      selectedOrders.filter((id) => id !== order._id),
                     );
                   } else {
                     // If not selected, add to selection
@@ -130,7 +130,7 @@ function OrderTable({
                     if (selectedOrders.includes(order._id)) {
                       // If already selected, remove from the selection
                       setselectedOrders(
-                        selectedOrders.filter((id) => id !== order._id)
+                        selectedOrders.filter((id) => id !== order._id),
                       );
                     } else {
                       // If not selected, add to selection
@@ -147,10 +147,10 @@ function OrderTable({
                 {order.tableService?.tableNumber
                   ? `Table ${order.tableService.tableNumber}`
                   : order.tableNumber
-                  ? `Table ${order.tableNumber}`
-                  : order.roomService?.roomNumber
-                  ? `Room ${order.roomService.roomNumber}`
-                  : "N/A"}
+                    ? `Table ${order.tableNumber}`
+                    : order.roomService?.roomNumber
+                      ? `Room ${order.roomService.roomNumber}`
+                      : "N/A"}
               </td>
               <td className="px-2 lg:px-6 lg:py-4 whitespace-nowrap">
                 <span className="hidden lg:inline">
@@ -161,11 +161,11 @@ function OrderTable({
               <td className="hidden md:block px-2 lg:px-6 py-4 whitespace-nowrap">
                 {order.orderItems?.reduce(
                   (sum, item) => sum + (item.quantity || 0),
-                  0
+                  0,
                 )}{" "}
                 {order.orderItems?.reduce(
                   (sum, item) => sum + (item.quantity || 0),
-                  0
+                  0,
                 ) > 1
                   ? "items"
                   : "item"}
@@ -176,28 +176,37 @@ function OrderTable({
                   : "Pending"}{" "}
                 {order.total != null && "MMK"}
               </td>
-              <td className="px-2 lg:px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    order.paymentMethod === "cash"
-                      ? "bg-green-100 text-green-800"
-                      : order.paymentMethod === "kpay"
-                      ? "bg-blue-100 text-blue-800"
-                      : order.paymentMethod === "wavepay"
-                      ? "bg-purple-100 text-purple-800"
-                      : order.paymentMethod === "foc"
-                      ? "bg-orange-100 text-orange-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {order.paymentMethod
-                    ? order.paymentMethod === "wavepay"
-                      ? "WavePay"
-                      : order.paymentMethod === "foc"
-                      ? "FOC"
-                      : order.paymentMethod.toUpperCase()
-                    : "N/A"}
-                </span>
+              <td className="hidden lg:block px-2 lg:px-6 py-4 whitespace-nowrap">
+                {order.paymentMethods && order.paymentMethods.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {order.paymentMethods.map((payment, index) => (
+                      <span
+                        key={payment._id || index}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          payment.paymentMethod === "cash"
+                            ? "bg-green-100 text-green-800"
+                            : payment.paymentMethod === "kpay"
+                              ? "bg-blue-100 text-blue-800"
+                              : payment.paymentMethod === "wavepay"
+                                ? "bg-purple-100 text-purple-800"
+                                : payment.paymentMethod === "foc"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {payment.paymentMethod === "wavepay"
+                          ? "WavePay"
+                          : payment.paymentMethod === "foc"
+                            ? "FOC"
+                            : payment.paymentMethod.toUpperCase()}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                    N/A
+                  </span>
+                )}
               </td>
               <td className="px-2 lg:px-6 py-4 whitespace-nowrap ">
                 <div className="flex space-x-4 items-center">

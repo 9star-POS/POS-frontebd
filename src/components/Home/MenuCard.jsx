@@ -25,7 +25,7 @@ const MenuCard = ({ menu }) => {
         dispatch(addItemToReceipt({ table: selectedTable, item: menu }));
       } else {
         dispatch(
-          incrementQuantity({ table: selectedTable, itemName: menu.name })
+          incrementQuantity({ table: selectedTable, itemName: menu.name }),
         );
       }
     } else {
@@ -36,7 +36,7 @@ const MenuCard = ({ menu }) => {
   const handleDecrement = () => {
     if (selectedTable !== null) {
       dispatch(
-        decrementQuantity({ table: selectedTable, itemName: menu.name })
+        decrementQuantity({ table: selectedTable, itemName: menu.name }),
       );
     }
   };
@@ -45,7 +45,7 @@ const MenuCard = ({ menu }) => {
 
   return (
     <div
-      className={`w-auto overflow-hidden rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 ${
+      className={`w-auto lg:w-[200px] overflow-hidden rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 ${
         isSelected
           ? "border-2 border-primary bg-primary/10"
           : "border border-gray-200"
@@ -54,7 +54,7 @@ const MenuCard = ({ menu }) => {
     >
       <div className="hidden lg:block">
         <img
-          className="w-full h-48 sm:h-52 object-cover"
+          className="w-full h-48 sm:h-32 object-cover"
           src={menu.stockImagesUrl[0].url || defaultImage}
           alt="Food"
         />

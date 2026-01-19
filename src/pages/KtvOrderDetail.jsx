@@ -178,7 +178,7 @@ function KtvOrderDetail() {
             <div className="flex items-center gap-3">
               <span
                 className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(
-                  order.status
+                  order.status,
                 )}`}
               >
                 {order.status.toUpperCase()}
@@ -194,32 +194,17 @@ function KtvOrderDetail() {
           </div>
         </div>
 
-        {/* Room & Payment Information Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gray-50">
+        {/* Room & Order Information Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <DoorOpen className="text-primary" size={24} />
-              <h3 className="font-semibold text-lg">Room Number</h3>
+              <h3 className="font-semibold text-lg">Location</h3>
             </div>
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-xl font-semibold text-gray-800">
               Room {order.roomService?.roomNumber || "N/A"}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              {order.roomService?.hourlyRate?.toLocaleString() || 0} MMK/hour
-            </p>
           </div>
-
-          {/* <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <CreditCard className="text-primary" size={24} />
-              <h3 className="font-semibold text-lg">Payment Method</h3>
-            </div>
-            <p className="text-xl font-semibold text-gray-800 capitalize">
-              {order.paymentMethod === "none"
-                ? "Not Paid"
-                : order.paymentMethod}
-            </p>
-          </div> */}
 
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
@@ -228,16 +213,6 @@ function KtvOrderDetail() {
             </div>
             <p className="text-xl font-semibold text-gray-800">
               {formatDate(order.createdAt)}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <Clock className="text-primary" size={24} />
-              <h3 className="font-semibold text-lg">Order Time</h3>
-            </div>
-            <p className="text-xl font-semibold text-gray-800">
-              {formatTime(order.createdAt)}
             </p>
           </div>
         </div>
@@ -271,7 +246,7 @@ function KtvOrderDetail() {
                     {order.roomService.serviceEndedAt
                       ? calculateDuration(
                           order.roomService.serviceStartedAt,
-                          order.roomService.serviceEndedAt
+                          order.roomService.serviceEndedAt,
                         )
                       : `${order.roomServiceTime} hour(s)`}
                   </p>
@@ -349,7 +324,7 @@ function KtvOrderDetail() {
         {order.orderItems && order.orderItems.length > 0 && (
           <div className="p-6 border-t border-gray-200">
             <h2 className="font-bold text-2xl mb-4 text-gray-800 flex items-center gap-2">
-              <Receipt className="text-purple-600" size={28} />
+              <Receipt className="" size={28} />
               Food & Beverage Items
             </h2>
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -405,7 +380,7 @@ function KtvOrderDetail() {
                       <td className="p-4 text-center">
                         <span
                           className={`font-semibold capitalize ${getKitchenStatusColor(
-                            item.kitchenStatus
+                            item.kitchenStatus,
                           )}`}
                         >
                           {item.kitchenStatus}
@@ -424,7 +399,7 @@ function KtvOrderDetail() {
 
         {/* Order Summary */}
         <div className="p-6 border-t border-gray-200">
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6">
+          <div className="rounded-lg p-6">
             <h3 className="font-bold text-xl mb-4 text-gray-800">
               Order Summary
             </h3>
@@ -472,12 +447,38 @@ function KtvOrderDetail() {
                 </span>
               </div>
               {/* )} */}
+
+              {order.paymentMethods && order.paymentMethods.length > 0 && (
+                <div className="border-t border-purple-200 pt-3 mt-3">
+                  <div className="text-lg font-semibold text-gray-800 mb-2">
+                    Payment Method:
+                  </div>
+                  <div className="space-y-2">
+                    {order.paymentMethods.map((payment, index) => (
+                      <div
+                        key={payment._id || index}
+                        className="flex justify-between items-center text-base"
+                      >
+                        <span className="text-gray-700 capitalize">
+                          {payment.paymentMethod === "wavepay"
+                            ? "WavePay"
+                            : payment.paymentMethod === "foc"
+                              ? "FOC"
+                              : payment.paymentMethod}
+                        </span>
+                        <span className="font-medium text-gray-800">
+                          {Number(payment.paidAmount).toLocaleString()} MMK
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="border-t-2 border-purple-300 pt-3 mt-3">
                 <div className="flex justify-between text-2xl">
-                  <span className="font-bold text-gray-800">Grand Total:</span>
-                  <span className="font-bold text-purple-600">
-                    {order.total} MMK
-                  </span>
+                  <span className="font-bold text-gray-800">Total:</span>
+                  <span className="font-bold">{order.total} MMK</span>
                 </div>
               </div>
             </div>

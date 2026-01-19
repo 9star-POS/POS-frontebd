@@ -73,13 +73,60 @@ function Receipt({ onClose }) {
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isChangingRoom, setIsChangingRoom] = useState(false);
   const [paperSize, setPaperSize] = useState(
-    () => localStorage.getItem("receipt-paper-size") || "57mm"
+    () => localStorage.getItem("receipt-paper-size") || "57mm",
   );
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  // console.log("receipts", receipts);
+  const [partialPayments, setPartialPayments] = useState([]);
+  const [usePartialPayment, setUsePartialPayment] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
+  // Handler for opening checkout modal
+  const handleCheckoutClick = () => {
+    setIsCheckoutModalOpen(true);
+  };
+
+  // Handler for closing checkout modal
+  const handleCloseCheckoutModal = () => {
+    setIsCheckoutModalOpen(false);
+  };
+
+  // Helper functions for partial payments
+  const addPartialPayment = (method, amount) => {
+    setPartialPayments([
+      ...partialPayments,
+      { method, amount: Number(amount) },
+    ]);
+  };
+
+  const removePartialPayment = (index) => {
+    setPartialPayments(partialPayments.filter((_, i) => i !== index));
+  };
+
+  const updatePartialPayment = (index, field, value) => {
+    const updated = [...partialPayments];
+    updated[index] = {
+      ...updated[index],
+      [field]: field === "amount" ? Number(value) : value,
+    };
+    setPartialPayments(updated);
+  };
+
+  const getTotalPaidAmount = () => {
+    return partialPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
+  const getRemainingAmount = () => {
+    return calculateTotal() - getTotalPaidAmount();
+  };
+
+  const isPaymentComplete = () => {
+    return Math.abs(getTotalPaidAmount() - calculateTotal()) < 0.01; // Allow for floating point precision
+  };
   // Reset payment method when room changes
   useEffect(() => {
     setPaymentMethod("cash"); // Reset to default payment method
+    setPartialPayments([]); // Reset partial payments
+    setUsePartialPayment(false); // Reset partial payment toggle
   }, [selectedRoom]);
 
   useEffect(() => {
@@ -117,7 +164,7 @@ function Receipt({ onClose }) {
         if (chosenOrderId && selectedRoom) {
           console.log("setting orderId for room", selectedRoom, chosenOrderId);
           dispatch(
-            setOrderIdForRoom({ room: selectedRoom, orderId: chosenOrderId })
+            setOrderIdForRoom({ room: selectedRoom, orderId: chosenOrderId }),
           );
         }
         // Handle order items separately (can be null or empty)
@@ -160,7 +207,7 @@ function Receipt({ onClose }) {
               room: selectedRoom,
               hourlyRate: chosen?.roomService?.hourlyRate || 0,
               serviceTime: chosen?.roomServiceTime || 0,
-            })
+            }),
           );
         } else {
           // Clear room service if not present
@@ -169,7 +216,7 @@ function Receipt({ onClose }) {
               room: selectedRoom,
               hourlyRate: 0,
               serviceTime: 0,
-            })
+            }),
           );
           setRoomServiceId(null);
         }
@@ -189,14 +236,14 @@ function Receipt({ onClose }) {
             setVocalistsForRoom({
               room: selectedRoom,
               vocalists: mappedVocalists,
-            })
+            }),
           );
         } else {
           // Only clear vocalists if there's no order at all, not if orderItems is null
           // This allows vocalists to persist even when orderItems is null
           if (!chosen) {
             dispatch(
-              setVocalistsForRoom({ room: selectedRoom, vocalists: [] })
+              setVocalistsForRoom({ room: selectedRoom, vocalists: [] }),
             );
           }
         }
@@ -231,7 +278,7 @@ function Receipt({ onClose }) {
               room: selectedRoom,
               hourlyRate: res.data.hourlyRate || 0,
               serviceTime: 0,
-            })
+            }),
           );
         }
       }
@@ -347,7 +394,7 @@ function Receipt({ onClose }) {
         const filteredRooms = res.data.filter(
           (room) =>
             String(room.roomNumber) !== String(selectedRoom) &&
-            room.status === "inactive"
+            room.status === "inactive",
         );
         setAvailableRooms(filteredRooms);
       } else {
@@ -457,7 +504,7 @@ function Receipt({ onClose }) {
             const orderItem = item.orderItemIds[orderItemIndex];
             const removeFromThisItem = Math.min(
               remainingToRemove,
-              orderItem.quantity
+              orderItem.quantity,
             );
 
             // Sum quantities for the same orderItemId
@@ -465,7 +512,7 @@ function Receipt({ onClose }) {
             if (itemsToRemoveMap.has(orderItemId)) {
               itemsToRemoveMap.set(
                 orderItemId,
-                itemsToRemoveMap.get(orderItemId) + removeFromThisItem
+                itemsToRemoveMap.get(orderItemId) + removeFromThisItem,
               );
             } else {
               itemsToRemoveMap.set(orderItemId, removeFromThisItem);
@@ -482,7 +529,7 @@ function Receipt({ onClose }) {
         ([orderItemId, quantity]) => ({
           orderItemId,
           quantity,
-        })
+        }),
       );
 
       // console.log("itemsToRemove", itemsToRemove);
@@ -524,7 +571,7 @@ function Receipt({ onClose }) {
             });
             const mappedItems = Array.from(grouped.values());
             dispatch(
-              setItemsForRoom({ room: selectedRoom, items: mappedItems })
+              setItemsForRoom({ room: selectedRoom, items: mappedItems }),
             );
           }
         }
@@ -537,13 +584,13 @@ function Receipt({ onClose }) {
         if (refreshRes?.success && Array.isArray(refreshRes.data)) {
           // Filter out deleted orders (API should handle status and roomNumber)
           const forTable = refreshRes.data.filter(
-            (o) => o?.isDeleted === false
+            (o) => o?.isDeleted === false,
           );
           const pickLatest = (list) =>
             list
               .slice()
               .sort(
-                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
               )[0] || null;
           const chosen = pickLatest(forTable);
           if (chosen) {
@@ -551,7 +598,7 @@ function Receipt({ onClose }) {
             setOrderId(chosen._id);
             if (chosen._id && selectedRoom) {
               dispatch(
-                setOrderIdForRoom({ room: selectedRoom, orderId: chosen._id })
+                setOrderIdForRoom({ room: selectedRoom, orderId: chosen._id }),
               );
             }
             // Sync vocalists from API response
@@ -568,7 +615,7 @@ function Receipt({ onClose }) {
                 setVocalistsForRoom({
                   room: selectedRoom,
                   vocalists: mappedVocalists,
-                })
+                }),
               );
             }
             // Sync room service from API response
@@ -579,7 +626,7 @@ function Receipt({ onClose }) {
                   room: selectedRoom,
                   hourlyRate: chosen?.roomService?.hourlyRate || 0,
                   serviceTime: chosen?.roomServiceTime || 0,
-                })
+                }),
               );
             }
           }
@@ -762,6 +809,14 @@ function Receipt({ onClose }) {
       return;
     }
 
+    // Validate partial payments if enabled
+    if (usePartialPayment && !isPaymentComplete()) {
+      toast.error(
+        `Payment incomplete. Total: ${calculateTotal()} MMK, Paid: ${getTotalPaidAmount()} MMK, Remaining: ${getRemainingAmount()} MMK`,
+      );
+      return;
+    }
+
     // Prepare vocalist service times array
     const vocalistServiceTimes = [];
     if (selectedRoom && receipts[selectedRoom]?.vocalists) {
@@ -787,7 +842,17 @@ function Receipt({ onClose }) {
       discount: calculateDiscount(),
       total: calculateTotal(),
       status: "completed",
-      paymentMethod: paymentMethod,
+      paymentMethods: usePartialPayment
+        ? partialPayments.map((payment) => ({
+            paymentMethod: payment.method,
+            paidAmount: payment.amount,
+          }))
+        : [
+            {
+              paymentMethod: paymentMethod,
+              paidAmount: calculateTotal(),
+            },
+          ],
     };
 
     try {
@@ -796,6 +861,7 @@ function Receipt({ onClose }) {
       if (res?.success) {
         toast.success("KTV order checkout completed successfully");
         setIsCalculatorOpen(false);
+        setIsCheckoutModalOpen(false);
 
         // Prepare order data for printing
         const orderForPrint = {
@@ -1040,14 +1106,14 @@ function Receipt({ onClose }) {
         }
         if (newOrderId && selectedRoom) {
           dispatch(
-            setOrderIdForRoom({ room: selectedRoom, orderId: newOrderId })
+            setOrderIdForRoom({ room: selectedRoom, orderId: newOrderId }),
           );
         }
         if (selectedRoom && selectedRoomId && selectedRoomStatus !== "active") {
           try {
             const statusResponse = await updateRoomStatus(
               selectedRoomId,
-              "active"
+              "active",
             );
             // console.log(statusResponse);
             if (statusResponse?.success) {
@@ -1055,14 +1121,14 @@ function Receipt({ onClose }) {
                 setRoomStatus({
                   room: selectedRoom,
                   status: statusResponse?.data?.status || "active",
-                })
+                }),
               );
               dispatch(
                 setRoomDetails({
                   room: selectedRoom,
                   roomId: selectedRoomId,
                   status: statusResponse?.data?.status || "active",
-                })
+                }),
               );
             } else if (statusResponse?.message) {
               toast.info(statusResponse.message);
@@ -1101,7 +1167,7 @@ function Receipt({ onClose }) {
               room: selectedRoom,
               hourlyRate: res.data.roomService.hourlyRate || 0,
               serviceTime: res.data.roomServiceTime || 0,
-            })
+            }),
           );
         }
 
@@ -1111,7 +1177,7 @@ function Receipt({ onClose }) {
             setVocalistsForRoom({
               room: selectedRoom,
               vocalists: res.data.vocalist,
-            })
+            }),
           );
         }
       }
@@ -1189,7 +1255,7 @@ function Receipt({ onClose }) {
                 {(remoteOrder?.createdAt || localCreationTime) && (
                   <p className="text-gray-500 text-sm">
                     {new Date(
-                      remoteOrder?.createdAt || localCreationTime
+                      remoteOrder?.createdAt || localCreationTime,
                     ).toLocaleDateString("en-GB")}
                   </p>
                 )}
@@ -1253,7 +1319,7 @@ function Receipt({ onClose }) {
                         {Number(
                           (receipts[selectedRoom]?.roomService?.hourlyRate ??
                             remoteOrder?.roomService?.hourlyRate) ||
-                            0
+                            0,
                         ).toLocaleString()}{" "}
                         MMK/hr ·
                       </span>
@@ -1262,7 +1328,7 @@ function Receipt({ onClose }) {
                           className="p-1 rounded-md hover:bg-gray-100 text-primary"
                           onClick={() =>
                             dispatch(
-                              decrementRoomServiceTime({ room: selectedRoom })
+                              decrementRoomServiceTime({ room: selectedRoom }),
                             )
                           }
                         >
@@ -1272,7 +1338,7 @@ function Receipt({ onClose }) {
                           {Number(
                             (receipts[selectedRoom]?.roomService?.serviceTime ??
                               remoteOrder?.roomServiceTime) ||
-                              0
+                              0,
                           )}{" "}
                           hr
                         </span>
@@ -1280,7 +1346,7 @@ function Receipt({ onClose }) {
                           className="p-1 rounded-md hover:bg-gray-100 text-primary"
                           onClick={() =>
                             dispatch(
-                              incrementRoomServiceTime({ room: selectedRoom })
+                              incrementRoomServiceTime({ room: selectedRoom }),
                             )
                           }
                         >
@@ -1294,12 +1360,12 @@ function Receipt({ onClose }) {
                       Number(
                         (receipts[selectedRoom]?.roomService?.hourlyRate ??
                           remoteOrder?.roomService?.hourlyRate) ||
-                          0
+                          0,
                       ) *
                       Number(
                         (receipts[selectedRoom]?.roomService?.serviceTime ??
                           remoteOrder?.roomServiceTime) ||
-                          0
+                          0,
                       )
                     ).toLocaleString()}{" "}
                     MMK
@@ -1342,7 +1408,7 @@ function Receipt({ onClose }) {
                                         decrementVocalistServiceTime({
                                           room: selectedRoom,
                                           vocalistId: v?.vocalistId,
-                                        })
+                                        }),
                                       )
                                     }
                                   >
@@ -1358,7 +1424,7 @@ function Receipt({ onClose }) {
                                         incrementVocalistServiceTime({
                                           room: selectedRoom,
                                           vocalistId: v?.vocalistId,
-                                        })
+                                        }),
                                       )
                                     }
                                   >
@@ -1382,7 +1448,7 @@ function Receipt({ onClose }) {
                                     removeVocalistFromRoom({
                                       room: selectedRoom,
                                       vocalistId: v?.vocalistId,
-                                    })
+                                    }),
                                   )
                                 }
                               >
@@ -1391,7 +1457,7 @@ function Receipt({ onClose }) {
                             </div>
                           </div>
                         )
-                      )
+                      ),
                     )}
                   </div>
                 </div>
@@ -1433,7 +1499,7 @@ function Receipt({ onClose }) {
                           setRoomNote({
                             room: selectedRoom,
                             note: e.target.value,
-                          })
+                          }),
                         )
                       }
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-primary"
@@ -1549,7 +1615,7 @@ function Receipt({ onClose }) {
                         )}
                       </button>
                     )}
-                    {/* <button
+                    <button
                       onClick={handlePrintPreview}
                       disabled={
                         !selectedRoom ||
@@ -1562,45 +1628,15 @@ function Receipt({ onClose }) {
                     >
                       <Printer size={18} />
                       Print Preview
-                    </button> */}
+                    </button>
                   </div>
 
                   {orderId && userRole !== "ktv-waiter" && (
                     <>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">
-                          Payment Method
-                        </label>
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
-                          required
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="kpay">KPay</option>
-                          <option value="wavepay">WavePay</option>
-                        </select>
-                      </div>
-                      <div className="flex gap-2">
                         <button
-                          onClick={handlePrintPreview}
-                          disabled={
-                            !selectedRoom ||
-                            (!hasLocalItems &&
-                              !hasLocalRoomService &&
-                              !hasLocalVocalists)
-                          }
-                          className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Print preview without checkout"
-                        >
-                          <Printer size={18} />
-                          Print Preview
-                        </button>
-                        <button
-                          // onClick={handleCheckout}
-                          onClick={handlePayment}
-                          className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors"
+                          onClick={handleCheckoutClick}
+                          className="flex-1 bg-primary text-white font-semibold py-4 rounded-full border border-primary hover:bg-primary/90 transition-colors"
                         >
                           Checkout
                         </button>
@@ -1628,6 +1664,267 @@ function Receipt({ onClose }) {
           items={receipts[selectedRoom]?.items || []}
           currency="MMK"
         />
+      )}
+
+      {/* Checkout Modal */}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">KTV Checkout</h3>
+              <button
+                onClick={handleCloseCheckoutModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {/* Order Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                <h4 className="font-semibold mb-3">Order Summary</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">
+                      {calculateSubtotal().toLocaleString()} MMK
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Gov Tax:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={taxRate === 0 ? "" : taxRate}
+                          onChange={handleTaxChange}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                          %
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-600">
+                        {calculateTax().toLocaleString()} MMK
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Service Fee:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={serviceFee === 0 ? "" : serviceFee}
+                          onChange={handleServiceFeeChange}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:border-primary"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
+                          %
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-600">
+                        {calculateServiceFee().toLocaleString()} MMK
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Discount:</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={discountAmount === 0 ? "" : discountAmount}
+                        onChange={handleDiscountChange}
+                        className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium"
+                        placeholder="0"
+                      />
+                      <span className="text-gray-600 text-sm">MMK</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-bold text-lg">Total:</span>
+                    <span className="font-bold text-lg text-primary">
+                      {calculateTotal().toLocaleString()} MMK
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="partialPayment"
+                    checked={usePartialPayment}
+                    onChange={(e) => {
+                      setUsePartialPayment(e.target.checked);
+                      if (!e.target.checked) {
+                        setPartialPayments([]);
+                      }
+                    }}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label
+                    htmlFor="partialPayment"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Enable Partial Payment
+                  </label>
+                </div>
+
+                {!usePartialPayment ? (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">
+                      Payment Method
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary bg-white"
+                      required
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="kpay">KPay</option>
+                      <option value="wavepay">WavePay</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-gray-700">
+                      Payment Breakdown
+                    </div>
+
+                    {/* Payment Summary */}
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Total Amount:</span>
+                        <span className="font-semibold">
+                          {calculateTotal().toLocaleString()} MMK
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Paid Amount:</span>
+                        <span className="font-semibold text-green-600">
+                          {getTotalPaidAmount().toLocaleString()} MMK
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold">
+                        <span>Remaining:</span>
+                        <span
+                          className={
+                            getRemainingAmount() > 0
+                              ? "text-red-600"
+                              : "text-green-600"
+                          }
+                        >
+                          {getRemainingAmount().toLocaleString()} MMK
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Payment Methods List */}
+                    <div className="space-y-2">
+                      {partialPayments.map((payment, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <select
+                            value={payment.method}
+                            onChange={(e) =>
+                              updatePartialPayment(
+                                index,
+                                "method",
+                                e.target.value,
+                              )
+                            }
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary"
+                          >
+                            <option value="cash">Cash</option>
+                            <option value="kpay">KPay</option>
+                            <option value="wavepay">WavePay</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={payment.amount}
+                            onChange={(e) =>
+                              updatePartialPayment(
+                                index,
+                                "amount",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Amount"
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary"
+                            min="0"
+                            step="0.01"
+                          />
+                          <button
+                            onClick={() => removePartialPayment(index)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Add Payment Button */}
+                    {getRemainingAmount() > 0 && (
+                      <button
+                        onClick={() => addPartialPayment("cash", 0)}
+                        className="w-full py-2 px-3 bg-blue-50 text-blue-600 border border-blue-200 rounded text-sm font-medium hover:bg-blue-100 transition-colors"
+                      >
+                        Add Payment Method
+                      </button>
+                    )}
+
+                    {/* Payment Status */}
+                    <div
+                      className={`p-2 rounded text-sm text-center ${
+                        isPaymentComplete()
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                      }`}
+                    >
+                      {isPaymentComplete()
+                        ? "✓ Payment Complete"
+                        : `⚠ Payment Incomplete - ${getRemainingAmount().toLocaleString()} MMK remaining`}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseCheckoutModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCalculatorConfirm}
+                  disabled={usePartialPayment && !isPaymentComplete()}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    usePartialPayment && !isPaymentComplete()
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
+                >
+                  Complete Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Remove Order Items Modal */}
