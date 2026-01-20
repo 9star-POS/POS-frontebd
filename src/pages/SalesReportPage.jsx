@@ -927,7 +927,7 @@ const SalesReportPage = () => {
                                 <p className="text-xs text-gray-400">Total</p>
                                 <p className="text-lg md:text-xl font-futura text-primary">
                                   {Number(
-                                    item.restaurantOrders?.total || 0,
+                                    item.restaurantOrders?.totalPaidAmount || 0,
                                   ).toLocaleString()}{" "}
                                   MMK
                                 </p>
@@ -954,7 +954,7 @@ const SalesReportPage = () => {
                                 <p className="text-xs text-gray-400">Total</p>
                                 <p className="text-lg md:text-xl font-futura text-primary">
                                   {Number(
-                                    item.ktvOrders?.total || 0,
+                                    item.ktvOrders?.totalPaidAmount || 0,
                                   ).toLocaleString()}{" "}
                                   MMK
                                 </p>
@@ -964,40 +964,30 @@ const SalesReportPage = () => {
                         )}
 
                         {/* Combined Total - Show when filter is "all" or show filtered total */}
-                        <div>
-                          <p className="text-xs md:text-sm text-gray-500 mb-1">
-                            {paymentMethodFilter === "all"
-                              ? "Combined Total"
-                              : paymentMethodFilter === "restaurant"
-                                ? "Restaurant Total"
-                                : "KTV Total"}
-                          </p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-xs text-gray-400">Orders</p>
-                              <p className="text-lg md:text-xl font-futura font-bold">
-                                {paymentMethodFilter === "all"
-                                  ? item.combined?.orderCount || 0
-                                  : paymentMethodFilter === "restaurant"
-                                    ? item.restaurantOrders?.orderCount || 0
-                                    : item.ktvOrders?.orderCount || 0}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-400">Total</p>
-                              <p className="text-lg md:text-xl font-futura font-bold text-primary">
-                                {Number(
-                                  paymentMethodFilter === "all"
-                                    ? item.combined?.total || 0
-                                    : paymentMethodFilter === "restaurant"
-                                      ? item.restaurantOrders?.total || 0
-                                      : item.ktvOrders?.total || 0,
-                                ).toLocaleString()}{" "}
-                                MMK
-                              </p>
+                        {paymentMethodFilter === "all" && (
+                          <div>
+                            <p className="text-xs md:text-sm text-gray-500 mb-1">
+                              Combined Total
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-xs text-gray-400">Orders</p>
+                                <p className="text-lg md:text-xl font-futura font-bold">
+                                  {item.combined?.orderCount || 0}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400">Total</p>
+                                <p className="text-lg md:text-xl font-futura font-bold text-primary">
+                                  {Number(
+                                    item.combined?.totalPaidAmount || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
