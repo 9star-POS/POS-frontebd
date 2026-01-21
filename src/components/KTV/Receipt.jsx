@@ -25,7 +25,6 @@ import box from "./../../assets/box.png";
 import "./../input.css";
 import CalculatorModal from "./CalculatorModel";
 import { toast } from "sonner";
-// import checkoutOrder from "../../api/Order/checkout";
 import getKtvOrders from "../../api/Order/getKtvOrders";
 import sendKtvOrder from "../../api/KTV/sendKtvOrder";
 import getRoomService from "../../api/KTV/getRoomService";
