@@ -423,14 +423,18 @@ function KtvOrderDetail() {
                 </span>
               </div>
               <div className="flex justify-between text-lg">
-                <span className="text-gray-600">Tax:</span>
+                <span className="text-gray-600">
+                  Tax: ({(order.tax / order.subTotal) * 100}%)
+                </span>
                 <span className="font-semibold text-gray-800">
                   {order.tax} MMK
                 </span>
               </div>
               {order.serviceFee != null && order.serviceFee > 0 && (
                 <div className="flex justify-between text-lg">
-                  <span className="text-gray-600">Service Fee:</span>
+                  <span className="text-gray-600">
+                    Service Fee: ({(order.serviceFee / order.subTotal) * 100}%)
+                  </span>
                   <span className="font-semibold text-gray-800">
                     {typeof order.serviceFee === "number"
                       ? order.serviceFee.toLocaleString()
