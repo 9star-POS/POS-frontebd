@@ -31,6 +31,7 @@ function OrderDetail() {
       const res = await getRestaurantOrderById(id);
       if (res?.success) {
         setOrder(res.data);
+
         // console.log("order", order);
       } else {
         setError(res.message || "Failed to load order");
@@ -47,6 +48,8 @@ function OrderDetail() {
       getOrder();
     }
   }, [id]);
+
+  // console.log("order", order);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

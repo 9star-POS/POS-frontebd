@@ -1383,82 +1383,77 @@ function Receipt({ onClose }) {
                       receipts[selectedRoom]?.vocalists ||
                       remoteOrder?.vocalist ||
                       []
-                    ).map(
-                      (v, idx) => (
-                        console.log("vocalist", v),
-                        (
-                          <div
-                            key={v?._id || idx}
-                            className="flex justify-between items-center"
-                          >
-                            <div className="flex-1">
-                              <p className="text-gray-800">
-                                {v?.vocalistName || "Vocalist"}
-                              </p>
-                              <p className="text-sm text-gray-500 flex items-center gap-2">
-                                <span>
-                                  {Number(v?.hourlyRate || 0).toLocaleString()}{" "}
-                                  MMK/hr ·
-                                </span>
-                                <span className="inline-flex items-center gap-1">
-                                  <button
-                                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                    onClick={() =>
-                                      dispatch(
-                                        decrementVocalistServiceTime({
-                                          room: selectedRoom,
-                                          vocalistId: v?.vocalistId,
-                                        }),
-                                      )
-                                    }
-                                  >
-                                    <Minus size={14} />
-                                  </button>
-                                  <span className="min-w-[40px] text-center">
-                                    {Number(v?.serviceTime || 0)} hr
-                                  </span>
-                                  <button
-                                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                    onClick={() =>
-                                      dispatch(
-                                        incrementVocalistServiceTime({
-                                          room: selectedRoom,
-                                          vocalistId: v?.vocalistId,
-                                        }),
-                                      )
-                                    }
-                                  >
-                                    <Plus size={14} />
-                                  </button>
-                                </span>
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium min-w-[80px] text-right">
-                                {(
-                                  Number(v?.hourlyRate || 0) *
-                                  Number(v?.serviceTime || 0)
-                                ).toLocaleString()}{" "}
-                                MMK
-                              </p>
+                    ).map((v, idx) => (
+                      <div
+                        key={v?._id || idx}
+                        className="flex justify-between items-center"
+                      >
+                        <div className="flex-1">
+                          <p className="text-gray-800">
+                            {v?.vocalistName || "Vocalist"}
+                          </p>
+                          <p className="text-sm text-gray-500 flex items-center gap-2">
+                            <span>
+                              {Number(v?.hourlyRate || 0).toLocaleString()}{" "}
+                              MMK/hr ·
+                            </span>
+                            <span className="inline-flex items-center gap-1">
                               <button
-                                className="p-1 rounded-md hover:bg-red-100 text-red-500"
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
                                 onClick={() =>
                                   dispatch(
-                                    removeVocalistFromRoom({
+                                    decrementVocalistServiceTime({
                                       room: selectedRoom,
                                       vocalistId: v?.vocalistId,
                                     }),
                                   )
                                 }
                               >
-                                <Trash2 size={16} />
+                                <Minus size={14} />
                               </button>
-                            </div>
-                          </div>
-                        )
-                      ),
-                    )}
+                              <span className="min-w-[40px] text-center">
+                                {Number(v?.serviceTime || 0)} hr
+                              </span>
+                              <button
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                                onClick={() =>
+                                  dispatch(
+                                    incrementVocalistServiceTime({
+                                      room: selectedRoom,
+                                      vocalistId: v?.vocalistId,
+                                    }),
+                                  )
+                                }
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium min-w-[80px] text-right">
+                            {(
+                              Number(v?.hourlyRate || 0) *
+                              Number(v?.serviceTime || 0)
+                            ).toLocaleString()}{" "}
+                            MMK
+                          </p>
+                          <button
+                            className="p-1 rounded-md hover:bg-red-100 text-red-500"
+                            onClick={() =>
+                              dispatch(
+                                removeVocalistFromRoom({
+                                  room: selectedRoom,
+                                  vocalistId: v?.vocalistId,
+                                }),
+                              )
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1515,7 +1510,7 @@ function Receipt({ onClose }) {
                     </p>
                   </div>
                 )}
-
+                {/* 
                 <div className="flex justify-between items-center border-t pt-3">
                   <div className="flex items-center gap-2">
                     <p className="text-gray-600">Gov Tax</p>
@@ -1536,9 +1531,9 @@ function Receipt({ onClose }) {
                   <p className="font-medium text-gray-600">
                     {calculateTax().toLocaleString()} MMK
                   </p>
-                </div>
+                </div> */}
 
-                <div className="flex justify-between items-center">
+                {/* <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <p className="text-gray-600">Service Fee</p>
                     <div className="relative">
@@ -1558,9 +1553,9 @@ function Receipt({ onClose }) {
                   <p className="font-medium text-gray-600">
                     {calculateServiceFee().toLocaleString()} MMK
                   </p>
-                </div>
+                </div> */}
 
-                <div className="flex justify-between items-center">
+                {/* <div className="flex justify-between items-center">
                   <p className="text-gray-600">Discount</p>
                   <div className="flex items-center gap-2">
                     <input
@@ -1572,14 +1567,14 @@ function Receipt({ onClose }) {
                     />
                     <span className="text-gray-600 text-sm">MMK</span>
                   </div>
-                </div>
+                </div> */}
 
-                <div className="flex justify-between items-center pt-3 border-t">
+                {/* <div className="flex justify-between items-center pt-3 border-t">
                   <p className="font-bold text-lg">Total</p>
                   <p className="font-bold text-lg text-primary">
                     {calculateTotal().toLocaleString()} MMK
                   </p>
-                </div>
+                </div> */}
               </div>
 
               {(hasLocalItems || roomServiceId || orderId) && (
@@ -1696,7 +1691,7 @@ function Receipt({ onClose }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Gov Tax:</span>
                     <div className="flex items-center gap-2">
-                      <div className="relative">
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
                           value={taxRate === 0 ? "" : taxRate}
@@ -1705,9 +1700,7 @@ function Receipt({ onClose }) {
                           min="0"
                           max="100"
                         />
-                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                          %
-                        </span>
+                        <span className="text-gray-500">%</span>
                       </div>
                       <span className="font-medium text-gray-600">
                         {calculateTax().toLocaleString()} MMK
@@ -1717,7 +1710,7 @@ function Receipt({ onClose }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Service Fee:</span>
                     <div className="flex items-center gap-2">
-                      <div className="relative">
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
                           value={serviceFee === 0 ? "" : serviceFee}
@@ -1726,9 +1719,7 @@ function Receipt({ onClose }) {
                           min="0"
                           max="100"
                         />
-                        <span className="absolute right-[-22px] top-1/2 transform -translate-y-1/2 text-gray-500">
-                          %
-                        </span>
+                        <span className="text-gray-500">%</span>
                       </div>
                       <span className="font-medium text-gray-600">
                         {calculateServiceFee().toLocaleString()} MMK

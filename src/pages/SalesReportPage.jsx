@@ -263,7 +263,26 @@ const SalesReportPage = () => {
     }
 
     if (analyticsFilter === "all") {
-      if (analyticsData.summary) return analyticsData.summary;
+      if (analyticsData.summary) {
+        // If category filter is not "all", calculate summary from filtered items
+        if (categoryFilter !== "all") {
+          const items = filteredAnalyticsItems;
+          const totalItemsSold = items.reduce(
+            (acc, item) => acc + (item.totalQuantity ?? 0),
+            0,
+          );
+          const totalRevenue = items.reduce(
+            (acc, item) => acc + (item.totalRevenue ?? 0),
+            0,
+          );
+          return {
+            totalUniqueStocks: items.length,
+            totalItemsSold,
+            totalRevenue,
+          };
+        }
+        return analyticsData.summary;
+      }
       const totalItemsSold = analyticsItems.reduce(
         (acc, item) => acc + (item.totalQuantity ?? 0),
         0,
@@ -315,7 +334,13 @@ const SalesReportPage = () => {
       totalItemsSold,
       totalRevenue,
     };
-  }, [analyticsData, analyticsItems, analyticsFilter, filteredAnalyticsItems]);
+  }, [
+    analyticsData,
+    analyticsItems,
+    analyticsFilter,
+    categoryFilter,
+    filteredAnalyticsItems,
+  ]);
 
   const ReportCard = ({ title, data }) => {
     // Handle both combined and individual order data structures
