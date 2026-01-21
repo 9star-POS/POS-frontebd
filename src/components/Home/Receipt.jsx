@@ -23,6 +23,8 @@ import SplitOrderModal from "../KTV/SplitOrderModal";
 import getTableService from "../../api/Table/getTableService";
 import printReceipt from "../../utils/printReceipt";
 import { getUserRole } from "../../utils/getUserRole";
+import changeRestaurantOrderTable from "../../api/Order/changeRestaurantOrderTable";
+import getAllTables from "../../api/Table/getAllTables";
 
 function Receipt({ onClose }) {
   const dispatch = useDispatch();
@@ -48,6 +50,9 @@ function Receipt({ onClose }) {
   const [partialPayments, setPartialPayments] = useState([]);
   const [usePartialPayment, setUsePartialPayment] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isTableChangeOpen, setIsTableChangeOpen] = useState(false);
+  const [availableTables, setAvailableTables] = useState([]);
+  const [selectedNewTable, setSelectedNewTable] = useState("");
 
   // Handler for opening checkout modal
   const handleCheckoutClick = () => {
@@ -57,6 +62,105 @@ function Receipt({ onClose }) {
   // Handler for closing checkout modal
   const handleCloseCheckoutModal = () => {
     setIsCheckoutModalOpen(false);
+  };
+
+  // Handler for opening table change modal
+  const handleOpenTableChange = async () => {
+    if (!orderId) {
+      toast.error("No active order to change table");
+      return;
+    }
+
+    try {
+      // Fetch all tables from API
+      const res = await getAllTables();
+
+      if (res?.success && Array.isArray(res.data)) {
+        // Filter out current table and deleted tables
+        const availableTables = res.data.filter(
+          (table) =>
+            String(table.tableNumber) !== String(selectedTable) &&
+            !table.isDeleted &&
+            table.status !== "deleted",
+        );
+
+        setAvailableTables(availableTables);
+        setSelectedNewTable("");
+        setIsTableChangeOpen(true);
+      } else {
+        toast.error("No tables available");
+      }
+    } catch (error) {
+      toast.error("Failed to load tables");
+      console.error("Error loading tables:", error);
+    }
+  };
+
+  // Handler for closing table change modal
+  const handleCloseTableChange = () => {
+    setIsTableChangeOpen(false);
+    setSelectedNewTable("");
+    setAvailableTables([]);
+  };
+
+  // Handler for changing table
+  const handleChangeTable = async () => {
+    if (!selectedNewTable) {
+      toast.error("Please select a new table");
+      return;
+    }
+
+    if (!orderId) {
+      toast.error("No active order to change table");
+      return;
+    }
+
+    try {
+      const res = await changeRestaurantOrderTable(orderId, selectedNewTable);
+
+      if (res?.success) {
+        toast.success("Table changed successfully");
+
+        try {
+          // Update new table status to active
+          await updateTableStatus({
+            tableServiceId: selectedNewTable,
+            status: "active",
+          });
+
+          // Update previous table status to inactive
+          if (tableServiceId) {
+            await updateTableStatus({
+              tableServiceId: tableServiceId,
+              status: "inactive",
+            });
+          }
+        } catch (error) {
+          // console.error("Failed to update table status:", error);
+        }
+
+        // Update local state with new table
+        dispatch(removeTable(selectedTable));
+        // Note: We don't set the new table as selected since the order is now associated with it
+        // The user would need to select the new table from the table list to continue working on it
+
+        handleCloseTableChange();
+
+        // Optionally refresh the order data
+        if (res?.data) {
+          setRemoteOrder({
+            ...res.data,
+            tableService: {
+              ...res.data.tableService,
+              tableNumber: selectedNewTable,
+            },
+          });
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to change table");
+      console.error("Error changing table:", error);
+    }
   };
 
   // Helper functions for partial payments
@@ -816,6 +920,14 @@ function Receipt({ onClose }) {
                 Split Order
               </button>
             )}
+            {orderId && (
+              <button
+                onClick={handleOpenTableChange}
+                className="bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+              >
+                Change Table
+              </button>
+            )}
           </div>
         </div>
 
@@ -1310,6 +1422,78 @@ function Receipt({ onClose }) {
                   }`}
                 >
                   Complete Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table Change Modal */}
+      {isTableChangeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Change Table</h3>
+              <button
+                onClick={handleCloseTableChange}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Table:{" "}
+                  <span className="text-primary font-bold">
+                    {selectedTable}
+                  </span>
+                </label>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select New Table
+                </label>
+                <select
+                  value={selectedNewTable}
+                  onChange={(e) => setSelectedNewTable(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">Select a table...</option>
+                  {availableTables.map((table) => (
+                    <option key={table._id} value={table._id}>
+                      Table {table.tableNumber}{" "}
+                      {table.status === "active" && "(Occupied)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-5">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseTableChange}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangeTable}
+                  disabled={!selectedNewTable}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    !selectedNewTable
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
+                >
+                  Change Table
                 </button>
               </div>
             </div>
