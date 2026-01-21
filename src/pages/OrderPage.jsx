@@ -10,6 +10,8 @@ import Calendar from "../components/Calender";
 import deleteOrders from "../api/Order/deleteOrder";
 import softDeleteRestaurantOrder from "../api/Order/softDeleteRestaurantOrder";
 import deleteKtvOrder from "../api/KTV/deleteKtvOrder";
+import hardDeleteRestaurantOrder from "../api/Order/hardDeleteRestaurantOrder";
+import hardDeleteKtvOrder from "../api/KTV/hardDeleteKtvOrder";
 import EditOrder from "./EditOrder";
 // import getReport from "../api/report/getReport";
 import NoItems from "../components/NoItems";
@@ -26,6 +28,7 @@ const OrdersPage = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("restaurant"); // "restaurant" or "ktv"
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all"); // "all", "none", "cash", "kpay", "wavepay", "foc"
+  const [showDeletedOrders, setShowDeletedOrders] = useState(false); // Toggle for showing deleted orders
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
   // Initialize filters from sessionStorage or default to today
@@ -100,6 +103,26 @@ const OrdersPage = () => {
     throw new Error(res?.message || "Failed to delete order");
   };
 
+  const handleHardDeleteRestaurantOrder = async (orderId) => {
+    const res = await hardDeleteRestaurantOrder(orderId);
+    if (res?.success) {
+      // Refresh orders list
+      await getOrders();
+      return res;
+    }
+    throw new Error(res?.message || "Failed to permanently delete order");
+  };
+
+  const handleHardDeleteKtvOrder = async (orderId) => {
+    const res = await hardDeleteKtvOrder(orderId);
+    if (res?.success) {
+      // Refresh orders list
+      await getOrders();
+      return res;
+    }
+    throw new Error(res?.message || "Failed to permanently delete KTV order");
+  };
+
   const handleDeleteKtvOrder = async (orderId) => {
     const res = await deleteKtvOrder(orderId);
     if (res?.success) {
@@ -149,6 +172,16 @@ const OrdersPage = () => {
       params.endDate = appliedFilters.endDate;
     }
 
+    // Add isDeleted parameter for restaurant orders when showDeletedOrders is true
+    if (activeTab === "restaurant" && showDeletedOrders) {
+      params.isDeleted = true;
+    }
+
+    // Add isDeleted parameter for KTV orders when showDeletedOrders is true
+    if (activeTab === "ktv" && showDeletedOrders) {
+      params.isDeleted = true;
+    }
+
     if (activeTab === "restaurant") {
       res = await getRestaurantOrders(params);
     } else {
@@ -157,19 +190,27 @@ const OrdersPage = () => {
 
     if (res?.success) {
       setLoading(false);
-      // Filter to show only completed orders
-      let completedOrders = res.data.filter(
-        (order) => order.status === "completed"
-      );
 
-      // Apply payment method filter
-      if (paymentMethodFilter !== "all") {
-        completedOrders = completedOrders.filter(
-          (order) => order.paymentMethod === paymentMethodFilter
+      // Filter orders based on whether we're showing deleted orders or not
+      let filteredOrders;
+      if (showDeletedOrders) {
+        // Show only deleted orders for both restaurant and KTV
+        filteredOrders = res.data.filter((order) => order.isDeleted === true);
+      } else {
+        // Show only completed orders (normal behavior)
+        filteredOrders = res.data.filter(
+          (order) => order.status === "completed",
         );
       }
 
-      setOrders(completedOrders || []);
+      // Apply payment method filter
+      if (paymentMethodFilter !== "all") {
+        filteredOrders = filteredOrders.filter(
+          (order) => order.paymentMethod === paymentMethodFilter,
+        );
+      }
+
+      setOrders(filteredOrders || []);
     } else {
       setLoading(false);
       setOrders([]);
@@ -203,7 +244,7 @@ const OrdersPage = () => {
   useEffect(() => {
     getOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, paymentMethodFilter]);
+  }, [activeTab, paymentMethodFilter, showDeletedOrders]);
 
   useEffect(() => {
     getOrders(filters);
@@ -268,33 +309,75 @@ const OrdersPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-5 border-b border-gray-200">
-          <button
-            onClick={() => {
-              setActiveTab("restaurant");
-              setOrderIds([]);
-            }}
-            className={`px-6 py-3 font-semibold transition-all ${
-              activeTab === "restaurant"
-                ? "text-primary border-b-2 border-primary"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Restaurant Orders
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab("ktv");
-              setOrderIds([]);
-            }}
-            className={`px-6 py-3 font-semibold transition-all ${
-              activeTab === "ktv"
-                ? "text-primary border-b-2 border-primary"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            KTV Orders
-          </button>
+        <div className="flex justify-between">
+          <div className="flex gap-2 mb-5 border-b border-gray-200 items-center">
+            <button
+              onClick={() => {
+                setActiveTab("restaurant");
+                setOrderIds([]);
+              }}
+              className={`px-6 py-3 font-semibold transition-all ${
+                activeTab === "restaurant"
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Restaurant Orders
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("ktv");
+                setOrderIds([]);
+              }}
+              className={`px-6 py-3 font-semibold transition-all ${
+                activeTab === "ktv"
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              KTV Orders
+            </button>
+          </div>
+
+          {/* Show Deleted Orders Toggle - Only for Restaurant Tab */}
+          {activeTab === "restaurant" && (
+            <label className="flex items-center gap-2 cursor-pointer ml-4">
+              <input
+                type="checkbox"
+                checked={showDeletedOrders}
+                onChange={(e) => setShowDeletedOrders(e.target.checked)}
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Show Deleted
+              </span>
+              {showDeletedOrders && (
+                <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded ml-2">
+                  Deleted Only
+                </span>
+              )}
+            </label>
+          )}
+
+          {/* Show Deleted Orders Toggle - Only for KTV Tab */}
+          {activeTab === "ktv" && (
+            <label className="flex items-center gap-2 cursor-pointer ml-4">
+              <input
+                type="checkbox"
+                checked={showDeletedOrders}
+                onChange={(e) => setShowDeletedOrders(e.target.checked)}
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Show Deleted
+              </span>
+              {showDeletedOrders && (
+                <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded ml-2">
+                  Deleted Only
+                </span>
+              )}
+            </label>
+          )}
         </div>
         {loading ? (
           <div>
@@ -318,7 +401,10 @@ const OrdersPage = () => {
                 setOrderIds={getOerderIds}
                 deleteOrder={handleDeleteOrder}
                 onSoftDelete={handleSoftDeleteRestaurantOrder}
+                onHardDelete={handleHardDeleteRestaurantOrder}
                 onDeleteKtvOrder={handleDeleteKtvOrder}
+                onHardDeleteKtvOrder={handleHardDeleteKtvOrder}
+                showDeletedOrders={showDeletedOrders}
               />
             )}
           </div>

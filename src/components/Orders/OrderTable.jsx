@@ -4,7 +4,7 @@ import { FaRegTrashAlt } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DeleteModel from "../DeleteModel";
-import { canEdit } from "../../utils/getUserRole";
+import { canEdit, isOwner, canSoftDelete } from "../../utils/getUserRole";
 
 function OrderTable({
   sendData,
@@ -12,7 +12,10 @@ function OrderTable({
   deleteOrder,
   setOrderIds,
   onSoftDelete,
+  onHardDelete,
   onDeleteKtvOrder,
+  onHardDeleteKtvOrder,
+  showDeletedOrders,
 }) {
   // console.log(orders[0].tax);
   const navigate = useNavigate();
@@ -20,6 +23,7 @@ function OrderTable({
   const [orderId, setOrderId] = useState([]);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false); // For selected mail _IDs
   const [deletingOrderId, setDeletingOrderId] = useState(null);
+  const [deleteType, setDeleteType] = useState("soft"); // "soft" or "hard"
 
   const handleViewOrder = (order, e) => {
     e.stopPropagation();
@@ -38,7 +42,32 @@ function OrderTable({
   const handleDeleteClick = (order, e) => {
     e.stopPropagation();
     setOrderId([order._id]);
+
+    // Determine delete type based on order and current view
+    if (order?.roomService) {
+      if (showDeletedOrders) {
+        setDeleteType("ktv-hard"); // Hard delete for deleted KTV orders
+      } else {
+        setDeleteType("ktv"); // Regular delete for active KTV orders
+      }
+    } else if (showDeletedOrders) {
+      setDeleteType("hard"); // Hard delete for deleted restaurant orders
+    } else {
+      setDeleteType("soft"); // Soft delete for active restaurant orders
+    }
+
     setIsDeleteOpen(true);
+  };
+
+  // Check if user can perform delete operation
+  const canDeleteOrder = (order) => {
+    if (showDeletedOrders) {
+      // Hard delete - only owners can delete
+      return isOwner();
+    } else {
+      // Soft delete - all logged-in users can delete (including cashiers)
+      return canSoftDelete();
+    }
   };
 
   useEffect(() => {
@@ -217,8 +246,8 @@ function OrderTable({
                   >
                     <MdOutlineRemoveRedEye size={25} />
                   </button>
-                  {/* Show delete button for both restaurant and KTV orders if user can edit */}
-                  {canEdit() && (
+                  {/* Show delete button for both restaurant and KTV orders based on user role and delete type */}
+                  {canDeleteOrder(order) && (
                     <button
                       className="text-red-500 font-bold hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={(e) => handleDeleteClick(order, e)}
@@ -240,33 +269,66 @@ function OrderTable({
       </table>
       <DeleteModel
         isOpen={isDeleteOpen}
+        color={
+          deleteType === "hard" || deleteType === "ktv-hard" ? null : "orange"
+        }
         onClose={() => {
           setIsDeleteOpen(false);
           setDeletingOrderId(null);
+          setDeleteType("soft");
         }}
         submit={async () => {
-          if (orderId.length > 0) {
-            setDeletingOrderId(orderId[0]);
-            try {
-              // Find the order to determine if it's KTV or restaurant
-              const order = orders.find((o) => o._id === orderId[0]);
-              if (order?.roomService && onDeleteKtvOrder) {
-                // Delete KTV order
+          setDeletingOrderId(orderId[0]);
+          try {
+            // Find order to determine if it's KTV or restaurant
+            const order = orders.find((o) => o._id === orderId[0]);
+
+            if (order?.roomService) {
+              // Handle KTV order based on whether it's deleted or not
+              if (showDeletedOrders && onHardDeleteKtvOrder) {
+                // Hard delete for deleted KTV orders
+                await onHardDeleteKtvOrder(orderId[0]);
+              } else if (!showDeletedOrders && onDeleteKtvOrder) {
+                // Regular delete for active KTV orders
                 await onDeleteKtvOrder(orderId[0]);
-              } else if (!order?.roomService && onSoftDelete) {
-                // Delete restaurant order
+              }
+            } else if (!order?.roomService) {
+              // Handle restaurant order based on whether it's deleted or not
+              if (showDeletedOrders && onHardDelete) {
+                // Hard delete for deleted restaurant orders
+                await onHardDelete(orderId[0]);
+              } else if (!showDeletedOrders && onSoftDelete) {
+                // Soft delete for active restaurant orders
                 await onSoftDelete(orderId[0]);
               }
-              setIsDeleteOpen(false);
-              setOrderId([]);
-            } catch (error) {
-              // console.error("Error deleting order:", error);
-            } finally {
-              setDeletingOrderId(null);
             }
+            setIsDeleteOpen(false);
+            setOrderId([]);
+            setDeleteType("soft");
+          } catch (error) {
+            // console.error("Error deleting order:", error);
+          } finally {
+            setDeletingOrderId(null);
           }
         }}
-        text="Are you sure you want to delete this order? This action cannot be undone."
+        text={
+          deleteType === "hard"
+            ? "Are you sure you want to permanently delete this order? This action cannot be undone."
+            : deleteType === "ktv-hard"
+              ? "Are you sure you want to permanently delete this KTV order? This action cannot be undone."
+              : deleteType === "ktv"
+                ? "Are you sure you want to delete this KTV order? It will be moved to deleted orders."
+                : "Are you sure you want to delete this order? It will be moved to deleted orders."
+        }
+        textColor={
+          deleteType === "hard"
+            ? "text-red-600"
+            : deleteType === "ktv-hard"
+              ? "text-red-600"
+              : deleteType === "ktv"
+                ? "text-orange-600"
+                : "text-orange-600"
+        }
       />
     </div>
   );

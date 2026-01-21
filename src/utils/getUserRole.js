@@ -32,6 +32,15 @@ export const canEdit = () => {
 };
 
 /**
+ * Check if the current user can soft delete (including cashiers)
+ * @returns {boolean} True if user can soft delete, false otherwise
+ */
+export const canSoftDelete = () => {
+  const role = getUserRole();
+  return role !== null; // All logged-in users can soft delete
+};
+
+/**
  * Check if the current user is a waiter (ktv-waiter or restaurant-waiter)
  * @returns {boolean} True if user is a waiter, false otherwise
  */
@@ -56,3 +65,10 @@ export const isBarCounter = () => {
   return getUserRole() === "bar-counter";
 };
 
+/**
+ * Check if the current user is an owner
+ * @returns {boolean} True if user is owner, false otherwise
+ */
+export const isOwner = () => {
+  return getUserRole() === "owner";
+};
