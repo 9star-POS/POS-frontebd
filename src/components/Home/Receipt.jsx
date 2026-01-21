@@ -496,6 +496,7 @@ function Receipt({ onClose }) {
       tax: (taxRate / 100) * calculateSubtotal(),
       discount: calculateDiscount(),
       total: calculateTotal(),
+      serviceFee: calculateServiceFee(calculateSubtotal()),
       paymentMethods: usePartialPayment
         ? partialPayments.map((payment) => ({
             paymentMethod: payment.method,
