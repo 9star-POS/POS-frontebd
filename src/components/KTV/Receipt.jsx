@@ -91,14 +91,33 @@ function Receipt({ onClose }) {
 
   // Helper functions for partial payments
   const addPartialPayment = (method, amount) => {
-    setPartialPayments([
-      ...partialPayments,
-      { method, amount: Number(amount) },
-    ]);
+    let finalAmount = Number(amount);
+
+    // If FOC is selected, set amount to remaining amount and apply 100% discount
+    if (method === "foc") {
+      finalAmount = getRemainingAmount();
+      // Apply 100% discount
+      const subtotal = calculateSubtotal();
+      const roomCharges = calculateRoomCharges();
+      const vocalistCharges = calculateVocalistCharges();
+      const tax = calculateTax();
+      const serviceFeeAmount = calculateServiceFee();
+      const totalWithTaxAndFees =
+        subtotal + roomCharges + vocalistCharges + tax + serviceFeeAmount;
+      setDiscountAmount(totalWithTaxAndFees);
+    }
+
+    setPartialPayments([...partialPayments, { method, amount: finalAmount }]);
   };
 
   const removePartialPayment = (index) => {
+    const removedPayment = partialPayments[index];
     setPartialPayments(partialPayments.filter((_, i) => i !== index));
+
+    // If FOC payment is removed, reset the discount
+    if (removedPayment && removedPayment.method === "foc") {
+      setDiscountAmount(0);
+    }
   };
 
   const updatePartialPayment = (index, field, value) => {
@@ -107,18 +126,58 @@ function Receipt({ onClose }) {
       ...updated[index],
       [field]: field === "amount" ? Number(value) : value,
     };
+
+    // If method is changed to FOC, set amount to remaining amount and apply 100% discount
+    if (field === "method" && value === "foc") {
+      updated[index].amount = getRemainingAmount();
+      // Apply 100% discount
+      const subtotal = calculateSubtotal();
+      const roomCharges = calculateRoomCharges();
+      const vocalistCharges = calculateVocalistCharges();
+      const tax = calculateTax();
+      const serviceFeeAmount = calculateServiceFee();
+      const totalWithTaxAndFees =
+        subtotal + roomCharges + vocalistCharges + tax + serviceFeeAmount;
+      setDiscountAmount(totalWithTaxAndFees);
+    }
+
+    // If method is changed away from FOC, reset the discount
+    if (
+      field === "method" &&
+      updated[index].method !== "foc" &&
+      partialPayments[index]?.method === "foc"
+    ) {
+      setDiscountAmount(0);
+    }
+
     setPartialPayments(updated);
   };
 
   const getTotalPaidAmount = () => {
-    return partialPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    return partialPayments.reduce((sum, payment) => {
+      return sum + (payment.method === "foc" ? 0 : payment.amount);
+    }, 0);
   };
 
   const getRemainingAmount = () => {
+    const hasFoc =
+      partialPayments.some((p) => p.method === "foc") ||
+      paymentMethod === "foc";
+    if (hasFoc) {
+      // For FOC, remaining amount should be 0 since discount covers everything
+      return 0;
+    }
     return calculateTotal() - getTotalPaidAmount();
   };
 
   const isPaymentComplete = () => {
+    const hasFoc =
+      partialPayments.some((p) => p.method === "foc") ||
+      paymentMethod === "foc";
+    if (hasFoc) {
+      // For FOC, payment is complete if discount covers the full amount
+      return calculateTotal() === 0;
+    }
     return Math.abs(getTotalPaidAmount() - calculateTotal()) < 0.01; // Allow for floating point precision
   };
   // Reset payment method when room changes
@@ -127,6 +186,24 @@ function Receipt({ onClose }) {
     setPartialPayments([]); // Reset partial payments
     setUsePartialPayment(false); // Reset partial payment toggle
   }, [selectedRoom]);
+
+  // Handle FOC payment method - apply 100% discount when FOC is selected
+  useEffect(() => {
+    if (paymentMethod === "foc") {
+      // Apply 100% discount for FOC
+      const subtotal = calculateSubtotal();
+      const roomCharges = calculateRoomCharges();
+      const vocalistCharges = calculateVocalistCharges();
+      const tax = calculateTax();
+      const serviceFeeAmount = calculateServiceFee();
+      const totalWithTaxAndFees =
+        subtotal + roomCharges + vocalistCharges + tax + serviceFeeAmount;
+      setDiscountAmount(totalWithTaxAndFees);
+    } else if (discountAmount > 0 && paymentMethod !== "foc") {
+      // Reset discount if switching away from FOC and discount was applied
+      setDiscountAmount(0);
+    }
+  }, [paymentMethod]);
 
   useEffect(() => {
     const fetchOrdersForTable = async () => {
@@ -808,8 +885,12 @@ function Receipt({ onClose }) {
       return;
     }
 
-    // Validate partial payments if enabled
-    if (usePartialPayment && !isPaymentComplete()) {
+    // Validate partial payments if enabled (skip for FOC)
+    if (
+      usePartialPayment &&
+      !isPaymentComplete() &&
+      !partialPayments.some((p) => p.method === "foc")
+    ) {
       toast.error(
         `Payment incomplete. Total: ${calculateTotal()} MMK, Paid: ${getTotalPaidAmount()} MMK, Remaining: ${getRemainingAmount()} MMK`,
       );
@@ -844,12 +925,12 @@ function Receipt({ onClose }) {
       paymentMethods: usePartialPayment
         ? partialPayments.map((payment) => ({
             paymentMethod: payment.method,
-            paidAmount: payment.amount,
+            paidAmount: payment.method === "foc" ? 0 : payment.amount,
           }))
         : [
             {
               paymentMethod: paymentMethod,
-              paidAmount: calculateTotal(),
+              paidAmount: paymentMethod === "foc" ? 0 : calculateTotal(),
             },
           ],
     };
@@ -1561,8 +1642,9 @@ function Receipt({ onClose }) {
                       type="text"
                       value={discountAmount === 0 ? "" : discountAmount}
                       onChange={handleDiscountChange}
-                      className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium"
+                      className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium disabled:bg-gray-100 disabled:text-gray-500"
                       placeholder="0"
+                      disabled={paymentMethod === "foc" || partialPayments.some(p => p.method === "foc")}
                     />
                     <span className="text-gray-600 text-sm">MMK</span>
                   </div>
@@ -1732,8 +1814,12 @@ function Receipt({ onClose }) {
                         type="text"
                         value={discountAmount === 0 ? "" : discountAmount}
                         onChange={handleDiscountChange}
-                        className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium"
+                        className="w-28 px-3 py-1 border border-gray-300 rounded-md text-right focus:outline-none focus:border-primary font-medium disabled:bg-gray-100 disabled:text-gray-500"
                         placeholder="0"
+                        disabled={
+                          paymentMethod === "foc" ||
+                          partialPayments.some((p) => p.method === "foc")
+                        }
                       />
                       <span className="text-gray-600 text-sm">MMK</span>
                     </div>
@@ -1784,6 +1870,7 @@ function Receipt({ onClose }) {
                       <option value="cash">Cash</option>
                       <option value="kpay">KPay</option>
                       <option value="wavepay">WavePay</option>
+                      <option value="foc">FOC (Free of Charge)</option>
                     </select>
                   </div>
                 ) : (
@@ -1838,6 +1925,7 @@ function Receipt({ onClose }) {
                             <option value="cash">Cash</option>
                             <option value="kpay">KPay</option>
                             <option value="wavepay">WavePay</option>
+                            <option value="foc">FOC (Free of Charge)</option>
                           </select>
                           <input
                             type="number"
@@ -1850,9 +1938,10 @@ function Receipt({ onClose }) {
                               )
                             }
                             placeholder="Amount"
-                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary"
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-primary disabled:bg-gray-100 disabled:text-gray-500"
                             min="0"
                             step="0.01"
+                            disabled={payment.method === "foc"}
                           />
                           <button
                             onClick={() => removePartialPayment(index)}
