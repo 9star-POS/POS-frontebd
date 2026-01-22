@@ -899,7 +899,6 @@ function Receipt({ onClose }) {
 
         setRemoteOrder(res?.data || null);
         setOrderId(null);
-        window.location.href = "/ktv";
         if (roomServiceId) {
           try {
             await updateRoomStatus(roomServiceId, "inactive");
@@ -912,6 +911,7 @@ function Receipt({ onClose }) {
         }
 
         if (onClose) onClose();
+        navigate("/ktv");
       } else {
         toast.error(res?.message || "Failed to complete checkout");
       }

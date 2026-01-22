@@ -656,7 +656,6 @@ function Receipt({ onClose }) {
 
         setRemoteOrder(res?.data || null);
         setOrderId(null);
-        window.location.href = "/";
         if (tableServiceId) {
           try {
             await updateTableStatus({
@@ -672,6 +671,7 @@ function Receipt({ onClose }) {
         }
 
         if (onClose) onClose();
+        navigate("/");
       }
     } catch (_) {
       // API layer toasts errors
