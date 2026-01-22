@@ -19,7 +19,7 @@ const BarPage = () => {
   const audioRef = useRef(null);
 
   // Custom notification sound file path (same as NotificationContext)
-  const customSoundPath = "/soung.wav";
+  const customSoundPath = "/bar.wav";
 
   // Initialize audio element for custom sound
   useEffect(() => {
@@ -86,7 +86,7 @@ const BarPage = () => {
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
       gainNode.gain.linearRampToValueAtTime(
         0.3,
-        audioContext.currentTime + 0.1
+        audioContext.currentTime + 0.1,
       );
       gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
 
@@ -117,14 +117,14 @@ const BarPage = () => {
       requiresPreparation: item.requiresPreparation,
       // Additional display fields
       orderDisplay: `${item.orderType.toUpperCase()} #${item.orderId.slice(
-        -6
+        -6,
       )}`,
       statusColor:
         item.kitchenStatus === "pending"
           ? "orange"
           : item.kitchenStatus === "ready"
-          ? "green"
-          : "gray",
+            ? "green"
+            : "gray",
     }));
   };
 
@@ -151,13 +151,13 @@ const BarPage = () => {
         item.orderId,
         item.orderType,
         item.orderItemId,
-        newStatus
+        newStatus,
       );
 
       if (response?.success) {
         // Update local state immediately for better UX
         const updatedAllOrders = allOrders.map((order) =>
-          order.id === item.id ? { ...order, kitchenStatus: newStatus } : order
+          order.id === item.id ? { ...order, kitchenStatus: newStatus } : order,
         );
         setAllOrders(updatedAllOrders);
 
@@ -172,8 +172,8 @@ const BarPage = () => {
               item.orderType === "restaurant" && item.tableNumber
                 ? `Table ${item.tableNumber}`
                 : item.orderType === "ktv" && item.roomNumber
-                ? `Room ${item.roomNumber}`
-                : item.orderDisplay;
+                  ? `Room ${item.roomNumber}`
+                  : item.orderDisplay;
 
             const message = `${tableOrRoomInfo} - ${item.quantity}x ${item.stockName} is ready to serve`;
 
@@ -196,19 +196,18 @@ const BarPage = () => {
             };
 
             // Send notification
-            const notificationResponse = await createNotification(
-              notificationData
-            );
+            const notificationResponse =
+              await createNotification(notificationData);
 
             if (notificationResponse?.success) {
               console.log(
                 "Notification sent successfully:",
-                notificationResponse
+                notificationResponse,
               );
             } else {
               console.error(
                 "Failed to send notification:",
-                notificationResponse
+                notificationResponse,
               );
               // Don't show error to user as the main status update succeeded
             }
@@ -273,7 +272,7 @@ const BarPage = () => {
       {
         transports: ["websocket"],
         secure: true,
-      }
+      },
     );
 
     socketRef.current = socket;
@@ -495,8 +494,8 @@ const BarPage = () => {
                             updatingItems.has(item.id)
                               ? "Updating..."
                               : item.kitchenStatus === "ready"
-                              ? "Mark as pending"
-                              : "Mark as ready"
+                                ? "Mark as pending"
+                                : "Mark as ready"
                           }
                         />
                         {updatingItems.has(item.id) && (
@@ -509,8 +508,8 @@ const BarPage = () => {
                         {updatingItems.has(item.id)
                           ? "Updating..."
                           : item.kitchenStatus === "ready"
-                          ? "Ready"
-                          : "Prepare"}
+                            ? "Ready"
+                            : "Prepare"}
                       </span>
                     </div>
                   )}
@@ -535,8 +534,8 @@ const BarPage = () => {
                             item.kitchenStatus === "pending"
                               ? "bg-orange-100 text-orange-800"
                               : item.kitchenStatus === "ready"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {item.kitchenStatus.toUpperCase()}
