@@ -965,19 +965,6 @@ function Receipt({ onClose }) {
         <div className="flex justify-between w-full items-center mb-5">
           <p className="sub-header font-bold">Receipt</p>
           <div className="flex items-center gap-3">
-            {/* <select
-              value={paperSize}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPaperSize(val);
-                localStorage.setItem("receipt-paper-size", val);
-              }}
-              className="border border-primary/40 text-primary bg-white rounded-md px-2 py-1 text-sm"
-            >
-              <option value="57mm">57mm Thermal</option>
-              <option value="58mm">58mm Thermal</option>
-              <option value="80mm">80mm Thermal</option>
-            </select> */}
             <button
               className="lg:hidden bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
               onClick={onClose}
@@ -1373,6 +1360,7 @@ function Receipt({ onClose }) {
                       <option value="kpay">KPay</option>
                       <option value="wavepay">WavePay</option>
                       <option value="foc">FOC (Free of Charge)</option>
+                      <option value="debt">Debt</option>
                     </select>
                   </div>
                 ) : (
@@ -1428,6 +1416,7 @@ function Receipt({ onClose }) {
                             <option value="kpay">KPay</option>
                             <option value="wavepay">WavePay</option>
                             <option value="foc">FOC (Free of Charge)</option>
+                            <option value="debt">Debt</option>
                           </select>
                           <input
                             type="number"

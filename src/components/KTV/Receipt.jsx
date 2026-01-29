@@ -1871,6 +1871,7 @@ function Receipt({ onClose }) {
                       <option value="kpay">KPay</option>
                       <option value="wavepay">WavePay</option>
                       <option value="foc">FOC (Free of Charge)</option>
+                      <option value="debt">Debt</option>
                     </select>
                   </div>
                 ) : (
@@ -1926,6 +1927,7 @@ function Receipt({ onClose }) {
                             <option value="kpay">KPay</option>
                             <option value="wavepay">WavePay</option>
                             <option value="foc">FOC (Free of Charge)</option>
+                            <option value="debt">Debt</option>
                           </select>
                           <input
                             type="number"
