@@ -254,7 +254,91 @@ const SalesReportPage = () => {
       filtered = filtered.filter((item) => item.category === "drink");
     }
 
-    return filtered;
+    // Group items by stockName and sum remaining stock
+    const groupedItems = filtered.reduce((acc, item) => {
+      const existingItem = acc.find(
+        (grouped) => grouped.stockName === item.stockName,
+      );
+
+      if (existingItem) {
+        // Sum remaining stock for identical items
+        if (item.hasStockInfo && item.remainingStock !== null) {
+          existingItem.remainingStock =
+            (existingItem.remainingStock || 0) + item.remainingStock;
+          existingItem.hasStockInfo = true;
+        }
+        // Sum other relevant fields
+        existingItem.totalQuantity =
+          (existingItem.totalQuantity || 0) + (item.totalQuantity || 0);
+        existingItem.restaurantQuantity =
+          (existingItem.restaurantQuantity || 0) +
+          (item.restaurantQuantity || 0);
+        existingItem.ktvQuantity =
+          (existingItem.ktvQuantity || 0) + (item.ktvQuantity || 0);
+        existingItem.orderCount =
+          (existingItem.orderCount || 0) + (item.orderCount || 0);
+
+        // Use totalRevenue from API and calculate split if needed
+        existingItem.totalRevenue =
+          (existingItem.totalRevenue || 0) + (item.totalRevenue || 0);
+
+        // Calculate restaurant and KTV revenue split based on quantities
+        const totalQty =
+          (item.restaurantQuantity || 0) + (item.ktvQuantity || 0);
+        if (totalQty > 0 && item.totalRevenue > 0) {
+          const itemRestaurantRevenue = Math.round(
+            ((item.restaurantQuantity || 0) / totalQty) * item.totalRevenue,
+          );
+          const itemKtvRevenue = Math.round(
+            ((item.ktvQuantity || 0) / totalQty) * item.totalRevenue,
+          );
+
+          existingItem.restaurantRevenue =
+            (existingItem.restaurantRevenue || 0) + itemRestaurantRevenue;
+          existingItem.ktvRevenue =
+            (existingItem.ktvRevenue || 0) + itemKtvRevenue;
+        } else {
+          existingItem.restaurantRevenue =
+            (existingItem.restaurantRevenue || 0) +
+            (item.restaurantRevenue || 0);
+          existingItem.ktvRevenue =
+            (existingItem.ktvRevenue || 0) + (item.ktvRevenue || 0);
+        }
+      } else {
+        // Add new item to the group
+        const totalQty =
+          (item.restaurantQuantity || 0) + (item.ktvQuantity || 0);
+        let restaurantRevenue = 0;
+        let ktvRevenue = 0;
+
+        // Calculate revenue split based on quantities
+        if (totalQty > 0 && item.totalRevenue > 0) {
+          restaurantRevenue = Math.round(
+            ((item.restaurantQuantity || 0) / totalQty) * item.totalRevenue,
+          );
+          ktvRevenue = Math.round(
+            ((item.ktvQuantity || 0) / totalQty) * item.totalRevenue,
+          );
+        } else {
+          restaurantRevenue = item.restaurantRevenue || 0;
+          ktvRevenue = item.ktvRevenue || 0;
+        }
+
+        acc.push({
+          ...item,
+          remainingStock:
+            item.hasStockInfo && item.remainingStock !== null
+              ? item.remainingStock
+              : null,
+          restaurantRevenue,
+          ktvRevenue,
+        });
+      }
+
+      return acc;
+    }, []);
+
+    return groupedItems;
   }, [analyticsFilter, categoryFilter, analyticsItems]);
 
   const filteredSummary = useMemo(() => {
@@ -478,35 +562,6 @@ const SalesReportPage = () => {
               }
             </PDFDownloadLink>
           )}
-          {/* <button
-            onClick={generateReport}
-            className="bg-primary text-white px-4 md:px-8 py-2 rounded-lg hover:opacity-90 transition-colors font-semibold text-sm md:text-base"
-            disabled={
-              activeTab === "sales"
-                ? loading
-                : activeTab === "analytics"
-                  ? analyticsLoading
-                  : activeTab === "paymentMethod"
-                    ? paymentMethodLoading
-                    : vocalistLoading
-            }
-          >
-            {activeTab === "sales"
-              ? loading
-                ? "Loading..."
-                : "Generate Report"
-              : activeTab === "analytics"
-                ? analyticsLoading
-                  ? "Loading..."
-                  : "Generate Report"
-                : activeTab === "paymentMethod"
-                  ? paymentMethodLoading
-                    ? "Loading..."
-                    : "Generate Report"
-                  : vocalistLoading
-                    ? "Loading..."
-                    : "Generate Report"}
-          </button> */}
         </div>
       </div>
 
@@ -553,27 +608,6 @@ const SalesReportPage = () => {
           Vocalist Report
         </button>
       </div>
-
-      {/* Date Range Display */}
-      {/* {(activeTab === "sales" ? reportData : analyticsData) && (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-4">
-          <h2 className="text-lg font-semibold mb-2">Date Range</h2>
-          <p>
-            From:{" "}
-            <span className="font-medium">
-              {activeTab === "sales"
-                ? reportData?.dateRange.startDate
-                : analyticsData?.dateRange.startDate}
-            </span>{" "}
-            To:{" "}
-            <span className="font-medium">
-              {activeTab === "sales"
-                ? reportData?.dateRange.endDate
-                : analyticsData?.dateRange.endDate}
-            </span>
-          </p>
-        </div>
-      )} */}
 
       {/* Sales Report Tab Content */}
       {activeTab === "sales" && (
@@ -667,7 +701,7 @@ const SalesReportPage = () => {
                         >
                           Item Name
                         </th>
-                        <th
+                        {/* <th
                           scope="col"
                           className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                           onClick={() => requestSort("totalQuantity")}
@@ -676,23 +710,21 @@ const SalesReportPage = () => {
                             Quantity
                             <ArrowUpDown size={14} className="ml-1" />
                           </div>
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                          onClick={() => requestSort("totalRevenue")}
-                        >
-                          <div className="flex items-center">
-                            Revenue
-                            <ArrowUpDown size={14} className="ml-1" />
-                          </div>
-                        </th>
+                        </th> */}
                         {analyticsFilter !== "ktv" && (
                           <th
                             scope="col"
                             className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                           >
                             Restaurant
+                          </th>
+                        )}
+                        {analyticsFilter !== "ktv" && (
+                          <th
+                            scope="col"
+                            className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Restaurant Sale
                           </th>
                         )}
                         {analyticsFilter !== "restaurant" && (
@@ -703,6 +735,24 @@ const SalesReportPage = () => {
                             KTV
                           </th>
                         )}
+                        {analyticsFilter !== "restaurant" && (
+                          <th
+                            scope="col"
+                            className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            KTV Sale
+                          </th>
+                        )}
+                        <th
+                          scope="col"
+                          className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                          onClick={() => requestSort("totalRevenue")}
+                        >
+                          <div className="flex items-center">
+                            Total Sale
+                            <ArrowUpDown size={14} className="ml-1" />
+                          </div>
+                        </th>
                         <th
                           scope="col"
                           className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -729,21 +779,25 @@ const SalesReportPage = () => {
                               {item.stockName}
                             </div>
                           </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {item.totalQuantity}
-                            </div>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-primary">
-                              {Number(item.totalRevenue || 0).toLocaleString()}{" "}
-                              MMK
-                            </div>
-                          </td>
+                          {/* <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {item.totalQuantity}
+                              </div>
+                            </td> */}
                           {analyticsFilter !== "ktv" && (
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
                                 {item.restaurantQuantity}
+                              </div>
+                            </td>
+                          )}
+                          {analyticsFilter !== "ktv" && (
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold text-blue-600">
+                                {Number(
+                                  item.restaurantRevenue || 0,
+                                ).toLocaleString()}{" "}
+                                MMK
                               </div>
                             </td>
                           )}
@@ -754,6 +808,20 @@ const SalesReportPage = () => {
                               </div>
                             </td>
                           )}
+                          {analyticsFilter !== "restaurant" && (
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-semibold text-purple-600">
+                                {Number(item.ktvRevenue || 0).toLocaleString()}{" "}
+                                MMK
+                              </div>
+                            </td>
+                          )}
+                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-bold text-primary">
+                              {Number(item.totalRevenue || 0).toLocaleString()}{" "}
+                              MMK
+                            </div>
+                          </td>
                           <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
                               {item.orderCount}
@@ -784,6 +852,9 @@ const SalesReportPage = () => {
                           {item.stockName}
                         </h3>
                         <div className="text-right">
+                          <p className="text-xs text-gray-500 mb-1">
+                            Total Sale
+                          </p>
                           <p className="text-lg font-bold text-primary">
                             {Number(item.totalRevenue || 0).toLocaleString()}{" "}
                             MMK
@@ -804,20 +875,42 @@ const SalesReportPage = () => {
                           </p>
                         </div>
                         {analyticsFilter !== "ktv" && (
-                          <div>
-                            <p className="text-gray-500 mb-1">Restaurant</p>
-                            <p className="font-semibold text-gray-900">
-                              {item.restaurantQuantity}
-                            </p>
-                          </div>
+                          <>
+                            <div>
+                              <p className="text-gray-500 mb-1">Restaurant</p>
+                              <p className="font-semibold text-gray-900">
+                                {item.restaurantQuantity}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 mb-1">
+                                Restaurant Revenue
+                              </p>
+                              <p className="font-semibold text-blue-600">
+                                {Number(
+                                  item.restaurantRevenue || 0,
+                                ).toLocaleString()}{" "}
+                                MMK
+                              </p>
+                            </div>
+                          </>
                         )}
                         {analyticsFilter !== "restaurant" && (
-                          <div>
-                            <p className="text-gray-500 mb-1">KTV</p>
-                            <p className="font-semibold text-gray-900">
-                              {item.ktvQuantity}
-                            </p>
-                          </div>
+                          <>
+                            <div>
+                              <p className="text-gray-500 mb-1">KTV</p>
+                              <p className="font-semibold text-gray-900">
+                                {item.ktvQuantity}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 mb-1">KTV Revenue</p>
+                              <p className="font-semibold text-purple-600">
+                                {Number(item.ktvRevenue || 0).toLocaleString()}{" "}
+                                MMK
+                              </p>
+                            </div>
+                          </>
                         )}
                         <div>
                           <p className="text-gray-500 mb-1">Remaining Stock</p>
