@@ -388,7 +388,7 @@ const DebtPage = () => {
     // Save to sessionStorage (clears when browser closes)
     sessionStorage.setItem(
       "debtTrackerDateRange",
-      JSON.stringify(resetFilters)
+      JSON.stringify(resetFilters),
     );
     fetchDebts(resetFilters);
   };
@@ -743,24 +743,24 @@ const DebtPage = () => {
                     statusFilter === "all"
                       ? "No Debts"
                       : statusFilter === "paid"
-                      ? "No Paid Debts"
-                      : "No Unpaid Debts"
+                        ? "No Paid Debts"
+                        : "No Unpaid Debts"
                   }
                   subHeader={
                     statusFilter === "all"
                       ? "No debt records found"
                       : statusFilter === "paid"
-                      ? "No paid debt records found"
-                      : "No unpaid debt records found"
+                        ? "No paid debt records found"
+                        : "No unpaid debt records found"
                   }
                 />
               </div>
             ) : (
               <>
                 {/* Desktop Table View */}
-                <div className="hidden md:block shadow-lg h-[calc(100vh-470px)] overflow-y-auto border border-gray-200">
+                <div className="hidden md:block shadow-lg h-[calc(100vh-470px)] overflow-y-auto border border-gray-200 overflow-x-auto w-[calc(100vw-50px)]">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-primary sticky top-0">
+                    <thead className="bg-primary sticky top-0 ">
                       <tr className="font-bold text-md md:text-lg">
                         <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
                           No
@@ -774,7 +774,7 @@ const DebtPage = () => {
                         <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
                           Status
                         </th>
-                        <th className="hidden lg:block px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
+                        <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
                           Table/Room
                         </th>
                         <th className="px-4 lg:px-6 py-4 text-left text-md font-semibold text-white tracking-wider">
