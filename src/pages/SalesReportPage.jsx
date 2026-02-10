@@ -6,6 +6,7 @@ import getSaleReport from "../api/report/getSaleReport";
 import getStockAnalytics from "../api/report/getStockAnalytics";
 import getPaymentMethodReport from "../api/report/getPaymentMethodReport";
 import getVocalistReport from "../api/report/getVocalistReport";
+import getSelectedStockData from "../api/report/getSelectedStockData";
 import { ArrowUpDown } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SalesSummaryPDF from "../components/Home/pdf/SalesSummaryPDF";
@@ -20,9 +21,11 @@ const SalesReportPage = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [paymentMethodData, setPaymentMethodData] = useState(null);
   const [vocalistData, setVocalistData] = useState(null);
+  const [stockData, setStockData] = useState(null);
   const [activeTab, setActiveTab] = useState("sales"); // "sales", "analytics", "paymentMethod", or "vocalist"
   const [analyticsFilter, setAnalyticsFilter] = useState("all"); // all, restaurant, ktv
   const [categoryFilter, setCategoryFilter] = useState("all"); // all, food, drink
+  const [stockViewFilter, setStockViewFilter] = useState("sold"); // sold, all
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all"); // all, restaurant, ktv
   const [sortConfig, setSortConfig] = useState({
     key: "totalQuantity",
@@ -74,15 +77,6 @@ const SalesReportPage = () => {
       endDate: format(dates.endDate, "yyyy-MM-dd"),
     };
     sessionStorage.setItem("salesReportDateRange", JSON.stringify(dateRange));
-  };
-
-  const formatDisplayDate = (date) => {
-    if (!date) return "";
-    try {
-      return format(new Date(date), "yyyy MMM dd");
-    } catch {
-      return String(date);
-    }
   };
 
   const formatFileDate = (date) => {
@@ -211,6 +205,19 @@ const SalesReportPage = () => {
     }
   };
 
+  const fetchStockData = async () => {
+    try {
+      const response = await getSelectedStockData();
+      if (response?.success) {
+        setStockData(response.data);
+      } else {
+        console.error("Failed to fetch stock data");
+      }
+    } catch (error) {
+      console.error("Error fetching stock data:", error);
+    }
+  };
+
   const generateReport = () => {
     if (activeTab === "sales") {
       fetchReport();
@@ -229,9 +236,165 @@ const SalesReportPage = () => {
     }
   }, [activeTab, startDate, endDate]);
 
+  useEffect(() => {
+    fetchStockData();
+  }, []);
+
   const analyticsItems = analyticsData?.analytics || [];
 
+  // Helper function to get remaining stock quantity from stock data
+  const getRemainingStockQuantity = (stockName, itemType, type) => {
+    if (!stockData || !stockData.length) return null;
+
+    const stockItem = stockData.find(
+      (item) =>
+        item.name === stockName &&
+        item.category === itemType &&
+        item.type === type,
+    );
+
+    return stockItem ? stockItem.quantity : null;
+  };
+
+  // Function to generate all stock items view with sales data
+  const getAllStockItemsView = () => {
+    if (!stockData || !stockData.length) return [];
+
+    // Group stock items by name and category
+    const groupedStockItems = stockData.reduce((acc, stockItem) => {
+      const key = `${stockItem.name}-${stockItem.category}`;
+      const existing = acc.find((item) => item.key === key);
+
+      if (existing) {
+        existing.items.push(stockItem);
+      } else {
+        acc.push({
+          key,
+          stockName: stockItem.name,
+          category: stockItem.category,
+          items: [stockItem],
+        });
+      }
+      return acc;
+    }, []);
+
+    // Create a map of analytics data for quick lookup
+    const analyticsMap = {};
+    if (analyticsItems.length > 0) {
+      // Group analytics items by stockName and category
+      analyticsItems.forEach((item) => {
+        const key = `${item.stockName}-${item.category}`;
+        if (!analyticsMap[key]) {
+          analyticsMap[key] = {
+            totalQuantity: 0,
+            restaurantQuantity: 0,
+            ktvQuantity: 0,
+            totalRevenue: 0,
+            restaurantRevenue: 0,
+            ktvRevenue: 0,
+            orderCount: 0,
+          };
+        }
+
+        const analytics = analyticsMap[key];
+        analytics.totalQuantity += item.totalQuantity || 0;
+        analytics.restaurantQuantity += item.restaurantQuantity || 0;
+        analytics.ktvQuantity += item.ktvQuantity || 0;
+        analytics.totalRevenue += item.totalRevenue || 0;
+        analytics.orderCount += item.orderCount || 0;
+        // Note: We'll calculate restaurantRevenue and ktvRevenue below based on quantity split
+      });
+
+      // Calculate revenue split for each item based on quantities
+      Object.keys(analyticsMap).forEach((key) => {
+        const analytics = analyticsMap[key];
+        const totalQty =
+          (analytics.restaurantQuantity || 0) + (analytics.ktvQuantity || 0);
+
+        if (totalQty > 0 && analytics.totalRevenue > 0) {
+          analytics.restaurantRevenue = Math.round(
+            ((analytics.restaurantQuantity || 0) / totalQty) *
+              analytics.totalRevenue,
+          );
+          analytics.ktvRevenue = Math.round(
+            ((analytics.ktvQuantity || 0) / totalQty) * analytics.totalRevenue,
+          );
+        } else {
+          // If no quantity split, use existing values or default to 0
+          analytics.restaurantRevenue = analytics.restaurantRevenue || 0;
+          analytics.ktvRevenue = analytics.ktvRevenue || 0;
+        }
+      });
+    }
+
+    // Convert to analytics format and merge with sales data
+    return groupedStockItems.map((group) => {
+      const restaurantItem = group.items.find(
+        (item) => item.type === "restaurant",
+      );
+      const ktvItem = group.items.find((item) => item.type === "ktv");
+
+      const restaurantStock = restaurantItem ? restaurantItem.quantity : null;
+      const ktvStock = ktvItem ? ktvItem.quantity : null;
+
+      let totalRemainingStock = 0;
+      let hasStockInfo = false;
+
+      if (restaurantStock !== null) {
+        totalRemainingStock += restaurantStock;
+        hasStockInfo = true;
+      }
+      if (ktvStock !== null) {
+        totalRemainingStock += ktvStock;
+        hasStockInfo = true;
+      }
+
+      // Get sales data from analytics if available
+      const key = `${group.stockName}-${group.category}`;
+      const salesData = analyticsMap[key] || {
+        totalQuantity: 0,
+        restaurantQuantity: 0,
+        ktvQuantity: 0,
+        totalRevenue: 0,
+        restaurantRevenue: 0,
+        ktvRevenue: 0,
+        orderCount: 0,
+      };
+
+      return {
+        stockId: group.key,
+        stockName: group.stockName,
+        category: group.category,
+        ...salesData, // Include all sales data
+        remainingStock: hasStockInfo ? totalRemainingStock : null,
+        hasStockInfo,
+        // Add stock details for reference
+        restaurantStock,
+        ktvStock,
+      };
+    });
+  };
+
   const filteredAnalyticsItems = useMemo(() => {
+    // If showing all stock items, use the all stock view
+    if (stockViewFilter === "all") {
+      let allStockItems = getAllStockItemsView();
+
+      // Apply category filter (food/drink)
+      if (categoryFilter === "food") {
+        allStockItems = allStockItems.filter(
+          (item) => item.category === "food",
+        );
+      } else if (categoryFilter === "drink") {
+        allStockItems = allStockItems.filter(
+          (item) => item.category === "drink",
+        );
+      }
+
+      return allStockItems;
+    }
+
+    // Original logic for sold items only
     if (!analyticsItems.length) return [];
 
     let filtered = analyticsItems;
@@ -261,12 +424,34 @@ const SalesReportPage = () => {
       );
 
       if (existingItem) {
-        // Sum remaining stock for identical items
-        if (item.hasStockInfo && item.remainingStock !== null) {
-          existingItem.remainingStock =
-            (existingItem.remainingStock || 0) + item.remainingStock;
-          existingItem.hasStockInfo = true;
+        // Get remaining stock from new API data
+        const restaurantStock = getRemainingStockQuantity(
+          item.stockName,
+          item.category,
+          "restaurant",
+        );
+        const ktvStock = getRemainingStockQuantity(
+          item.stockName,
+          item.category,
+          "ktv",
+        );
+
+        // Calculate total remaining stock
+        let totalRemainingStock = 0;
+        let hasStockInfo = false;
+
+        if (restaurantStock !== null) {
+          totalRemainingStock += restaurantStock;
+          hasStockInfo = true;
         }
+        if (ktvStock !== null) {
+          totalRemainingStock += ktvStock;
+          hasStockInfo = true;
+        }
+
+        existingItem.remainingStock = hasStockInfo ? totalRemainingStock : null;
+        existingItem.hasStockInfo = hasStockInfo;
+
         // Sum other relevant fields
         existingItem.totalQuantity =
           (existingItem.totalQuantity || 0) + (item.totalQuantity || 0);
@@ -305,6 +490,31 @@ const SalesReportPage = () => {
             (existingItem.ktvRevenue || 0) + (item.ktvRevenue || 0);
         }
       } else {
+        // Get remaining stock from new API data
+        const restaurantStock = getRemainingStockQuantity(
+          item.stockName,
+          item.category,
+          "restaurant",
+        );
+        const ktvStock = getRemainingStockQuantity(
+          item.stockName,
+          item.category,
+          "ktv",
+        );
+
+        // Calculate total remaining stock
+        let totalRemainingStock = 0;
+        let hasStockInfo = false;
+
+        if (restaurantStock !== null) {
+          totalRemainingStock += restaurantStock;
+          hasStockInfo = true;
+        }
+        if (ktvStock !== null) {
+          totalRemainingStock += ktvStock;
+          hasStockInfo = true;
+        }
+
         // Add new item to the group
         const totalQty =
           (item.restaurantQuantity || 0) + (item.ktvQuantity || 0);
@@ -326,10 +536,8 @@ const SalesReportPage = () => {
 
         acc.push({
           ...item,
-          remainingStock:
-            item.hasStockInfo && item.remainingStock !== null
-              ? item.remainingStock
-              : null,
+          remainingStock: hasStockInfo ? totalRemainingStock : null,
+          hasStockInfo,
           restaurantRevenue,
           ktvRevenue,
         });
@@ -339,7 +547,13 @@ const SalesReportPage = () => {
     }, []);
 
     return groupedItems;
-  }, [analyticsFilter, categoryFilter, analyticsItems]);
+  }, [
+    analyticsFilter,
+    categoryFilter,
+    analyticsItems,
+    stockData,
+    stockViewFilter,
+  ]);
 
   const filteredSummary = useMemo(() => {
     if (!analyticsData) {
@@ -666,24 +880,45 @@ const SalesReportPage = () => {
                   ))}
                 </div>
 
-                <div className="inline-flex rounded-full bg-gray-100 p-1 mb-4">
-                  {[
-                    { key: "all", label: "All" },
-                    { key: "food", label: "Kitchen" },
-                    { key: "drink", label: "Bar" },
-                  ].map((option) => (
-                    <button
-                      key={option.key}
-                      onClick={() => setCategoryFilter(option.key)}
-                      className={`px-4 py-2 rounded-full font-semibold transition-all text-sm md:text-base ${
-                        categoryFilter === option.key
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-gray-600 hover:text-gray-800"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <div className="flex gap-2 md:gap-3 mb-4">
+                  <div className="inline-flex rounded-full bg-gray-100 p-1">
+                    {[
+                      { key: "all", label: "All" },
+                      { key: "food", label: "Kitchen" },
+                      { key: "drink", label: "Bar" },
+                    ].map((option) => (
+                      <button
+                        key={option.key}
+                        onClick={() => setCategoryFilter(option.key)}
+                        className={`px-4 py-2 rounded-full font-semibold transition-all text-sm md:text-base ${
+                          categoryFilter === option.key
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-gray-600 hover:text-gray-800"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="inline-flex rounded-full bg-gray-100 p-1">
+                    {[
+                      { key: "sold", label: "Sold Items" },
+                      { key: "all", label: "All Stock" },
+                    ].map((option) => (
+                      <button
+                        key={option.key}
+                        onClick={() => setStockViewFilter(option.key)}
+                        className={`px-4 py-2 rounded-full font-semibold transition-all text-sm md:text-base ${
+                          stockViewFilter === option.key
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-gray-600 hover:text-gray-800"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
