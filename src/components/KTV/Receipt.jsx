@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Plus, Minus, Trash2, X, Printer } from "lucide-react";
 import {
@@ -218,7 +218,7 @@ function Receipt({ onClose }) {
         status: "pending",
         roomNumber: selectedRoom,
       });
-      console.log(res);
+
       if (res?.success && Array.isArray(res.data)) {
         // Filter out deleted orders (API should handle status and roomNumber)
         const forTable = res.data.filter((o) => o?.isDeleted === false);
@@ -1276,7 +1276,7 @@ function Receipt({ onClose }) {
             >
               Save
             </button>
-            {hasLocalItems && (
+            {hasLocalItems && userRole !== "ktv-waiter" && (
               <button
                 onClick={() => setIsSplitOpen(true)}
                 className="bg-white text-primary py-2 px-6 border border-primary rounded-full hover:bg-primary hover:text-white transition-colors"
@@ -1382,9 +1382,12 @@ function Receipt({ onClose }) {
                         );
                       })()}
                     </div>
-                    <p className="font-medium min-w-[100px] text-right">
-                      {(item.price * (item.quantity || 1)).toLocaleString()} MMK
-                    </p>
+                    {userRole !== "ktv-waiter" && (
+                      <p className="font-medium min-w-[100px] text-right">
+                        {(item.price * (item.quantity || 1)).toLocaleString()}{" "}
+                        MMK
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1541,12 +1544,14 @@ function Receipt({ onClose }) {
 
             <div className="sticky bottom-[-150px] lg:bottom-[0] pb-2 bg-white border-t pt-3">
               <div className="space-y-3 mb-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-gray-600">Subtotal</p>
-                  <p className="font-medium">
-                    {calculateSubtotal().toLocaleString()} MMK
-                  </p>
-                </div>
+                {userRole !== "ktv-waiter" && (
+                  <div className="flex justify-between items-center">
+                    <p className="text-gray-600">Subtotal</p>
+                    <p className="font-medium">
+                      {calculateSubtotal().toLocaleString()} MMK
+                    </p>
+                  </div>
+                )}
 
                 {remoteOrder && typeof remoteOrder.discount === "number" && (
                   <div className="flex justify-between items-center">
@@ -1691,20 +1696,22 @@ function Receipt({ onClose }) {
                         )}
                       </button>
                     )}
-                    <button
-                      onClick={handlePrintPreview}
-                      disabled={
-                        !selectedRoom ||
-                        (!hasLocalItems &&
-                          !hasLocalRoomService &&
-                          !hasLocalVocalists)
-                      }
-                      className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Print preview without checkout"
-                    >
-                      <Printer size={18} />
-                      Print Preview
-                    </button>
+                    {userRole !== "ktv-waiter" && (
+                      <button
+                        onClick={handlePrintPreview}
+                        disabled={
+                          !selectedRoom ||
+                          (!hasLocalItems &&
+                            !hasLocalRoomService &&
+                            !hasLocalVocalists)
+                        }
+                        className="flex-1 bg-white text-primary font-semibold py-4 rounded-full border border-primary hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Print preview without checkout"
+                      >
+                        <Printer size={18} />
+                        Print Preview
+                      </button>
+                    )}
                   </div>
 
                   {orderId && userRole !== "ktv-waiter" && (
