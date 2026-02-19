@@ -1361,15 +1361,14 @@ function Receipt({ onClose }) {
                         const hasLocalQuantity = localQty > 0;
                         return (
                           <>
-                            {hasLocalQuantity &&
-                              userRole !=="ktv-waiter" && (
-                                  <button
-                                    onClick={() => handleDecrement(item.name)}
-                                    className="p-1 rounded-md hover:bg-gray-100 text-primary"
-                                  >
-                                    <Minus size={16} />
-                                  </button>,
-                                )}
+                            {hasLocalQuantity && userRole !== "ktv-waiter" && (
+                              <button
+                                onClick={() => handleDecrement(item.name)}
+                                className="p-1 rounded-md hover:bg-gray-100 text-primary"
+                              >
+                                <Minus size={16} />
+                              </button>
+                            )}
                             <span className="font-medium min-w-[24px] text-center">
                               {item.quantity || 1}
                             </span>
