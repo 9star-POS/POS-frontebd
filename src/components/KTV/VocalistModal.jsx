@@ -18,13 +18,13 @@ const VocalistModal = ({ isOpen, onClose }) => {
   const selectedRoom = useSelector((state) => state.ktvReceipts.selectedRoom);
   // console.log(selectedRoom);
   const orderIdFromRedux = useSelector(
-    (state) => state.ktvReceipts.orderIds?.[selectedRoom] || null
+    (state) => state.ktvReceipts.orderIds?.[selectedRoom] || null,
   );
   const [orderId, setOrderId] = useState(orderIdFromRedux);
 
   // console.log(orderId);
   const existingVocalists = useSelector(
-    (state) => state.ktvReceipts.receipts[selectedRoom]?.vocalists || []
+    (state) => state.ktvReceipts.receipts[selectedRoom]?.vocalists || [],
   );
   const [vocalists, setVocalists] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,30 +53,17 @@ const VocalistModal = ({ isOpen, onClose }) => {
     if (!selectedRoom) return;
 
     try {
-      const res = await getKtvOrders();
-      if (res?.success && Array.isArray(res.data)) {
-        // Find active order for this room
-        const forRoom = res.data.filter(
-          (o) =>
-            String(o.roomService?.roomNumber) === String(selectedRoom) &&
-            o?.isDeleted === false &&
-            (o.status === "pending" ||
-              o.status === "ongoing" ||
-              o.status === "in_progress")
-        );
-        // Pick the latest active order by createdAt
-        const pickLatest = (list) =>
-          list
-            .slice()
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ||
-          null;
-        const chosen = pickLatest(forRoom);
+      const res = await getKtvOrders({
+        status: "pending",
+        roomNumber: selectedRoom,
+      });
+      if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+        const chosen = res.data[0];
         if (chosen?._id) {
           const foundOrderId = chosen._id;
           setOrderId(foundOrderId);
-          // Also update Redux state
           dispatch(
-            setOrderIdForRoom({ room: selectedRoom, orderId: foundOrderId })
+            setOrderIdForRoom({ room: selectedRoom, orderId: foundOrderId }),
           );
         }
       }
@@ -90,7 +77,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
     const res = await getAllVocalists();
     if (res?.success && Array.isArray(res.data)) {
       const activeVocalists = res.data.filter(
-        (v) => v.status === "active" && !v.isDeleted
+        (v) => v.status === "active" && !v.isDeleted,
       );
       setVocalists(activeVocalists);
     } else {
@@ -108,7 +95,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
     const isSelected = selectedVocalists.find((v) => v._id === vocalist._id);
     if (isSelected) {
       setSelectedVocalists(
-        selectedVocalists.filter((v) => v._id !== vocalist._id)
+        selectedVocalists.filter((v) => v._id !== vocalist._id),
       );
     } else {
       setSelectedVocalists([...selectedVocalists, vocalist]);
@@ -174,7 +161,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
             setVocalistsForRoom({
               room: selectedRoom,
               vocalists: res.data.vocalist,
-            })
+            }),
           );
         } else {
           // Fallback: manually add to local state
@@ -188,7 +175,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
                   hourlyRate: v.hourlyRate,
                   serviceTime: 0,
                 },
-              })
+              }),
             );
           });
         }
@@ -208,7 +195,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
               hourlyRate: v.hourlyRate,
               serviceTime: 0,
             },
-          })
+          }),
         );
       });
       toast.success(`${selectedVocalists.length} vocalist(s) added`);
@@ -259,7 +246,7 @@ const VocalistModal = ({ isOpen, onClose }) => {
                 {vocalists.map((vocalist) => {
                   const alreadyAdded = isVocalistAlreadyAdded(vocalist._id);
                   const isSelected = selectedVocalists.find(
-                    (v) => v._id === vocalist._id
+                    (v) => v._id === vocalist._id,
                   );
                   return (
                     <div
@@ -268,8 +255,8 @@ const VocalistModal = ({ isOpen, onClose }) => {
                         alreadyAdded
                           ? "bg-gray-100 border-gray-300 opacity-50 cursor-not-allowed"
                           : isSelected
-                          ? "bg-primary/10 border-primary"
-                          : "border-gray-300 hover:border-primary"
+                            ? "bg-primary/10 border-primary"
+                            : "border-gray-300 hover:border-primary"
                       }`}
                       onClick={() => !alreadyAdded && toggleVocalist(vocalist)}
                     >
