@@ -6,6 +6,7 @@ import OrderDetail from "./pages/OrderDetail";
 import KtvOrderDetail from "./pages/KtvOrderDetail";
 import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./components/PrivateRoute";
+import OwnerRoute from "./components/OwnerRoute";
 import PageNotFound from "./components/PageNotFound";
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
@@ -176,7 +177,9 @@ export default function App() {
                         path="/sales-report"
                         element={
                           <PrivateRoute>
-                            <SalesReportPage />
+                            <OwnerRoute>
+                              <SalesReportPage />
+                            </OwnerRoute>
                           </PrivateRoute>
                         }
                       />

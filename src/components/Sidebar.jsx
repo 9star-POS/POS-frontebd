@@ -74,8 +74,10 @@ const Sidebar = ({ closeSidebar }) => {
       (item) => item.to === "/" || item.to === "/notifications"
     );
   } else if (isCashier) {
-    // Cashier - show all except Accounts
-    navItems = allNavItems.filter((item) => item.to !== "/accounts");
+    // Cashier - show all except Accounts and Sales Report
+    navItems = allNavItems.filter(
+      (item) => item.to !== "/accounts" && item.to !== "/sales-report"
+    );
   } else {
     // Other roles - show all
     navItems = allNavItems;
