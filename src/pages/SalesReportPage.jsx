@@ -7,7 +7,7 @@ import getStockAnalytics from "../api/report/getStockAnalytics";
 import getPaymentMethodReport from "../api/report/getPaymentMethodReport";
 import getVocalistReport from "../api/report/getVocalistReport";
 import getSelectedStockData from "../api/report/getSelectedStockData";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ChevronRight } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SalesSummaryPDF from "../components/Home/pdf/SalesSummaryPDF";
 import StockAnalyticsPDF from "../components/Home/pdf/StockAnalyticsPDF";
@@ -31,6 +31,19 @@ const SalesReportPage = () => {
     key: "totalQuantity",
     direction: "descending",
   });
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  const toggleGroup = (subCategory) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(subCategory)) {
+        next.delete(subCategory);
+      } else {
+        next.add(subCategory);
+      }
+      return next;
+    });
+  };
 
   // Initialize dates from sessionStorage or default to today
   // sessionStorage automatically clears when browser closes, so it resets to today
@@ -726,6 +739,58 @@ const SalesReportPage = () => {
     setSortConfig({ key, direction });
   };
 
+  const getGroupedAnalyticsItems = () => {
+    const items = filteredAnalyticsItems;
+    if (!items.length) return [];
+
+    const groups = {};
+    items.forEach((item) => {
+      const sub = item.subCategory || "Other";
+      if (!groups[sub]) groups[sub] = [];
+      groups[sub].push(item);
+    });
+
+    const result = [];
+    Object.keys(groups)
+      .sort((a, b) => {
+        if (a === "Other") return 1;
+        if (b === "Other") return -1;
+        return a.localeCompare(b);
+      })
+      .forEach((subCategory) => {
+        const groupItems = sortData(groups[subCategory]);
+        const subtotal = groupItems.reduce(
+          (acc, item) => ({
+            restaurantQuantity:
+              acc.restaurantQuantity + (item.restaurantQuantity || 0),
+            ktvQuantity: acc.ktvQuantity + (item.ktvQuantity || 0),
+            totalQuantity: acc.totalQuantity + (item.totalQuantity || 0),
+            restaurantRevenue:
+              acc.restaurantRevenue + (item.restaurantRevenue || 0),
+            ktvRevenue: acc.ktvRevenue + (item.ktvRevenue || 0),
+            totalRevenue: acc.totalRevenue + (item.totalRevenue || 0),
+            orderCount: acc.orderCount + (item.orderCount || 0),
+          }),
+          {
+            restaurantQuantity: 0,
+            ktvQuantity: 0,
+            totalQuantity: 0,
+            restaurantRevenue: 0,
+            ktvRevenue: 0,
+            totalRevenue: 0,
+            orderCount: 0,
+          },
+        );
+        result.push({ type: "group", subCategory, subtotal });
+        groupItems.forEach((item) => result.push({ type: "item", ...item }));
+      });
+
+    return result.filter((entry) => {
+      if (entry.type === "group") return true;
+      return expandedGroups.has(entry.subCategory);
+    });
+  };
+
   return (
     <div className="p-3 md:p-5 h-[calc(100vh-90px)] overflow-y-auto">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-5 gap-3">
@@ -1007,157 +1072,298 @@ const SalesReportPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {sortData(filteredAnalyticsItems).map((item) => (
-                        <tr key={item.stockId} className="hover:bg-gray-50">
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {item.stockName}
-                            </div>
-                          </td>
-                          {/* <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                {item.totalQuantity}
-                              </div>
-                            </td> */}
-                          {analyticsFilter !== "ktv" && (
-                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                {item.restaurantQuantity}
+                      {getGroupedAnalyticsItems().map((entry) =>
+                        entry.type === "group" ? (
+                          <tr
+                            key={`group-${entry.subCategory}`}
+                            className="bg-indigo-50 border-t-2 border-indigo-300 cursor-pointer select-none hover:bg-indigo-100"
+                            onClick={() => toggleGroup(entry.subCategory)}
+                          >
+                            <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <ChevronRight
+                                  size={18}
+                                  className={`text-indigo-500 transition-transform duration-200 ${
+                                    expandedGroups.has(entry.subCategory)
+                                      ? "rotate-90"
+                                      : ""
+                                  }`}
+                                />
+                                <span className="text-base font-extrabold text-indigo-800">
+                                  {entry.subCategory}
+                                </span>
                               </div>
                             </td>
-                          )}
-                          {analyticsFilter !== "ktv" && (
-                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-blue-600">
+                            {analyticsFilter !== "ktv" && (
+                              <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                                <div className="text-base font-extrabold text-indigo-800">
+                                  {entry.subtotal.restaurantQuantity}
+                                </div>
+                              </td>
+                            )}
+                            {analyticsFilter !== "ktv" && (
+                              <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                                <div className="text-base font-extrabold text-blue-600">
+                                  {Number(
+                                    entry.subtotal.restaurantRevenue || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </div>
+                              </td>
+                            )}
+                            {analyticsFilter !== "restaurant" && (
+                              <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                                <div className="text-base font-extrabold text-indigo-800">
+                                  {entry.subtotal.ktvQuantity}
+                                </div>
+                              </td>
+                            )}
+                            {analyticsFilter !== "restaurant" && (
+                              <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                                <div className="text-base font-extrabold text-purple-600">
+                                  {Number(
+                                    entry.subtotal.ktvRevenue || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                              <div className="text-base font-extrabold text-primary">
                                 {Number(
-                                  item.restaurantRevenue || 0,
+                                  entry.subtotal.totalRevenue || 0,
                                 ).toLocaleString()}{" "}
                                 MMK
                               </div>
                             </td>
-                          )}
-                          {analyticsFilter !== "restaurant" && (
-                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                {item.ktvQuantity}
+                            <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
+                              <div className="text-base font-extrabold text-indigo-800">
+                                {entry.subtotal.orderCount}
                               </div>
                             </td>
-                          )}
-                          {analyticsFilter !== "restaurant" && (
+                            <td className="px-4 lg:px-6 py-3 whitespace-nowrap"></td>
+                          </tr>
+                        ) : (
+                          <tr key={entry.stockId} className="hover:bg-gray-50">
                             <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-purple-600">
-                                {Number(item.ktvRevenue || 0).toLocaleString()}{" "}
+                              <div className="text-sm font-medium text-gray-900">
+                                {entry.stockName}
+                              </div>
+                            </td>
+                            {analyticsFilter !== "ktv" && (
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {entry.restaurantQuantity}
+                                </div>
+                              </td>
+                            )}
+                            {analyticsFilter !== "ktv" && (
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-semibold text-blue-600">
+                                  {Number(
+                                    entry.restaurantRevenue || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </div>
+                              </td>
+                            )}
+                            {analyticsFilter !== "restaurant" && (
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {entry.ktvQuantity}
+                                </div>
+                              </td>
+                            )}
+                            {analyticsFilter !== "restaurant" && (
+                              <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-semibold text-purple-600">
+                                  {Number(
+                                    entry.ktvRevenue || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-bold text-primary">
+                                {Number(
+                                  entry.totalRevenue || 0,
+                                ).toLocaleString()}{" "}
                                 MMK
                               </div>
                             </td>
-                          )}
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-bold text-primary">
-                              {Number(item.totalRevenue || 0).toLocaleString()}{" "}
-                              MMK
-                            </div>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {item.orderCount}
-                            </div>
-                          </td>
-                          <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {item.hasStockInfo && item.remainingStock !== null
-                                ? item.remainingStock.toLocaleString()
-                                : "N/A"}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {entry.orderCount}
+                              </div>
+                            </td>
+                            <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {entry.hasStockInfo &&
+                                entry.remainingStock !== null
+                                  ? entry.remainingStock.toLocaleString()
+                                  : "N/A"}
+                              </div>
+                            </td>
+                          </tr>
+                        ),
+                      )}
                     </tbody>
                   </table>
                 </div>
 
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-3 p-3 max-h-[calc(100vh-400px)] overflow-y-auto">
-                  {sortData(filteredAnalyticsItems).map((item) => (
-                    <div
-                      key={item.stockId}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-base font-semibold text-gray-900 flex-1 min-w-0 pr-2">
-                          {item.stockName}
-                        </h3>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Total Sale
-                          </p>
-                          <p className="text-lg font-bold text-primary">
-                            {Number(item.totalRevenue || 0).toLocaleString()}{" "}
+                  {getGroupedAnalyticsItems().map((entry) =>
+                    entry.type === "group" ? (
+                      <div
+                        key={`group-${entry.subCategory}`}
+                        className="bg-indigo-50 rounded-lg p-3 border border-indigo-300 cursor-pointer select-none hover:bg-indigo-100"
+                        onClick={() => toggleGroup(entry.subCategory)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <ChevronRight
+                              size={18}
+                              className={`text-indigo-500 transition-transform duration-200 ${
+                                expandedGroups.has(entry.subCategory)
+                                  ? "rotate-90"
+                                  : ""
+                              }`}
+                            />
+                            <h3 className="text-base font-extrabold text-indigo-800">
+                              {entry.subCategory}
+                            </h3>
+                          </div>
+                          <p className="text-base font-extrabold text-primary">
+                            {Number(
+                              entry.subtotal.totalRevenue || 0,
+                            ).toLocaleString()}{" "}
                             MMK
                           </p>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-gray-500 mb-1">Quantity</p>
-                          <p className="font-semibold text-gray-900">
-                            {item.totalQuantity}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">Orders</p>
-                          <p className="font-semibold text-gray-900">
-                            {item.orderCount}
-                          </p>
-                        </div>
-                        {analyticsFilter !== "ktv" && (
-                          <>
+                        <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+                          <div>
+                            <p className="text-gray-500">Qty</p>
+                            <p className="font-extrabold text-indigo-800">
+                              {entry.subtotal.totalQuantity}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Orders</p>
+                            <p className="font-extrabold text-indigo-800">
+                              {entry.subtotal.orderCount}
+                            </p>
+                          </div>
+                          {analyticsFilter !== "ktv" && (
                             <div>
-                              <p className="text-gray-500 mb-1">Restaurant</p>
-                              <p className="font-semibold text-gray-900">
-                                {item.restaurantQuantity}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 mb-1">
-                                Restaurant Revenue
-                              </p>
-                              <p className="font-semibold text-blue-600">
+                              <p className="text-gray-500">Rest.</p>
+                              <p className="font-extrabold text-blue-600">
                                 {Number(
-                                  item.restaurantRevenue || 0,
-                                ).toLocaleString()}{" "}
-                                MMK
+                                  entry.subtotal.restaurantRevenue || 0,
+                                ).toLocaleString()}
                               </p>
                             </div>
-                          </>
-                        )}
-                        {analyticsFilter !== "restaurant" && (
-                          <>
+                          )}
+                          {analyticsFilter !== "restaurant" && (
                             <div>
-                              <p className="text-gray-500 mb-1">KTV</p>
-                              <p className="font-semibold text-gray-900">
-                                {item.ktvQuantity}
+                              <p className="text-gray-500">KTV</p>
+                              <p className="font-extrabold text-purple-600">
+                                {Number(
+                                  entry.subtotal.ktvRevenue || 0,
+                                ).toLocaleString()}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-gray-500 mb-1">KTV Revenue</p>
-                              <p className="font-semibold text-purple-600">
-                                {Number(item.ktvRevenue || 0).toLocaleString()}{" "}
-                                MMK
-                              </p>
-                            </div>
-                          </>
-                        )}
-                        <div>
-                          <p className="text-gray-500 mb-1">Remaining Stock</p>
-                          <p className="font-semibold text-gray-900">
-                            {item.hasStockInfo && item.remainingStock !== null
-                              ? item.remainingStock.toLocaleString()
-                              : "N/A"}
-                          </p>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ) : (
+                      <div
+                        key={entry.stockId}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-base font-semibold text-gray-900 flex-1 min-w-0 pr-2">
+                            {entry.stockName}
+                          </h3>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Total Sale
+                            </p>
+                            <p className="text-lg font-bold text-primary">
+                              {Number(
+                                entry.totalRevenue || 0,
+                              ).toLocaleString()}{" "}
+                              MMK
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500 mb-1">Quantity</p>
+                            <p className="font-semibold text-gray-900">
+                              {entry.totalQuantity}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">Orders</p>
+                            <p className="font-semibold text-gray-900">
+                              {entry.orderCount}
+                            </p>
+                          </div>
+                          {analyticsFilter !== "ktv" && (
+                            <>
+                              <div>
+                                <p className="text-gray-500 mb-1">Restaurant</p>
+                                <p className="font-semibold text-gray-900">
+                                  {entry.restaurantQuantity}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 mb-1">
+                                  Restaurant Revenue
+                                </p>
+                                <p className="font-semibold text-blue-600">
+                                  {Number(
+                                    entry.restaurantRevenue || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </p>
+                              </div>
+                            </>
+                          )}
+                          {analyticsFilter !== "restaurant" && (
+                            <>
+                              <div>
+                                <p className="text-gray-500 mb-1">KTV</p>
+                                <p className="font-semibold text-gray-900">
+                                  {entry.ktvQuantity}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 mb-1">KTV Revenue</p>
+                                <p className="font-semibold text-purple-600">
+                                  {Number(
+                                    entry.ktvRevenue || 0,
+                                  ).toLocaleString()}{" "}
+                                  MMK
+                                </p>
+                              </div>
+                            </>
+                          )}
+                          <div>
+                            <p className="text-gray-500 mb-1">Remaining Stock</p>
+                            <p className="font-semibold text-gray-900">
+                              {entry.hasStockInfo &&
+                              entry.remainingStock !== null
+                                ? entry.remainingStock.toLocaleString()
+                                : "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
